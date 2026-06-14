@@ -1,0 +1,12 @@
+[package]
+name = "aero"
+version = "0.1.0"
+edition = "2021"
+description = "Aero IDE — built from scratch"
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+
