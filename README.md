@@ -1,11 +1,11 @@
 # Aero IDE
 
-Built from scratch.
+Built from scratch. C# / Avalonia.
 
 ## Build
 
 ```bash
-cargo run
+dotnet run --project src
 ```
 
 ## License
