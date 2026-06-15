@@ -83,7 +83,9 @@ public class DocumentManager
         _documents.Add(doc);
         ActiveDocument = doc;
 
-        _bus.Publish(new DocumentOpened(doc.DisplayName));
+        // DocumentOpened is not published for untitled documents — the FilePath field
+        // in the message record implies a real file path and would mislead subscribers.
+        // The EditorViewModel already handles tab creation via NewFile() → EnsureTabForDocument().
         return doc;
     }
 

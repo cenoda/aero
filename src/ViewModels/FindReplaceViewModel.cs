@@ -19,7 +19,7 @@ public class FindReplaceViewModel : ReactiveObject
     [Reactive] public string ReplaceText { get; set; } = "";
     [Reactive] public bool CaseSensitive { get; set; }
     [Reactive] public bool WholeWord { get; set; }
-    [Reactive] public bool IsVisible { get; set; }
+    [Reactive] public bool FocusReplaceOnOpen { get; set; }
 
     public ReactiveCommand<Unit, Unit> FindNextCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
@@ -61,13 +61,4 @@ public class FindReplaceViewModel : ReactiveObject
         _replaceAllAction(SearchText, ReplaceText, CaseSensitive, WholeWord);
     }
 
-    public void Show()
-    {
-        IsVisible = true;
-    }
-
-    public void Hide()
-    {
-        IsVisible = false;
-    }
 }

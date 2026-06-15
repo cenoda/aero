@@ -247,8 +247,10 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
     }
 
 /// <summary>Show the find/replace overlay.</summary>
-    public void ShowFindReplace()
+    /// <param name="focusReplace">If true, focus the Replace field on open (Ctrl+H).</param>
+    public void ShowFindReplace(bool focusReplace = false)
     {
+        FindReplace.FocusReplaceOnOpen = focusReplace;
         IsFindReplaceVisible = true;
     }
 

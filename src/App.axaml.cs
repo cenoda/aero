@@ -30,7 +30,10 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var shell = _services.GetRequiredService<ShellViewModel>();
-            desktop.MainWindow = new MainWindow { DataContext = shell };
+            var bus = _services.GetRequiredService<IMessageBus>();
+            var mainWindow = new MainWindow { DataContext = shell };
+            mainWindow.Initialize(bus);
+            desktop.MainWindow = mainWindow;
         }
 
         base.OnFrameworkInitializationCompleted();

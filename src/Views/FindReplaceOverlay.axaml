@@ -17,7 +17,8 @@
                 <TextBlock Text="Find:" 
                          VerticalAlignment="Center"
                          Width="50"/>
-                <TextBox Text="{Binding SearchText}"
+                <TextBox x:Name="SearchTextBox"
+                         Text="{Binding SearchText}"
                          Width="250"
                          Watermark="Search text..."/>
             </StackPanel>
@@ -27,7 +28,8 @@
                 <TextBlock Text="Replace:" 
                          VerticalAlignment="Center"
                          Width="50"/>
-                <TextBox Text="{Binding ReplaceText}"
+                <TextBox x:Name="ReplaceTextBox"
+                         Text="{Binding ReplaceText}"
                          Width="250"
                          Watermark="Replace with..."/>
             </StackPanel>

@@ -19,11 +19,16 @@ namespace Aero.ViewModels;
 /// Top-level ViewModel for the main application window.
 /// Owns the overall layout state: active panel, status bar text, window title, etc.
 /// </summary>
-public class ShellViewModel : ReactiveObject
+public class ShellViewModel : ReactiveObject, IDisposable
 {
     private readonly IMessageBus _bus;
     private readonly DocumentManager _documentManager;
     private readonly EditorViewModel _editorViewModel;
+
+    // Stored handlers for unsubscribe
+    private Action<FolderOpened>? _folderOpenedHandler;
+    private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
+    private Action<DocumentSaved>? _documentSavedHandler;
 
 [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
@@ -69,10 +74,13 @@ SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         ToggleTerminalCommand = ReactiveCommand.Create(ToggleTerminal);
         AboutCommand = ReactiveCommand.Create(About);
 
-        // Subscribe to messages
-        _bus.Subscribe<FolderOpened>(msg => StatusText = msg.Path);
-        _bus.Subscribe<ActiveDocumentChanged>(OnActiveDocumentChanged);
-        _bus.Subscribe<DocumentSaved>(OnDocumentSaved);
+        // Subscribe to messages — store handlers for unsubscribe
+        _folderOpenedHandler = msg => StatusText = msg.Path;
+        _bus.Subscribe(_folderOpenedHandler);
+        _activeDocumentChangedHandler = OnActiveDocumentChanged;
+        _bus.Subscribe(_activeDocumentChangedHandler);
+        _documentSavedHandler = OnDocumentSaved;
+        _bus.Subscribe(_documentSavedHandler);
     }
 
 private void NewFile()
@@ -184,7 +192,7 @@ private void Exit()
 
     private void Replace()
     {
-        _editorViewModel.ShowFindReplace();
+        _editorViewModel.ShowFindReplace(focusReplace: true);
     }
 
     private void ToggleFileExplorer()
@@ -226,5 +234,16 @@ private void Exit()
 
         WindowTitle = $"Aero - {doc.FileName}";
         StatusText = doc.FilePath ?? doc.FileName;
+    }
+
+    /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
+    public void Dispose()
+    {
+        if (_folderOpenedHandler != null)
+            _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
+        if (_activeDocumentChangedHandler != null)
+            _bus.Unsubscribe<ActiveDocumentChanged>(_activeDocumentChangedHandler);
+        if (_documentSavedHandler != null)
+            _bus.Unsubscribe<DocumentSaved>(_documentSavedHandler);
     }
 }

@@ -69,11 +69,11 @@ public class DocumentManagerTests
     }
 
     [Fact]
-    public void NewDocument_PublishesDocumentOpened()
+    public void NewDocument_DoesNotPublishDocumentOpened()
     {
         var (dm, bus) = Create();
         dm.NewDocument();
-        Assert.Single(bus.MessagesOf<DocumentOpened>());
+        Assert.Empty(bus.MessagesOf<DocumentOpened>());
     }
 
     // -----------------------------------------------------------------------

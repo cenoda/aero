@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -14,8 +13,7 @@ namespace Aero.Views;
 public partial class EditorView : UserControl
 {
     private TextEditor? _activeEditor;
-    private CancellationTokenSource? _resubscribeCts;
-    private EditorTabViewModel? _pendingTab;
+    private int _subscribeGeneration;
 
     public EditorView()
     {
@@ -29,7 +27,7 @@ public partial class EditorView : UserControl
         {
             // When the active tab changes, rebind to the new TextEditor
             vm.WhenAnyValue(x => x.ActiveTab)
-              .Subscribe(tab => _ = ResubscribeEditorAsync(tab));
+              .Subscribe(tab => ResubscribeEditor(tab));
 
             // Execute find/replace operations against the live editor control
             vm.FindReplaceRequested += OnFindReplaceRequested;
@@ -37,19 +35,15 @@ public partial class EditorView : UserControl
     }
 
     /// <summary>
-    /// Finds the currently visible TextEditor in the TabControl's content
-    /// and subscribes to its TextChanged and CaretPositionChanged events.
-    /// Uses async retry with exponential backoff to handle lazy-loaded content
-    /// when tab changes and the UI updates asynchronously.
+    /// Unsubscribes from the current TextEditor and posts a deferred re-subscription
+    /// at <see cref="DispatcherPriority.Loaded"/>, which fires after the TabControl's
+    /// ContentPresenter has completed its layout pass and the new TextEditor is in the
+    /// visual tree. The editor is matched by document reference to avoid latching onto
+    /// a transitioning editor during rapid tab switches.
     /// </summary>
-    private async Task ResubscribeEditorAsync(EditorTabViewModel? newTab)
+    private void ResubscribeEditor(EditorTabViewModel? newTab)
     {
-        // Cancel any pending resubscribe operation
-        _resubscribeCts?.Cancel();
-        _resubscribeCts = new CancellationTokenSource();
-        var token = _resubscribeCts.Token;
-
-        // Unsubscribe from previous editor
+        // Unsubscribe from the previous editor immediately
         if (_activeEditor != null)
         {
             _activeEditor.TextChanged -= OnTextChanged;
@@ -60,46 +54,30 @@ public partial class EditorView : UserControl
         if (newTab == null)
             return;
 
-        _pendingTab = newTab;
+        // A generation counter lets stale posts (from rapid tab switching) bail out early
+        var generation = ++_subscribeGeneration;
 
-        // Retry with exponential backoff: 10ms, 25ms, 50ms, 100ms, 200ms (max ~400ms total)
-        var delays = new[] { 10, 25, 50, 100, 200 };
-        foreach (var delay in delays)
+        // Post at Loaded priority so we run after layout/render: by then the TabControl's
+        // ContentPresenter has created and arranged the new TextEditor in the visual tree.
+        Dispatcher.UIThread.Post(() =>
         {
-            // Check for cancellation or tab change
-            if (token.IsCancellationRequested || _pendingTab != newTab)
-                return;
+            if (generation != _subscribeGeneration)
+                return; // A newer tab switch superseded this one
 
-            // Wait for the visual tree to update
-            await Task.Delay(delay, token);
+            // Match by document reference — avoids picking up a transitioning editor
+            var innerDoc = newTab.Document?.InnerDocument;
+            _activeEditor = innerDoc == null
+                ? null
+                : this.GetVisualDescendants()
+                      .OfType<TextEditor>()
+                      .FirstOrDefault(e => e.Document == innerDoc);
 
-            // Check again after delay
-            if (token.IsCancellationRequested || _pendingTab != newTab)
-                return;
-
-            // Try to find the TextEditor in the visual tree
-            var editor = await Dispatcher.UIThread.InvokeAsync(() =>
+            if (_activeEditor != null)
             {
-                if (_pendingTab != newTab)
-                    return (TextEditor?)null;
-
-                // Find the TextEditor inside the TabControl's content presenter
-                return this.FindDescendantOfType<TextEditor>();
-            });
-
-            if (editor != null)
-            {
-                // Verify the editor belongs to the expected tab
-                if (_pendingTab == newTab)
-                {
-                    _activeEditor = editor;
-                    _activeEditor.TextChanged += OnTextChanged;
-                    _activeEditor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
-                    _pendingTab = null;
-                    return;
-                }
+                _activeEditor.TextChanged += OnTextChanged;
+                _activeEditor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
             }
-        }
+        }, DispatcherPriority.Loaded);
     }
 
     private void OnTextChanged(object? sender, EventArgs e)

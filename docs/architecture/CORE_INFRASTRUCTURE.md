@@ -91,3 +91,39 @@ Program.Main()
         → new MainWindow { DataContext = shellViewModel }
         → Show window
 ```
+
+## ViewModel → Modal Dialog Bridge (MessageBus Subscriber)
+
+ViewModels never open dialogs (MVVM). The pattern for asking the user a question
+from a ViewModel — e.g. "Save / Don't Save / Cancel?" — is:
+
+1. **Message** — define a record carrying a callback the user-facing layer invokes
+   with the response:
+   ```csharp
+   public record ConfirmDirtyClose(string FileName, Action<string> OnResponse);
+   ```
+2. **Publish** — ViewModel calls `_bus.Publish(new ConfirmDirtyClose(...))`.
+3. **Subscribe in code-behind** — `MainWindow` (the only place allowed to own a
+   `Window` / show a dialog) injects `IMessageBus` via its constructor and subscribes:
+   ```csharp
+   public MainWindow(IMessageBus bus)
+   {
+       _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+       _bus.Subscribe<ConfirmDirtyClose>(OnConfirmDirtyClose);
+   }
+
+   private async void OnConfirmDirtyClose(ConfirmDirtyClose msg)
+   {
+       var result = await DirtyCloseDialog.ShowAsync(this, msg.FileName);
+       msg.OnResponse(result ?? DirtyCloseResponse.Cancel);
+   }
+   ```
+4. **Inject the bus into `MainWindow`** when constructing it in `App.axaml.cs`:
+   ```csharp
+   var bus = _services.GetRequiredService<IMessageBus>();
+   desktop.MainWindow = new MainWindow(bus) { DataContext = shell };
+   ```
+
+The dialog itself is a small `Window` subclass with code-behind (no ViewModel)
+that returns the user's choice via `Close(response)`. See
+`src/Views/DirtyCloseDialog.axaml` and `src/Views/DirtyCloseDialog.axaml.cs`.
