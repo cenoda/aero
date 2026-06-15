@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+
+    <!-- AvaloniaEdit needed for TextDocument -->
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.*" />
+
+    <!-- ReactiveUI for EditorViewModel -->
+    <PackageReference Include="ReactiveUI" Version="20.*" />
+    <PackageReference Include="ReactiveUI.Fody" Version="19.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference the main project's source files directly
+         instead of an assembly reference (avoids Avalonia app bootstrap) -->
+    <Compile Include="../src/Core/IMessageBus.cs" />
+    <Compile Include="../src/Core/Messages.cs" />
+    <Compile Include="../src/Models/Editor/TextDocument.cs" />
+    <Compile Include="../src/Services/DocumentManager.cs" />
+    <Compile Include="../src/ViewModels/EditorViewModel.cs" />
+    <Compile Include="../src/ViewModels/EditorTabViewModel.cs" />
+    <Compile Include="../src/ViewModels/FindReplaceViewModel.cs" />
+  </ItemGroup>
+
+</Project>

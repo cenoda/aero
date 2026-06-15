@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ae="using:AvaloniaEdit"
+             xmlns:vm="using:Aero.ViewModels"
+             xmlns:views="using:Aero.Views"
+             x:Class="Aero.Views.EditorView"
+             x:DataType="vm:EditorViewModel">
+
+    <Grid>
+        <DockPanel>
+            <!-- Tab bar for open documents -->
+            <TabControl DockPanel.Dock="Top"
+                        ItemsSource="{Binding Tabs}"
+                        SelectedItem="{Binding ActiveTab}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EditorTabViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                            <Button Content="×"
+                                    Command="{Binding $parent[TabControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="4,0"
+                                    FontSize="14"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate x:DataType="vm:EditorTabViewModel">
+                        <ae:TextEditor Document="{Binding Document.InnerDocument}"
+                                      FontFamily="Consolas, Courier New, monospace"
+                                      FontSize="13"
+                                      ShowLineNumbers="True"
+                                      WordWrap="False"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto"/>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+
+            <!-- Welcome page when no documents -->
+            <TextBlock Text="No file open. Use File → Open or press Ctrl+O."
+                       IsVisible="{Binding !HasDocument}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.3"
+                       FontSize="18" />
+        </DockPanel>
+
+        <!-- Find/Replace overlay - floats on top of editor content -->
+        <views:FindReplaceOverlay DataContext="{Binding FindReplace}"
+                                  IsVisible="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).IsFindReplaceVisible}"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Top"
+                                  Margin="0,8,16,0"/>
+    </Grid>
+
+</UserControl>

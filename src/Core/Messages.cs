@@ -1,3 +1,5 @@
+using System;
+
 namespace Aero.Core;
 
 // ---------------------------------------------------------------------------
@@ -8,10 +10,37 @@ namespace Aero.Core;
 public record DocumentOpened(string FilePath);
 
 /// <summary>A document was closed.</summary>
-public record DocumentClosed(string FilePath);
+public record DocumentClosed(string FilePath, Aero.Models.Editor.TextDocument Document);
 
 /// <summary>The active (focused) document changed.</summary>
-public record ActiveDocumentChanged(string? FilePath);
+public record ActiveDocumentChanged(Aero.Models.Editor.TextDocument? Document);
+
+/// <summary>A document was modified (has unsaved changes).</summary>
+public record DocumentModified(string FilePath, Aero.Models.Editor.TextDocument? Document);
+
+/// <summary>A document was saved.</summary>
+public record DocumentSaved(string FilePath, Aero.Models.Editor.TextDocument? Document);
+
+/// <summary>A document is about to close (can be cancelled).</summary>
+public record DocumentClosing(string FilePath);
+
+/// <summary>
+/// Prompt user for dirty document close decision.
+/// Response: "Save", "Don'tSave", or "Cancel".
+/// </summary>
+public record ConfirmDirtyClose(
+    string FileName, 
+    Action<string> OnResponse);
+
+/// <summary>
+/// Response values for ConfirmDirtyClose.
+/// </summary>
+public static class DirtyCloseResponse
+{
+    public const string Save = "Save";
+    public const string DontSave = "Don'tSave";
+    public const string Cancel = "Cancel";
+}
 
 // ---------------------------------------------------------------------------
 // Build messages

@@ -1,26 +1,84 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aero.ViewModels"
+        xmlns:views="using:Aero.Views"
         x:Class="Aero.MainWindow"
         x:DataType="vm:ShellViewModel"
-        Title="Aero"
+        Title="{Binding WindowTitle}"
         Width="1200"
         Height="800"
         MinWidth="600"
         MinHeight="400">
 
     <DockPanel>
-        <!-- Status bar -->
-        <TextBlock DockPanel.Dock="Bottom"
-                   Text="{Binding StatusText}"
-                   Margin="8,4" />
+        <!-- Menu bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" Command="{Binding NewFileCommand}" InputGesture="Ctrl+N"/>
+                <MenuItem Header="_Open..." Command="{Binding OpenFileCommand}" InputGesture="Ctrl+O"/>
+                <Separator/>
+                <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S"/>
+                <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S"/>
+                <Separator/>
+                <MenuItem Header="_Close" Command="{Binding CloseFileCommand}" InputGesture="Ctrl+W"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z"/>
+                <MenuItem Header="_Redo" Command="{Binding RedoCommand}" InputGesture="Ctrl+Y"/>
+                <Separator/>
+                <MenuItem Header="_Find..." Command="{Binding FindCommand}" InputGesture="Ctrl+F"/>
+                <MenuItem Header="_Replace..." Command="{Binding ReplaceCommand}" InputGesture="Ctrl+H"/>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Toggle _File Explorer" Command="{Binding ToggleFileExplorerCommand}"/>
+                <MenuItem Header="Toggle _Terminal" Command="{Binding ToggleTerminalCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
+            </MenuItem>
+        </Menu>
 
-        <!-- Main content placeholder — replaced in Phase 1 -->
-        <TextBlock Text="Aero"
-                   FontSize="24"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Opacity="0.2" />
+        <!-- Main editor area -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Editor panel with tabs -->
+            <views:EditorView Grid.Row="0"
+                           DataContext="{Binding EditorViewModel}"/>
+
+            <!-- Status bar -->
+            <Border Grid.Row="1" 
+                    Background="#F0F0F0" 
+                    BorderBrush="#CCCCCC" 
+                    BorderThickness="0,1,0,0"
+                    Padding="8,4">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+<!-- Cursor position -->
+                    <TextBlock Grid.Column="0"
+                              Text="{Binding EditorViewModel.CursorPosition}"
+                              Margin="0,0,16,0"/>
+                    
+<!-- Language -->
+                    <TextBlock Grid.Column="1"
+                              Text="{Binding EditorViewModel.Language}"
+                              Margin="0,0,16,0"/>
+                    
+                    <!-- Encoding (placeholder) -->
+                    <TextBlock Grid.Column="3"
+                              Text="UTF-8"
+                              Margin="0,0,16,0"/>
+                    
+                    <!-- Line ending (placeholder) -->
+                    <TextBlock Grid.Column="4"
+                              Text="Lf"/>
+                </Grid>
+            </Border>
+        </Grid>
     </DockPanel>
 
 </Window>

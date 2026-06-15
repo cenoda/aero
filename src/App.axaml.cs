@@ -1,4 +1,5 @@
 using Aero.Core;
+using Aero.Services;
 using Aero.ViewModels;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,8 +13,8 @@ public partial class App : Application
 {
     private IServiceProvider? _services;
 
-    /// <summary>Global DI service provider — available after OnFrameworkInitializationCompleted.</summary>
-    public static IServiceProvider Services =>
+/// <summary>Global DI service provider — available after OnFrameworkInitializationCompleted.</summary>
+    internal static IServiceProvider Services =>
         ((App)Current!)._services
         ?? throw new InvalidOperationException("Services not yet initialized.");
 
@@ -42,8 +43,13 @@ public partial class App : Application
         // Core infrastructure
         services.AddSingleton<IMessageBus, MessageBus>();
 
+        // Services
+        services.AddSingleton<DocumentManager>();
+
         // ViewModels
         services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<EditorViewModel>();
+        services.AddSingleton<FindReplaceViewModel>();
 
         return services.BuildServiceProvider();
     }
