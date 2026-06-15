@@ -101,19 +101,20 @@ Every library explained in plain English — what it does, why you'd want it, an
 ## QUICK PICK: Install These Day 1
 
 ```
-AvaloniaEdit
-AvaloniaEdit.TextMate
-TextMateSharp.Grammars
-Dock.Avalonia
-Material.Icons.Avalonia
-Microsoft.Extensions.DependencyInjection
-Microsoft.Extensions.Configuration.Json
-Microsoft.Extensions.Logging
-CliWrap
-FuzzySharp
+Avalonia.AvaloniaEdit      11.3.*
+AvaloniaEdit.TextMate      11.3.*
+TextMateSharp.Grammars     1.*
+Dock.Avalonia              11.3.*
+Material.Icons.Avalonia    1.*
+Microsoft.Extensions.DependencyInjection  9.*
+Microsoft.Extensions.Configuration.Json   9.*
+Microsoft.Extensions.Logging             9.*
+CliWrap                    3.*
+FuzzySharp                 2.*
 ```
 
 Then add **StreamJsonRpc** at Phase 4, **LibGit2Sharp + DiffPlex** at Phase 7.
+
 
 ---
 

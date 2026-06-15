@@ -9,11 +9,30 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.*" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.*" />
-    <PackageReference Include="Avalonia.Themes.Simple" Version="11.2.*" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.*" />
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.2.*" Condition="'$(Configuration)' == 'Debug'" />
+    <!-- Avalonia core (11.3 = latest stable 11.x) -->
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Simple" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.*" Condition="'$(Configuration)' == 'Debug'" />
+
+    <!-- Editor -->
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.*" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.*" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="1.*" />
+
+    <!-- UI -->
+    <PackageReference Include="Dock.Avalonia" Version="11.3.*" />
+    <PackageReference Include="Material.Icons.Avalonia" Version="1.*" />
+
+    <!-- Infrastructure -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.*" />
+
+    <!-- Utilities -->
+    <PackageReference Include="CliWrap" Version="3.*" />
+    <PackageReference Include="FuzzySharp" Version="2.*" />
   </ItemGroup>
 
 </Project>
