@@ -25,12 +25,15 @@
     <PackageReference Include="Dock.Avalonia" Version="11.3.*" />
     <PackageReference Include="Material.Icons.Avalonia" Version="1.*" />
 
-    <!-- Infrastructure -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
+    <!-- MVVM -->
+    <PackageReference Include="ReactiveUI" Version="20.*" />
+    <PackageReference Include="ReactiveUI.Fody" Version="19.*" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.*" />
 
-    <!-- Utilities -->
+    <!-- Infrastructure -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
     <PackageReference Include="CliWrap" Version="3.*" />
     <PackageReference Include="FuzzySharp" Version="2.*" />
   </ItemGroup>

@@ -7,9 +7,9 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Avalonia project scaffold
 - [x] Basic window with title
 - [ ] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
-- [ ] Core infrastructure: `ObservableObject`, `RelayCommand`, `MessageBus`
+- [ ] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection 세팅
 - [ ] Add AvaloniaEdit NuGet package
-- [ ] Basic DI with Microsoft.Extensions.DependencyInjection
+- [ ] DI 컨테이너 구성 (Program.cs에 서비스 등록)
 
 ## Phase 1: The Editor
 - [ ] **TextBuffer** — efficient gap-buffer or rope structure
@@ -43,13 +43,14 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] **Problems panel** — list all diagnostics in workspace
 - [ ] **Code completion** — Ctrl+Space triggers LSP completions
 
-## Phase 5: Terminal
-- [ ] **PtyProcess** — spawn shell with pseudo-terminal
-- [ ] **TerminalEmulator** — parse escape sequences
-- [ ] **TerminalRenderer** — draw to Avalonia canvas
-- [ ] Terminal panel in bottom dock
-- [ ] Multiple terminal tabs
-- [ ] Ctrl+` to toggle terminal
+## Phase 5: Output Panel (가짜 터미널)
+> ⚠️ 진짜 인터랙티브 터미널(PTY)은 Phase 9로 이동. OS마다 PTY 구현이 달라 난이도가 매우 높음.
+> 지금은 명령 실행 결과를 텍스트로 보여주는 Output Panel로 대체한다.
+
+- [ ] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
+- [ ] **Output panel** — stdout/stderr 실시간 스트리밍
+- [ ] Ctrl+` 로 패널 토글
+- [ ] 실행 중 취소 버튼 (CancellationToken)
 
 ## Phase 6: Build & Output
 - [ ] **BuildService** — run `dotnet build` and capture output
@@ -82,6 +83,15 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] **Rename symbol** — via LSP
 - [ ] **Format document** — via LSP
 
+### Phase 9.5: 진짜 터미널 (선택 사항)
+> ⚠️ 난이도 높음. IDE 나머지가 다 완성된 후 도전할 것.
+
+- [ ] **Pty.Net** — OS별 PTY 연결 (Linux/Mac/Windows)
+- [ ] **VtNetCore** — VT100/xterm 이스케이프 코드 파싱
+- [ ] **TerminalRenderer** — Avalonia 캔버스에 직접 렌더링
+- [ ] 인터랙티브 쉘 (bash / cmd / powershell)
+- [ ] 여러 터미널 탭
+
 ## Phase 10: Plugin System
 - [ ] **IPlugin interface** — Initialize(), Shutdown(), metadata
 - [ ] **PluginHost** — scan & load assemblies
@@ -94,6 +104,8 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## AGENT TRACK: Multi-Agent AI Orchestration
 
 ### Phase A1: Agent Foundation
+> ⚠️ Phase 8 (UI Polish / Docking) 완료 후 시작할 것. 그 전에 시작하면 레이아웃 완성 후 전부 재작업해야 함.
+
 - [ ] **IAgent interface** — Id, Name, Kind (CLI/API/Local), Role (Frontend/Backend)
 - [ ] **AgentRegistry** — discover/register/unregister agents
 - [ ] **WorkspaceContext** — gather open files, cursor, diagnostics, git diff
