@@ -14,6 +14,7 @@ public partial class EditorView : UserControl
 {
     private TextEditor? _activeEditor;
     private int _subscribeGeneration;
+    private Action<FindReplaceArgs>? _findReplaceHandler;
 
     public EditorView()
     {
@@ -23,6 +24,13 @@ public partial class EditorView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        // Unsubscribe from previous ViewModel's FindReplaceRequested to prevent leak
+        if (DataContext is EditorViewModel previousVm && _findReplaceHandler != null)
+        {
+            previousVm.FindReplaceRequested -= _findReplaceHandler;
+            _findReplaceHandler = null;
+        }
+
         if (DataContext is EditorViewModel vm)
         {
             // When the active tab changes, rebind to the new TextEditor
@@ -30,7 +38,8 @@ public partial class EditorView : UserControl
               .Subscribe(tab => ResubscribeEditor(tab));
 
             // Execute find/replace operations against the live editor control
-            vm.FindReplaceRequested += OnFindReplaceRequested;
+            _findReplaceHandler = OnFindReplaceRequested;
+            vm.FindReplaceRequested += _findReplaceHandler;
         }
     }
 

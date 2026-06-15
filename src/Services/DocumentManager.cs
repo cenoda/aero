@@ -182,6 +182,12 @@ _bus.Publish(new DocumentSaved(filePath, document));
         }
     }
 
+/// <summary>Clear the last dirty state dictionary (called on app exit).</summary>
+    public void ClearLastDirtyState()
+    {
+        _lastDirtyState.Clear();
+    }
+
     /// <summary>Detect language from file extension.</summary>
     public static string DetectLanguage(string filePath)
     {
