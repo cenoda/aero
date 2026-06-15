@@ -84,7 +84,17 @@ matching the pattern in `EditorTabViewModel`.
 
 ## Resolution
 
-- **Root cause:** —
-- **Fix:** —
-- **Commit:** —
-- **Closed date:** —
+- **Root cause:** Multiple minor design issues from Phase 1 code review:
+  - 3a: `FindReplaceViewModel` had dead `IsVisible`/`Show()`/`Hide()` never wired
+  - 3b: `ShellViewModel.Find()` and `Replace()` both called identical `ShowFindReplace()`
+  - 3c: `Ctrl+F`/`Ctrl+H` shortcuts only worked when menu had focus (AvaloniaEdit consumes KeyDown first)
+  - 3d: `DocumentManager.NewDocument()` published `DocumentOpened` with display name in `FilePath` field
+  - 3e: `ShellViewModel` never unsubscribed from `MessageBus`
+- **Fix:**
+  - 3a: Removed `IsVisible` property and `Show()`/`Hide()` methods from `FindReplaceViewModel`
+  - 3b: Added `FocusReplaceOnOpen` property to `FindReplaceViewModel`; `ShowFindReplace(bool focusReplace)` sets it; `FindReplaceOverlay` code-behind focuses Replace TextBox; `ShellViewModel.Replace()` passes `focusReplace: true`
+  - 3c: `MainWindow.OnKeyDown` handles `Ctrl+F` and `Ctrl+H` via `ShellViewModel` commands
+  - 3d: Removed `DocumentOpened` publish from `NewDocument()`; updated test to verify no publish
+  - 3e: `ShellViewModel` implements `IDisposable`; stores handlers as fields; unsubscribes in `Dispose()`
+- **Commit:** (pending)
+- **Closed date:** 2026-06-15

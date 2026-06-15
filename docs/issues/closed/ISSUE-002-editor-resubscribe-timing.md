@@ -1,11 +1,11 @@
 # ISSUE-002: EditorView tab-switch caret tracking relies on polling — fragile under load
 
 **Label:** BUG
-**Status:** open
+**Status:** closed
 **Priority:** medium
 **Reported by:** code review (Phase 1)
 **Assigned to:** —
-**Related:** Phase 1 review, `EditorView.axaml.cs:ResubscribeEditorAsync`, `MainWindow.axaml`
+**Related:** Phase 1 review, `EditorView.axaml.cs:ResubscribeEditor`, `MainWindow.axaml`
 
 ## Description
 
@@ -46,11 +46,15 @@ causing the subscription to latch onto the outgoing tab's editor.
 
 ## Debug Log
 
-> Not yet attempted.
+### Attempt 1 — Option C (implemented)
+- **Hypothesis:** The polling retry is inherently racy; `DispatcherPriority.Loaded` fires deterministically after the TabControl's layout pass, making polling unnecessary.
+- **Action:** Replaced `ResubscribeEditorAsync` (5-step exponential-backoff `Task.Delay` loop) with synchronous `ResubscribeEditor`. Unsubscription happens immediately; re-subscription is posted at `DispatcherPriority.Loaded` via `Dispatcher.UIThread.Post`.
+- **Result:** No polling, no `CancellationTokenSource`. A generation counter (`_subscribeGeneration`) guards against stale posts from rapid tab switching. Editor is matched by `Document` reference (`e.Document == innerDoc`) instead of `FindDescendantOfType<TextEditor>()` (first-match), eliminating the wrong-editor-during-transition bug.
+- **Error / Output:** Build errors only in pre-existing `MainWindow.axaml.cs` (unrelated). `EditorView` compiles cleanly.
 
 ## Resolution
 
-- **Root cause:** —
-- **Fix:** —
-- **Commit:** —
-- **Closed date:** —
+- **Root cause:** `TabControl.ContentTemplate` lazily instantiates the `TextEditor` after `SelectedItem` changes, creating a window where the visual tree has no editor yet. The polling loop tried to bridge this window but was inherently unreliable under load and could latch onto the wrong editor during a transition.
+- **Fix:** Option C from the issue notes — `Dispatcher.UIThread.Post(..., DispatcherPriority.Loaded)` runs after layout is complete, guaranteeing the correct editor is present. Combined with document-reference matching to prevent wrong-editor capture.
+- **Commit:** uncommitted (working tree)
+- **Closed date:** 2026-06-15
