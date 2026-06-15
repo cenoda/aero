@@ -16,7 +16,12 @@ Prefix the title or add a label line:
 - `[FEAT]` — new feature request
 - `[CHORE]` — cleanup, refactor, docs, etc.
 - `[AGENT]` — agent/orchestration related
+- `[DEBUG]` — debugging session, investigation, uncertain fix
 
 ## Template
 
 Copy `templates/issue-template.md` and fill it in.
+
+## Debug Rule
+
+If a bug fix is not obvious after 2 attempts, **create an issue file immediately** and record all debug attempts in the `Debug Log` section. Do not keep debug attempts in memory or in chat history only.

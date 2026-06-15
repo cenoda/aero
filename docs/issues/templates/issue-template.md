@@ -23,3 +23,32 @@ Clear description of the bug or feature.
 ## Notes / Screenshots
 
 Any additional context.
+
+## Debug Log
+
+> **Rule:** If the fix is not obvious in 2 attempts, record everything here.
+
+### Attempt 1
+- **Hypothesis:**
+- **Action:**
+- **Result:**
+- **Error / Output:**
+
+### Attempt 2
+- **Hypothesis:**
+- **Action:**
+- **Result:**
+- **Error / Output:**
+
+### Attempt N
+- **Hypothesis:**
+- **Action:**
+- **Result:**
+- **Error / Output:**
+
+## Resolution
+
+- **Root cause:**
+- **Fix:**
+- **Commit:**
+- **Closed date:**
