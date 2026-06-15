@@ -63,12 +63,12 @@ public class FindInTextTests
         Assert.Equal(-1, vm.FindInText("Hello World", "hello", 0, StringComparison.Ordinal, false));
     }
 
-    [Fact]
+[Fact]
     public void FindInText_PlainSearch_RespectsStartOffset()
     {
         var vm = CreateVm();
-        // "test" appears at 0 and 10; searching from offset 1 should find the second
-        Assert.Equal(10, vm.FindInText("test foobartest", "test", 1, StringComparison.Ordinal, false));
+        // "test" appears at 0 and 11; searching from offset 1 should find the second
+        Assert.Equal(11, vm.FindInText("test foobartest", "test", 1, StringComparison.Ordinal, false));
     }
 
     [Fact]
@@ -153,13 +153,13 @@ public class FindInTextTests
         Assert.Equal(0, vm.FindInText("foo, bar", "foo", 0, StringComparison.Ordinal, true));
     }
 
-    [Fact]
+[Fact]
     public void FindInText_WholeWord_SkipsFirstThenFindsSecond()
     {
         var vm = CreateVm();
-        // "foo" embedded first ("foobar"), then standalone "foo" later
+        // "foo" embedded first ("foobar"), then standalone "foo" at index 11
         // This is the key regression test for the fixed advance-logic infinite-loop bug
-        Assert.Equal(10, vm.FindInText("foobar baz foo qux", "foo", 0, StringComparison.Ordinal, true));
+        Assert.Equal(11, vm.FindInText("foobar baz foo qux", "foo", 0, StringComparison.Ordinal, true));
     }
 
     [Fact]
