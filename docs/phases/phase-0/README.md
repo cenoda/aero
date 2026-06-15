@@ -21,10 +21,10 @@ Set up project infrastructure so subsequent phases have a solid base.
 
 - [x] Avalonia project scaffold
 - [x] Basic window with title
-- [ ] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
-- [ ] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection setup
-- [ ] Add AvaloniaEdit NuGet package
-- [ ] DI container configuration (register services in Program.cs)
+- [x] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
+- [x] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection setup
+- [x] Add AvaloniaEdit NuGet package
+- [x] DI container configuration (register services in Program.cs)
 
 ## Related Documents
 
