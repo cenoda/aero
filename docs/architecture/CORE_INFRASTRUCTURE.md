@@ -104,9 +104,17 @@ from a ViewModel — e.g. "Save / Don't Save / Cancel?" — is:
    ```
 2. **Publish** — ViewModel calls `_bus.Publish(new ConfirmDirtyClose(...))`.
 3. **Subscribe in code-behind** — `MainWindow` (the only place allowed to own a
-   `Window` / show a dialog) injects `IMessageBus` via its constructor and subscribes:
+   `Window` / show a dialog) gets `IMessageBus` via an explicit `Initialize(bus)`
+   method called from `App.axaml.cs` after construction. Avalonia's XAML loader
+   requires a parameterless ctor, so constructor injection on a `Window` is not
+   available:
    ```csharp
-   public MainWindow(IMessageBus bus)
+   public MainWindow()
+   {
+       InitializeComponent();
+   }
+
+   public void Initialize(IMessageBus bus)
    {
        _bus = bus ?? throw new ArgumentNullException(nameof(bus));
        _bus.Subscribe<ConfirmDirtyClose>(OnConfirmDirtyClose);
@@ -118,10 +126,13 @@ from a ViewModel — e.g. "Save / Don't Save / Cancel?" — is:
        msg.OnResponse(result ?? DirtyCloseResponse.Cancel);
    }
    ```
-4. **Inject the bus into `MainWindow`** when constructing it in `App.axaml.cs`:
+4. **Wire it up in `App.axaml.cs`** (resolve `IMessageBus` from the service
+   provider, then call `Initialize`):
    ```csharp
    var bus = _services.GetRequiredService<IMessageBus>();
-   desktop.MainWindow = new MainWindow(bus) { DataContext = shell };
+   var mainWindow = new MainWindow { DataContext = shell };
+   mainWindow.Initialize(bus);
+   desktop.MainWindow = mainWindow;
    ```
 
 The dialog itself is a small `Window` subclass with code-behind (no ViewModel)
