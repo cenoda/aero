@@ -6,7 +6,7 @@ Quick-scan list of all issues. Update status here when opening/closing.
 |---|-------|-------|----------|--------|------|
 | 001 | Dirty-close dialog never shown — tab close silently no-ops | BUG | critical | closed | `closed/ISSUE-001-dirty-close-no-dialog.md` |
 | 002 | EditorView tab-switch caret tracking relies on polling — fragile under load | BUG | medium | closed | `closed/ISSUE-002-editor-resubscribe-timing.md` |
-| 003 | Phase 1 minor issues — dead state, keyboard shortcuts, message semantics, leaks | BUG | low | open | `open/ISSUE-003-phase1-minor-issues.md` |
+| 003 | Phase 1 minor issues — dead state, keyboard shortcuts, message semantics, leaks | BUG | low | closed | `closed/ISSUE-003-phase1-minor-issues.md` |
 
 ---
 

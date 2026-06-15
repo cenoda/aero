@@ -1,7 +1,7 @@
 # ISSUE-003: Phase 1 minor issues — dead state, keyboard shortcuts, message semantics, leaks
 
 **Label:** BUG
-**Status:** open
+**Status:** closed
 **Priority:** low
 **Reported by:** code review (Phase 1)
 **Assigned to:** —
