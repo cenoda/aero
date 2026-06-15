@@ -1,8 +1,7 @@
 using System;
-using System.Reactive.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using ReactiveUI;
 using Aero.ViewModels;
 
 namespace Aero.Views;
@@ -12,24 +11,32 @@ public partial class FindReplaceOverlay : UserControl
     public FindReplaceOverlay()
     {
         InitializeComponent();
-        DataContextChanged += OnDataContextChanged;
+        this.GetObservable(IsVisibleProperty).Subscribe(OnIsVisibleChanged);
     }
 
-    private void OnDataContextChanged(object? sender, EventArgs e)
+    /// <summary>
+    /// When the overlay becomes visible, check if we should focus the Replace field (Ctrl+H).
+    /// Reacting here ensures the control is in the visual tree and can receive focus.
+    /// </summary>
+    private void OnIsVisibleChanged(bool isVisible)
     {
-        if (DataContext is FindReplaceViewModel vm)
+        if (!isVisible)
+            return;
+
+        if (DataContext is not FindReplaceViewModel vm)
+            return;
+
+        if (vm.FocusReplaceOnOpen)
         {
-            // When FocusReplaceOnOpen is set (Ctrl+H), focus the Replace TextBox
-            vm.WhenAnyValue(x => x.FocusReplaceOnOpen)
-              .Where(focus => focus)
-              .Subscribe(_ =>
-              {
-                  Dispatcher.UIThread.Post(() =>
-                  {
-                      ReplaceTextBox.Focus();
-                      vm.FocusReplaceOnOpen = false;
-                  });
-              });
+            Dispatcher.UIThread.Post(() =>
+            {
+                ReplaceTextBox.Focus();
+                vm.FocusReplaceOnOpen = false;
+            });
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() => SearchTextBox.Focus());
         }
     }
 }

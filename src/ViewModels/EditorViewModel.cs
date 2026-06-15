@@ -32,11 +32,18 @@ public record FindReplaceArgs(
 /// ViewModel for the editor panel with tabs.
 /// Manages open documents, active tab, cursor position.
 /// </summary>
-public class EditorViewModel : ReactiveObject
+public class EditorViewModel : ReactiveObject, IDisposable
 {
     private readonly DocumentManager _documentManager;
     private readonly IMessageBus _bus;
     private readonly ObservableCollection<EditorTabViewModel> _tabs = new();
+
+    // Stored handlers for unsubscribe
+    private Action<DocMsg.DocumentOpened>? _documentOpenedHandler;
+    private Action<DocMsg.DocumentClosed>? _documentClosedHandler;
+    private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
+    private Action<DocMsg.DocumentModified>? _documentModifiedHandler;
+    private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
     [Reactive] public string CursorPosition { get; set; } = "Ln 1, Col 1";
@@ -70,12 +77,18 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
             (searchText, replaceText, caseSensitive, wholeWord) => ReplaceAll(searchText, replaceText, caseSensitive, wholeWord),
             () => HideFindReplace());
 
-        // Subscribe to document messages
-        _bus.Subscribe<DocMsg.DocumentOpened>(msg => OnDocumentOpened(msg));
-        _bus.Subscribe<DocMsg.DocumentClosed>(msg => OnDocumentClosed(msg));
-        _bus.Subscribe<DocMsg.ActiveDocumentChanged>(msg => OnActiveDocumentChanged(msg));
-        _bus.Subscribe<DocMsg.DocumentModified>(msg => OnDocumentModified(msg));
-        _bus.Subscribe<DocMsg.DocumentSaved>(msg => OnDocumentSaved(msg));
+        // Subscribe to document messages — store handlers for unsubscribe in Dispose()
+        _documentOpenedHandler = msg => OnDocumentOpened(msg);
+        _documentClosedHandler = msg => OnDocumentClosed(msg);
+        _activeDocumentChangedHandler = msg => OnActiveDocumentChanged(msg);
+        _documentModifiedHandler = msg => OnDocumentModified(msg);
+        _documentSavedHandler = msg => OnDocumentSaved(msg);
+
+        _bus.Subscribe(_documentOpenedHandler);
+        _bus.Subscribe(_documentClosedHandler);
+        _bus.Subscribe(_activeDocumentChangedHandler);
+        _bus.Subscribe(_documentModifiedHandler);
+        _bus.Subscribe(_documentSavedHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -398,5 +411,20 @@ private void OnDocumentModified(DocMsg.DocumentModified msg)
         {
             this.RaisePropertyChanged(nameof(ActiveTab));
         }
+    }
+
+    /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
+    public void Dispose()
+    {
+        if (_documentOpenedHandler != null)
+            _bus.Unsubscribe<DocMsg.DocumentOpened>(_documentOpenedHandler);
+        if (_documentClosedHandler != null)
+            _bus.Unsubscribe<DocMsg.DocumentClosed>(_documentClosedHandler);
+        if (_activeDocumentChangedHandler != null)
+            _bus.Unsubscribe<DocMsg.ActiveDocumentChanged>(_activeDocumentChangedHandler);
+        if (_documentModifiedHandler != null)
+            _bus.Unsubscribe<DocMsg.DocumentModified>(_documentModifiedHandler);
+        if (_documentSavedHandler != null)
+            _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
     }
 }
