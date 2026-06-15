@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Fody weaver configuration (auto-generated, must be tracked in source) -->
+    <None Include="FodyWeavers.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Avalonia core (11.3 = latest stable 11.x) -->
     <PackageReference Include="Avalonia" Version="11.3.*" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />

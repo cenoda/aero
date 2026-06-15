@@ -6,10 +6,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## Phase 0: Foundation
 - [x] Avalonia project scaffold
 - [x] Basic window with title
-- [ ] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
-- [ ] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection 세팅
-- [ ] Add AvaloniaEdit NuGet package
-- [ ] DI 컨테이너 구성 (Program.cs에 서비스 등록)
+- [x] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
+- [x] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection 세팅
+- [x] Add AvaloniaEdit NuGet package
+- [x] DI 컨테이너 구성 (Program.cs에 서비스 등록)
 
 ## Phase 1: The Editor
 - [ ] **TextBuffer** — efficient gap-buffer or rope structure

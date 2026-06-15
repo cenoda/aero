@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.ReactiveUI;
 using System;
 
 namespace Aero;
@@ -13,5 +14,6 @@ class Program
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .UseReactiveUI()
             .LogToTrace();
 }

@@ -1,6 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aero.ViewModels"
         x:Class="Aero.MainWindow"
+        x:DataType="vm:ShellViewModel"
         Title="Aero"
         Width="1200"
         Height="800"
@@ -10,10 +12,10 @@
     <DockPanel>
         <!-- Status bar -->
         <TextBlock DockPanel.Dock="Bottom"
-                   Text="Aero IDE"
+                   Text="{Binding StatusText}"
                    Margin="8,4" />
 
-        <!-- Main content placeholder -->
+        <!-- Main content placeholder — replaced in Phase 1 -->
         <TextBlock Text="Aero"
                    FontSize="24"
                    HorizontalAlignment="Center"
