@@ -2,6 +2,14 @@
 
 Track bugs, feature requests, and tasks here. One file per issue.
 
+## Layout
+
+- `open/`   — active issues (status: `open`, `in-progress`, `blocked`)
+- `closed/` — resolved issues (status: `closed`)
+- `templates/` — issue file template
+
+When closing an issue, move it from `open/` to `closed/` and update `INDEX.md`.
+
 ## Naming
 
 `ISSUE-###-short-name.md`

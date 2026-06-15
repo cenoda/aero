@@ -223,7 +223,7 @@ Do not keep debug attempts in chat history or memory only. Every attempt must be
 - Any behavior that contradicts `docs/architecture/` or `docs/CONVENTIONS.md`
 - Uncertain whether a change is correct or safe
 
-**Issue file location:** `docs/issues/ISSUE-###-short-name.md`
+**Issue file location:** `docs/issues/open/ISSUE-###-short-name.md` (move to `docs/issues/closed/` when resolved)
 
 **Issue file must contain:**
 1. **Description** — what is wrong, expected vs actual

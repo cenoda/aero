@@ -53,7 +53,7 @@
 
         <!-- Find/Replace overlay - floats on top of editor content -->
         <views:FindReplaceOverlay DataContext="{Binding FindReplace}"
-                                  IsVisible="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).IsFindReplaceVisible}"
+                                  IsVisible="{Binding $parent[UserControl].DataContext.IsFindReplaceVisible}"
                                   HorizontalAlignment="Right"
                                   VerticalAlignment="Top"
                                   Margin="0,8,16,0"/>
