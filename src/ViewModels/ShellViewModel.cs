@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -51,6 +52,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleFileExplorerCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleTerminalCommand { get; }
+    public ReactiveCommand<Unit, Unit> NextTabCommand { get; }
+    public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
 
     public ShellViewModel(IMessageBus bus, DocumentManager documentManager, EditorViewModel editorViewModel)
@@ -65,13 +68,15 @@ public class ShellViewModel : ReactiveObject, IDisposable
 SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         SaveAsCommand = ReactiveCommand.CreateFromTask(SaveAsAsync);
         CloseFileCommand = ReactiveCommand.Create(CloseFile);
-        ExitCommand = ReactiveCommand.Create(Exit);
+        ExitCommand = ReactiveCommand.CreateFromTask(ExitAsync);
         UndoCommand = ReactiveCommand.Create(Undo);
         RedoCommand = ReactiveCommand.Create(Redo);
         FindCommand = ReactiveCommand.Create(Find);
         ReplaceCommand = ReactiveCommand.Create(Replace);
         ToggleFileExplorerCommand = ReactiveCommand.Create(ToggleFileExplorer);
         ToggleTerminalCommand = ReactiveCommand.Create(ToggleTerminal);
+        NextTabCommand = ReactiveCommand.Create(NextTab);
+        PreviousTabCommand = ReactiveCommand.Create(PreviousTab);
         AboutCommand = ReactiveCommand.Create(About);
 
         // Subscribe to messages — store handlers for unsubscribe
@@ -88,7 +93,7 @@ private void NewFile()
         _editorViewModel.NewFile();
     }
 
-private async System.Threading.Tasks.Task OpenFileAsync()
+private async Task OpenFileAsync()
     {
         if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
             return;
@@ -114,7 +119,7 @@ var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenO
         }
     }
 
-private async System.Threading.Tasks.Task SaveAsync()
+private async Task SaveAsync()
     {
         if (EditorViewModel.ActiveTab?.Document == null)
             return;
@@ -126,10 +131,10 @@ private async System.Threading.Tasks.Task SaveAsync()
         }
     }
 
-private async System.Threading.Tasks.Task SaveAsAsync() =>
+private async Task SaveAsAsync() =>
         await SaveAsWithDialogAsync();
 
-    private async System.Threading.Tasks.Task SaveAsWithDialogAsync()
+    private async Task SaveAsWithDialogAsync()
     {
         if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
             return;
@@ -166,44 +171,77 @@ private async System.Threading.Tasks.Task SaveAsAsync() =>
         _editorViewModel.CloseActiveTab();
     }
 
-private void Exit()
+    private void NextTab()
     {
-        // Check if any documents are dirty before exiting
-        var dirtyDocuments = _documentManager.Documents.Where(d => d.IsDirty).ToList();
-        
-        if (dirtyDocuments.Count > 0)
+        var tabs = _editorViewModel.Tabs;
+        if (tabs.Count == 0) return;
+        if (_editorViewModel.ActiveTab == null)
         {
-            // Prompt user for each dirty document
-            foreach (var doc in dirtyDocuments)
-            {
-                var fileName = doc.FileName;
-                
-                // Create a continuation that will be called with the user's response
-                void HandleResponse(string response)
-                {
-                    if (response == DirtyCloseResponse.Save)
-                    {
-                        // Save the document
-                        _ = _documentManager.SaveDocumentAsync(doc);
-                    }
-                    // If DontSave or Cancel, just proceed without saving
-                }
-                
-                // Publish the confirmation request - UI should subscribe and show dialog
-                _bus.Publish(new ConfirmDirtyClose(fileName, HandleResponse));
-            }
-            
-            // For simplicity, proceed with shutdown after prompting
-            // In a more sophisticated implementation, you'd wait for all responses
+            _editorViewModel.ActivateTab(tabs[0]);
+            return;
         }
-        
-        // Clean up DocumentManager state before exit
+        var idx = tabs.IndexOf(_editorViewModel.ActiveTab);
+        var nextIdx = (idx + 1) % tabs.Count;
+        _editorViewModel.ActivateTab(tabs[nextIdx]);
+    }
+
+    private void PreviousTab()
+    {
+        var tabs = _editorViewModel.Tabs;
+        if (tabs.Count == 0) return;
+        if (_editorViewModel.ActiveTab == null)
+        {
+            _editorViewModel.ActivateTab(tabs[^1]);
+            return;
+        }
+        var idx = tabs.IndexOf(_editorViewModel.ActiveTab);
+        var prevIdx = (idx - 1 + tabs.Count) % tabs.Count;
+        _editorViewModel.ActivateTab(tabs[prevIdx]);
+    }
+
+/// <summary>
+    /// Exit the application, prompting for each dirty document one at a time.
+    /// Mirrors the CloseActiveTab flow: iterate dirty docs sequentially, await
+    /// each dialog response, then shut down only after all dialogs are resolved.
+    /// </summary>
+    private async Task ExitAsync()
+    {
+        var dirtyDocuments = _documentManager.Documents.Where(d => d.IsDirty).ToList();
+
+        foreach (var doc in dirtyDocuments)
+        {
+            var tcs = new TaskCompletionSource<string>();
+
+            void HandleResponse(string response)
+            {
+                tcs.TrySetResult(response);
+            }
+
+            _bus.Publish(new ConfirmDirtyClose(doc.DisplayName, HandleResponse));
+
+            var response = await tcs.Task;
+
+            if (response == DirtyCloseResponse.Save)
+            {
+                try
+                {
+                    await _documentManager.SaveDocumentAsync(doc);
+                }
+                catch (Exception ex)
+                {
+                    StatusText = $"Save failed: {ex.Message}";
+                }
+            }
+            else if (response == DirtyCloseResponse.Cancel)
+            {
+                return; // Stop exit — user cancelled
+            }
+            // DontSave: continue to next doc
+        }
+
         _documentManager.ClearLastDirtyState();
-        
-        // Dispose our subscriptions
         Dispose();
-        
-        // Close the application
+
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();
@@ -256,9 +294,9 @@ private void Exit()
         }
 
         WindowTitle = doc.IsDirty
-            ? $"Aero - {doc.FileName} *"
-            : $"Aero - {doc.FileName}";
-        StatusText = doc.FilePath ?? doc.FileName;
+            ? $"Aero - {doc.DisplayName} *"
+            : $"Aero - {doc.DisplayName}";
+        StatusText = doc.FilePath ?? doc.DisplayName;
     }
 
     private void OnDocumentSaved(DocumentSaved msg)
@@ -267,8 +305,8 @@ private void Exit()
         if (doc == null || doc != EditorViewModel.ActiveTab?.Document)
             return;
 
-        WindowTitle = $"Aero - {doc.FileName}";
-        StatusText = doc.FilePath ?? doc.FileName;
+        WindowTitle = $"Aero - {doc.DisplayName}";
+        StatusText = doc.FilePath ?? doc.DisplayName;
     }
 
     /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>

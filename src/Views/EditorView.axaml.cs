@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
 using ReactiveUI;
+using Aero.Core;
 using Aero.ViewModels;
 
 namespace Aero.Views;
@@ -15,6 +17,7 @@ public partial class EditorView : UserControl
     private TextEditor? _activeEditor;
     private int _subscribeGeneration;
     private Action<FindReplaceArgs>? _findReplaceHandler;
+    private CompositeDisposable? _reactiveSubscriptions;
 
     public EditorView()
     {
@@ -24,6 +27,10 @@ public partial class EditorView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        // Dispose previous ViewModel's reactive subscriptions and event handlers
+        _reactiveSubscriptions?.Dispose();
+        _reactiveSubscriptions = null;
+
         // Unsubscribe from previous ViewModel's FindReplaceRequested to prevent leak
         if (DataContext is EditorViewModel previousVm && _findReplaceHandler != null)
         {
@@ -33,9 +40,12 @@ public partial class EditorView : UserControl
 
         if (DataContext is EditorViewModel vm)
         {
+            _reactiveSubscriptions = new CompositeDisposable();
+
             // When the active tab changes, rebind to the new TextEditor
             vm.WhenAnyValue(x => x.ActiveTab)
-              .Subscribe(tab => ResubscribeEditor(tab));
+              .Subscribe(tab => ResubscribeEditor(tab))
+              .DisposeWith(_reactiveSubscriptions);
 
             // Execute find/replace operations against the live editor control
             _findReplaceHandler = OnFindReplaceRequested;
@@ -139,9 +149,9 @@ public partial class EditorView : UserControl
         var text = _activeEditor!.Document.Text;
         var startIndex = _activeEditor.CaretOffset;
 
-        var idx = vm.FindInText(text, searchText, startIndex, comparison, wholeWord);
+        var idx = TextSearchHelper.FindInText(text, searchText, startIndex, comparison, wholeWord);
         if (idx < 0)
-            idx = vm.FindInText(text, searchText, 0, comparison, wholeWord); // wrap around
+            idx = TextSearchHelper.FindInText(text, searchText, 0, comparison, wholeWord); // wrap around
 
         if (idx >= 0)
             _activeEditor.Select(idx, searchText.Length);
@@ -174,7 +184,7 @@ public partial class EditorView : UserControl
         var offsets = new List<int>();
         var idx = 0;
 
-        while ((idx = vm.FindInText(text, searchText, idx, comparison, wholeWord)) >= 0)
+        while ((idx = TextSearchHelper.FindInText(text, searchText, idx, comparison, wholeWord)) >= 0)
         {
             offsets.Add(idx);
             idx += searchText.Length;

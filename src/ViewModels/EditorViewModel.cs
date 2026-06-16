@@ -42,14 +42,13 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.DocumentOpened>? _documentOpenedHandler;
     private Action<DocMsg.DocumentClosed>? _documentClosedHandler;
     private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
-    private Action<DocMsg.DocumentModified>? _documentModifiedHandler;
-    private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
     [Reactive] public string CursorPosition { get; set; } = "Ln 1, Col 1";
     [Reactive] public string Language { get; set; } = "Plain Text";
     [Reactive] public bool HasDocument { get; set; }
     [Reactive] public bool IsFindReplaceVisible { get; set; }
+    [Reactive] public string StatusText { get; set; } = "";
 
     /// <summary>
     /// Raised when a find/replace action should be executed against the active TextEditor.
@@ -81,14 +80,9 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         _documentOpenedHandler = msg => OnDocumentOpened(msg);
         _documentClosedHandler = msg => OnDocumentClosed(msg);
         _activeDocumentChangedHandler = msg => OnActiveDocumentChanged(msg);
-        _documentModifiedHandler = msg => OnDocumentModified(msg);
-        _documentSavedHandler = msg => OnDocumentSaved(msg);
-
         _bus.Subscribe(_documentOpenedHandler);
         _bus.Subscribe(_documentClosedHandler);
         _bus.Subscribe(_activeDocumentChangedHandler);
-        _bus.Subscribe(_documentModifiedHandler);
-        _bus.Subscribe(_documentSavedHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -191,15 +185,17 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
 /// <summary>Prompt user for dirty document close decision.</summary>
     private void PromptDirtyClose(TextDocument doc, Action onProceed)
     {
-        var fileName = doc.FileName;
+        var displayName = doc.DisplayName;
 
         // Create a continuation that will be called with the user's response
         void HandleResponse(string response)
         {
             if (response == DirtyCloseResponse.Save)
             {
-                // Save the document first, then close
-                // Note: Fire-and-forget is intentional here - the save happens in background
+                // Save the document first, then close.
+                // Fire-and-forget is intentional — the UI dialog has already dismissed
+                // by the time we get here, so we can't show another dialog for errors.
+                // Errors are surfaced via the status bar where possible.
                 _ = SaveAndCloseAsync(doc, onProceed);
             }
             else if (response == DirtyCloseResponse.DontSave)
@@ -211,14 +207,23 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         }
 
         // Publish the confirmation request - UI should subscribe and show dialog
-        _bus.Publish(new ConfirmDirtyClose(fileName, HandleResponse));
+        _bus.Publish(new ConfirmDirtyClose(displayName, HandleResponse));
     }
 
 /// <summary>Save document and then close (async helper).</summary>
     private async Task SaveAndCloseAsync(TextDocument doc, Action onClose)
     {
-        await _documentManager.SaveDocumentAsync(doc);
-        onClose();
+        try
+        {
+            await _documentManager.SaveDocumentAsync(doc);
+            onClose();
+        }
+        catch (Exception ex)
+        {
+            // Surface the error to the status bar — the dialog is already dismissed,
+            // so we cannot re-prompt. The document stays open with unsaved changes.
+            StatusText = $"Save failed: {ex.Message}";
+        }
     }
 
     /// <summary>Switch to a tab.</summary>
@@ -300,27 +305,6 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
             FindReplaceOperation.ReplaceAll, searchText, replaceText ?? "", caseSensitive, wholeWord));
     }
 
-    /// <summary>
-    /// Find the next occurrence of search in text starting at start.
-    /// Used by the code-behind to implement the actual search logic.
-    /// </summary>
-    public int FindInText(string text, string search, int start, StringComparison comparison, bool wholeWord)
-    {
-        if (!wholeWord)
-            return text.IndexOf(search, start, comparison);
-
-        var idx = start;
-        while ((idx = text.IndexOf(search, idx, comparison)) >= 0)
-        {
-            var before = idx == 0 || !char.IsLetterOrDigit(text[idx - 1]) && text[idx - 1] != '_';
-            var end = idx + search.Length;
-            var after = end >= text.Length || !char.IsLetterOrDigit(text[end]) && text[end] != '_';
-            if (before && after) return idx;
-            idx += search.Length;
-        }
-        return -1;
-    }
-
     private void EnsureTabForDocument(TextDocument doc)
     {
         var existing = _tabs.FirstOrDefault(t => t.Document == doc);
@@ -392,28 +376,7 @@ var tab = new EditorTabViewModel(doc, _bus);
         UpdateStatus(tab?.Document);
     }
 
-private void OnDocumentModified(DocMsg.DocumentModified msg)
-    {
-        // Match by document reference for reliable untitled doc handling
-        var tab = _tabs.FirstOrDefault(t => t.Document == msg.Document);
-        if (tab != null)
-        {
-            // Force UI refresh - the Title property will update
-            this.RaisePropertyChanged(nameof(ActiveTab));
-        }
-    }
-
-    private void OnDocumentSaved(DocMsg.DocumentSaved msg)
-    {
-        // Match by document reference for reliable untitled doc handling
-        var tab = _tabs.FirstOrDefault(t => t.Document == msg.Document);
-        if (tab != null)
-        {
-            this.RaisePropertyChanged(nameof(ActiveTab));
-        }
-    }
-
-    /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
+/// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
         if (_documentOpenedHandler != null)
@@ -422,9 +385,5 @@ private void OnDocumentModified(DocMsg.DocumentModified msg)
             _bus.Unsubscribe<DocMsg.DocumentClosed>(_documentClosedHandler);
         if (_activeDocumentChangedHandler != null)
             _bus.Unsubscribe<DocMsg.ActiveDocumentChanged>(_activeDocumentChangedHandler);
-        if (_documentModifiedHandler != null)
-            _bus.Unsubscribe<DocMsg.DocumentModified>(_documentModifiedHandler);
-        if (_documentSavedHandler != null)
-            _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
     }
 }

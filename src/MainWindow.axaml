@@ -20,6 +20,9 @@
         <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseFileCommand}"/>
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}"/>
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}"/>
+        <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextTabCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousTabCommand}"/>
+        <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseFileCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>
@@ -80,12 +83,12 @@
                               Text="{Binding EditorViewModel.Language}"
                               Margin="0,0,16,0"/>
                     
-                    <!-- Encoding (placeholder) -->
+                    <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
                     <TextBlock Grid.Column="3"
                               Text="UTF-8"
                               Margin="0,0,16,0"/>
                     
-                    <!-- Line ending (placeholder) -->
+                    <!-- TODO(phase-3): Detect line ending from file content -->
                     <TextBlock Grid.Column="4"
                               Text="Lf"/>
                 </Grid>

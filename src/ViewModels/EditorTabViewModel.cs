@@ -65,8 +65,8 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
 
     /// <summary>Display name for the tab (filename + dirty indicator).</summary>
     public string Title => _document.IsDirty 
-        ? _document.FileName + " *" 
-        : _document.FileName;
+        ? _document.DisplayName + " *" 
+        : _document.DisplayName;
 
     /// <summary>The file path (may be null for new documents).</summary>
     public string? FilePath => _document.FilePath;

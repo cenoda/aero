@@ -41,7 +41,7 @@ public class EditorViewModelCloseTabTests
 
         var prompts = bus.MessagesOf<ConfirmDirtyClose>().ToList();
         Assert.Single(prompts);
-        Assert.Equal(doc.FileName, prompts[0].FileName);
+        Assert.Equal(doc.DisplayName, prompts[0].FileName);
     }
 
     [Fact]

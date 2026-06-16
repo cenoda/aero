@@ -27,6 +27,7 @@
          instead of an assembly reference (avoids Avalonia app bootstrap) -->
     <Compile Include="../src/Core/IMessageBus.cs" />
     <Compile Include="../src/Core/Messages.cs" />
+    <Compile Include="../src/Core/TextSearchHelper.cs" />
     <Compile Include="../src/Models/Editor/TextDocument.cs" />
     <Compile Include="../src/Services/DocumentManager.cs" />
     <Compile Include="../src/ViewModels/EditorViewModel.cs" />

@@ -48,6 +48,16 @@ public sealed class MessageBus : IMessageBus
         }
 
         foreach (var handler in snapshot)
-            ((Action<T>)handler)(message);
+        {
+            try
+            {
+                ((Action<T>)handler)(message);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[MessageBus] Handler for {typeof(T).Name} threw: {ex}");
+            }
+        }
     }
 }

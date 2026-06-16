@@ -75,9 +75,22 @@ public class DocumentManager
     {
         var doc = new TextDocument();
 
-        // Generate a unique display name (e.g., "Untitled", "Untitled-2")
-        var untitledCount = _documents.Count(d => d.IsNew) + 1;
-        doc.DisplayName = untitledCount == 1 ? "Untitled" : $"Untitled-{untitledCount}";
+        // Generate a unique display name — track the highest index used rather
+        // than counting current documents to avoid duplicates after close+new.
+        var maxIndex = _documents
+            .Where(d => d.IsNew)
+            .Select(d =>
+            {
+                if (d.DisplayName == "Untitled") return 1;
+                if (d.DisplayName.StartsWith("Untitled-")
+                    && int.TryParse(d.DisplayName.AsSpan("Untitled-".Length), out var n))
+                    return n;
+                return 0;
+            })
+            .DefaultIfEmpty(0)
+            .Max();
+        var newIndex = maxIndex + 1;
+        doc.DisplayName = newIndex == 1 ? "Untitled" : $"Untitled-{newIndex}";
         doc.Language = "Plain Text";
 
         _documents.Add(doc);

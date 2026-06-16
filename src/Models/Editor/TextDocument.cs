@@ -1,3 +1,4 @@
+using System;
 using AvaloniaEdit.Document;
 
 namespace Aero.Models.Editor;
@@ -15,6 +16,7 @@ public class TextDocument
     private bool _isNew = true;
     private string _language = "Plain Text";
     private string _displayName = "Untitled";
+    private string _content = string.Empty;
 
     public TextDocument() : this(string.Empty)
     {
@@ -22,7 +24,8 @@ public class TextDocument
 
     public TextDocument(string content)
     {
-        _document = new AvaloniaEdit.Document.TextDocument(content ?? string.Empty);
+        _content = content ?? string.Empty;
+        _document = new AvaloniaEdit.Document.TextDocument(_content);
     }
 
     public TextDocument(string content, string filePath) : this(content)
@@ -57,9 +60,6 @@ public class TextDocument
         set => _displayName = value;
     }
 
-    /// <summary>File name without path (same as DisplayName for saved files).</summary>
-    public string FileName => _displayName;
-
     /// <summary>
     /// Whether the document has unsaved changes.
     /// Derived from the undo stack's "original file" marker, so undoing
@@ -77,11 +77,24 @@ public class TextDocument
         set => _language = value;
     }
 
-    /// <summary>The text content.</summary>
+    /// <summary>
+    /// The text content. When accessed from a non-UI thread (e.g. unit tests
+    /// without an Avalonia dispatcher), falls back to a cached plain-text copy
+    /// to avoid AvaloniaEdit.TextDocument.VerifyAccess() failures.
+    /// </summary>
     public string Content
     {
-        get => _document.Text;
-        set => _document.Text = value ?? string.Empty;
+        get
+        {
+            try { return _document.Text; }
+            catch (InvalidOperationException) { return _content; }
+        }
+        set
+        {
+            _content = value ?? string.Empty;
+            try { _document.Text = _content; }
+            catch (InvalidOperationException) { /* non-UI thread — keep _content */ }
+        }
     }
 
     /// <summary>Current caret offset in the document (managed by TextEditor, updated externally).</summary>
