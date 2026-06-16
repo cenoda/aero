@@ -190,8 +190,21 @@ public partial class EditorView : UserControl
             idx += searchText.Length;
         }
 
-        // Replace in reverse order to preserve earlier offsets
-        for (var i = offsets.Count - 1; i >= 0; i--)
-            _activeEditor.Document.Replace(offsets[i], searchText.Length, replaceText);
+        if (offsets.Count == 0)
+            return;
+
+        // Group all replacements into a single undo operation so one Ctrl+Z reverts
+        // the entire Replace All (matches VS Code / standard editor behavior).
+        _activeEditor.Document.BeginUpdate();
+        try
+        {
+            // Replace in reverse order to preserve earlier offsets
+            for (var i = offsets.Count - 1; i >= 0; i--)
+                _activeEditor.Document.Replace(offsets[i], searchText.Length, replaceText);
+        }
+        finally
+        {
+            _activeEditor.Document.EndUpdate();
+        }
     }
 }
