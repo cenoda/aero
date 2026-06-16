@@ -16,7 +16,7 @@
 - [x] 4. App.Services - Make internal instead of public static
 
 ## Lower Priority
-- [ ] 5. EditorTabViewModel - Unsubscribe from MessageBus on dispose
+- [x] 5. EditorTabViewModel - Unsubscribe from MessageBus on dispose
 - [x] 6. ShellViewModel - Remove duplicated Language property (now uses EditorViewModel.Language)
 - [x] 7. DocumentManager - Implement untitled naming (Untitled, Untitled-2, ...)
 

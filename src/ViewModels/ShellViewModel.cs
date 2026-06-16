@@ -11,6 +11,7 @@ using Avalonia.Platform.Storage;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Aero.Core;
+using Aero.Models.Editor;
 using Aero.Services;
 using IMessageBus = Aero.Core.IMessageBus;
 
@@ -206,18 +207,33 @@ private async Task SaveAsAsync() =>
     /// </summary>
     private async Task ExitAsync()
     {
+        if (!await CheckDirtyBeforeExitAsync())
+            return;
+
+        _documentManager.ClearLastDirtyState();
+        Dispose();
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            if (desktop.MainWindow is MainWindow mw)
+                mw.MarkExitHandled();
+            desktop.Shutdown();
+        }
+    }
+
+    /// <summary>
+    /// Check all dirty documents and prompt the user before exit or window close.
+    /// Returns <c>true</c> if exit should proceed, <c>false</c> if the user cancelled.
+    /// </summary>
+    public async Task<bool> CheckDirtyBeforeExitAsync()
+    {
         var dirtyDocuments = _documentManager.Documents.Where(d => d.IsDirty).ToList();
 
         foreach (var doc in dirtyDocuments)
         {
             var tcs = new TaskCompletionSource<string>();
 
-            void HandleResponse(string response)
-            {
-                tcs.TrySetResult(response);
-            }
-
-            _bus.Publish(new ConfirmDirtyClose(doc.DisplayName, HandleResponse));
+            _bus.Publish(new ConfirmDirtyClose(doc.DisplayName, response => tcs.TrySetResult(response)));
 
             var response = await tcs.Task;
 
@@ -225,7 +241,14 @@ private async Task SaveAsAsync() =>
             {
                 try
                 {
-                    await _documentManager.SaveDocumentAsync(doc);
+                    var saved = await _documentManager.SaveDocumentAsync(doc);
+                    if (!saved)
+                    {
+                        // Untitled document — try Save As dialog
+                        var savedAs = await SaveAsDialogForDocAsync(doc);
+                        if (!savedAs)
+                            return false; // user cancelled Save As → cancel exit
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -234,18 +257,43 @@ private async Task SaveAsAsync() =>
             }
             else if (response == DirtyCloseResponse.Cancel)
             {
-                return; // Stop exit — user cancelled
+                return false; // Stop exit — user cancelled
             }
             // DontSave: continue to next doc
         }
 
-        _documentManager.ClearLastDirtyState();
-        Dispose();
+        return true;
+    }
 
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+    /// <summary>
+    /// Show a Save As file picker for the given document (not necessarily the active one).
+    /// Returns <c>true</c> if the document was saved, <c>false</c> if the user cancelled.
+    /// </summary>
+    private async Task<bool> SaveAsDialogForDocAsync(TextDocument doc)
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return false;
+
+        var window = desktop.MainWindow;
+        if (window == null)
+            return false;
+
+        var file = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            desktop.Shutdown();
+            Title = $"Save {doc.DisplayName} As",
+            FileTypeChoices = new[]
+            {
+                new FilePickerFileType("All Files") { Patterns = new[] { "*" } }
+            }
+        });
+
+        if (file != null)
+        {
+            await _documentManager.SaveDocumentAsAsync(doc, file.Path.LocalPath);
+            return true;
         }
+
+        return false;
     }
 
     private void Undo()

@@ -135,11 +135,11 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         // Check if document is dirty and prompt user
         if (doc.IsDirty)
         {
-            PromptDirtyClose(doc, () => CloseActiveTabImpl(ActiveTab));
+            PromptDirtyClose(doc, () => CloseTabImpl(ActiveTab));
             return;
         }
 
-        CloseActiveTabImpl(ActiveTab);
+        CloseTabImpl(ActiveTab);
     }
 
     /// <summary>Close a specific tab with dirty check.</summary>
@@ -160,18 +160,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         CloseTabImpl(tab);
     }
 
-    /// <summary>Actually close the active tab (after dirty check resolved).</summary>
-    private void CloseActiveTabImpl(EditorTabViewModel tab)
-    {
-        if (tab?.Document == null)
-            return;
-
-        // Dispose the tab's subscriptions to prevent memory leaks
-        tab.Dispose();
-        _documentManager.CloseDocument(tab.Document);
-    }
-
-    /// <summary>Actually close a specific tab (after dirty check resolved).</summary>
+    /// <summary>Actually close a tab (after dirty check resolved).</summary>
     private void CloseTabImpl(EditorTabViewModel tab)
     {
         if (tab?.Document == null)
@@ -215,8 +204,18 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
     {
         try
         {
-            await _documentManager.SaveDocumentAsync(doc);
-            onClose();
+            var saved = await _documentManager.SaveDocumentAsync(doc);
+            if (saved)
+            {
+                onClose();
+            }
+            else
+            {
+                // Untitled document — SaveDocumentAsync returned false because
+                // there is no file path. The dirty-close dialog is already dismissed,
+                // so surface this in the status bar and keep the tab open.
+                StatusText = "Untitled file — use Save As (Ctrl+Shift+S) first";
+            }
         }
         catch (Exception ex)
         {

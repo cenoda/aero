@@ -1,4 +1,7 @@
-# Dirty-Check on Close Implementation
+# Dirty-Check on Close Implementation (ARCHIVED)
+
+> **Status:** All items completed. Archived 2026-06-17.
+> See `docs/issues/closed/ISSUE-001-dirty-close-no-dialog.md` for the full record.
 
 ## Task
 Implement dirty-check prompt when closing tabs (CloseTab and CloseActiveTab) to prompt user with Save/Don't Save/Cancel options when closing dirty documents.
@@ -20,3 +23,4 @@ Implement dirty-check prompt when closing tabs (CloseTab and CloseActiveTab) to 
 - Files modified:
   - src/Core/Messages.cs - Added ConfirmDirtyClose message and DirtyCloseResponse constants
   - src/ViewModels/EditorViewModel.cs - Implemented dirty-check logic in CloseTab/CloseActiveTab
+

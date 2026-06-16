@@ -1,4 +1,6 @@
-# Phase 1 — To Fix
+# Phase 1 — To Fix (ARCHIVED)
+
+> **Status:** All items completed. Archived 2026-06-17.
 
 Code quality issues found during Phase 1 review. Must be resolved before Phase 2 starts.
 

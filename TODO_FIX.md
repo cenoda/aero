@@ -1,4 +1,7 @@
-# Phase 1 - Issues To Fix
+# Phase 1 - Issues To Fix (ARCHIVED)
+
+> **Status:** All items completed. Archived 2026-06-17.
+> See `docs/issues/closed/` for the full issue records.
 
 ## Tasks
 - [x] Issue 1: EditorViewModel never unsubscribes from MessageBus (ALREADY FIXED)

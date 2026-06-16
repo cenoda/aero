@@ -12,12 +12,12 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] DI 컨테이너 구성 (Program.cs에 서비스 등록)
 
 ## Phase 1: The Editor
-- [x] **TextBuffer** — efficient gap-buffer or rope structure
+- [x] **TextBuffer** — AvaloniaEdit's built-in piece-table (TextDocument)
 - [x] **TextEditor view** — AvaloniaEdit integration with line numbers
 - [x] **Document model** — open/close files, dirty flag
 - [x] **Tabbed editor** — multiple open files with tabs
 - [x] **File open/save** — Ctrl+O, Ctrl+S, file dialogs
-- [x] **Undo/Redo** — command-pattern undo stack (Ctrl+Z / Ctrl+Y)
+- [x] **Undo/Redo** — AvaloniaEdit undo stack (Ctrl+Z / Ctrl+Y)
 - [x] **Find/Replace** — Ctrl+F with overlay panel
 - [x] Status bar shows cursor position (Ln X, Col Y)
 
