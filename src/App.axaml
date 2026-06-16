@@ -3,5 +3,6 @@
              x:Class="Aero.App">
     <Application.Styles>
         <StyleInclude Source="avares://Avalonia.Themes.Simple/SimpleTheme.xaml" />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
     </Application.Styles>
 </Application>

@@ -4,6 +4,8 @@ Quick-scan list of all issues. Update status here when opening/closing.
 
 | # | Title | Label | Priority | Status | Path |
 |---|-------|-------|----------|--------|------|
+| 008 | Editor content area blank — missing AvaloniaEdit theme | BUG | critical | closed | `closed/ISSUE-008-editor-layout-no-content.md` |
+| 007 | Tab close button binding crashes app when a tab is created | BUG | critical | closed | `closed/ISSUE-007-tab-close-binding-crash.md` |
 | 001 | Dirty-close dialog never shown — tab close silently no-ops | BUG | critical | closed | `closed/ISSUE-001-dirty-close-no-dialog.md` |
 | 002 | EditorView tab-switch caret tracking relies on polling — fragile under load | BUG | medium | closed | `closed/ISSUE-002-editor-resubscribe-timing.md` |
 | 003 | Phase 1 minor issues — dead state, keyboard shortcuts, message semantics, leaks | BUG | low | closed | `closed/ISSUE-003-phase1-minor-issues.md` |
