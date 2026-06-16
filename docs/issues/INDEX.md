@@ -9,6 +9,7 @@ Quick-scan list of all issues. Update status here when opening/closing.
 | 003 | Phase 1 minor issues — dead state, keyboard shortcuts, message semantics, leaks | BUG | low | closed | `closed/ISSUE-003-phase1-minor-issues.md` |
 | 004 | Untitled "Save" on dirty close silently discards content | BUG | critical | closed | `closed/ISSUE-004-untitled-save-data-loss.md` |
 | 005 | OS window close ("X") bypasses dirty-check prompt | BUG | high | closed | `closed/ISSUE-005-window-close-dirty-bypass.md` |
+| 006 | Phase 1 robustness hardening (I/O exceptions, Replace All undo) | BUG | medium | closed | `closed/ISSUE-006-phase1-hardening.md` |
 
 ---
 

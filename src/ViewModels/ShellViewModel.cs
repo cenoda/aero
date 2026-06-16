@@ -116,7 +116,16 @@ var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenO
         if (files.Count > 0)
         {
             var file = files[0];
-            await _editorViewModel.OpenFileAsync(file.Path.LocalPath);
+            try
+            {
+                await _editorViewModel.OpenFileAsync(file.Path.LocalPath);
+            }
+            catch (Exception ex)
+            {
+                // File read can fail (deleted, locked, no permission). Surface it
+                // instead of letting the exception escape the command and crash the app.
+                StatusText = $"Open failed: {ex.Message}";
+            }
         }
     }
 
@@ -125,10 +134,17 @@ private async Task SaveAsync()
         if (EditorViewModel.ActiveTab?.Document == null)
             return;
 
-        var saved = await _editorViewModel.SaveAsync();
-        if (!saved)
+        try
         {
-            await SaveAsWithDialogAsync();
+            var saved = await _editorViewModel.SaveAsync();
+            if (!saved)
+            {
+                await SaveAsWithDialogAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Save failed: {ex.Message}";
         }
     }
 
@@ -159,7 +175,14 @@ private async Task SaveAsAsync() =>
 
         if (file != null)
         {
-            await _editorViewModel.SaveAsAsync(file.Path.LocalPath);
+            try
+            {
+                await _editorViewModel.SaveAsAsync(file.Path.LocalPath);
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Save failed: {ex.Message}";
+            }
         }
         else
         {
@@ -289,8 +312,17 @@ private async Task SaveAsAsync() =>
 
         if (file != null)
         {
-            await _documentManager.SaveDocumentAsAsync(doc, file.Path.LocalPath);
-            return true;
+            try
+            {
+                await _documentManager.SaveDocumentAsAsync(doc, file.Path.LocalPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Write failed — report it and cancel the exit rather than discarding work.
+                StatusText = $"Save failed: {ex.Message}";
+                return false;
+            }
         }
 
         return false;
