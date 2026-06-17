@@ -62,13 +62,18 @@ sleep 0.3
 xdotool key --window "$WINDOW_ID" Ctrl+Shift+Tab
 sleep 0.3
 
-echo "[7/8] Testing find overlay (Ctrl+F)"
+echo "[7/9] Testing find overlay (Ctrl+F)"
 xdotool key --window "$WINDOW_ID" Ctrl+f
 sleep 0.7
 import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_test_04_find.png"
 
-echo "[8/8] Testing status bar + final state"
-import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_test_05_status.png"
+echo "[8/9] Testing find overlay Escape shortcut closes overlay"
+xdotool key --window "$WINDOW_ID" Escape
+sleep 0.5
+import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_test_05_escape.png"
+
+echo "[9/9] Testing status bar + final state"
+import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_test_06_status.png"
 
 echo "Manual smoke test completed successfully."
 echo "Screenshots:"

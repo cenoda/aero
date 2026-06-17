@@ -1,7 +1,7 @@
 # Phase 1 Manual Test Report
 
-**Date:** 2026-06-16  
-**Tester:** Kimi Code CLI  
+**Date:** 2026-06-17
+**Tester:** Kimi Code CLI
 **Environment:** Linux headless with Xvfb + xdotool
 
 ## Build & Automated Test Verification
@@ -23,7 +23,9 @@
 | File open/save dialogs | ⚠️ Limited | Unit tests only | Native file dialogs cannot be exercised in bare Xvfb |
 | Undo/Redo | ⚠️ Limited | `DocumentManagerTests.cs` + `TextDocument` | GUI shortcut not verifiable; undo stack covered by tests |
 | Find/Replace overlay | ✅ Pass | Screenshot `aero_test_04_find.png` | Ctrl+F opens overlay with Find/Replace fields |
-| Status bar (Ln X, Col Y) | ✅ Pass | Screenshot `aero_test_05_status.png` | Shows "Ln 1, Col 1" and "Plain Text" |
+| Find/Replace Escape shortcut | ✅ Pass | Screenshot `aero_test_05_escape.png` | Escape closes the overlay |
+| Find/Replace Enter shortcut | ⚠️ Limited | XAML + `IsDefault` button | Enter triggers Find Next; headless typing prevents direct verification |
+| Status bar (Ln X, Col Y) | ✅ Pass | Screenshot `aero_test_06_status.png` | Shows "Ln 1, Col 1" and "Plain Text" |
 
 ## GUI Smoke Test Execution
 
@@ -40,9 +42,20 @@ The script launches Aero under Xvfb and exercises window-level commands:
 3. **Multiple Ctrl+N** — creates "Untitled", "Untitled-2", "Untitled-3" tabs.
 4. **Ctrl+Tab / Ctrl+Shift+Tab** — tab switching commands sent.
 5. **Ctrl+F** — opens the find/replace overlay.
-6. **Status bar** — remains visible with cursor position and language.
+6. **Escape** — closes the find/replace overlay.
+7. **Status bar** — remains visible with cursor position and language.
 
 Screenshots are saved to `manual_test_screenshots/`.
+
+## Shortcut Update Verification
+
+The latest commit adds keyboard-only support to the Find/Replace overlay:
+
+- **Enter** — triggers `FindNextCommand` via `KeyBinding` and `IsDefault="True"` on the Find Next button.
+- **Escape** — triggers `CloseCommand` and closes the overlay.
+- **TabIndex** — added across overlay controls for keyboard navigation.
+
+The manual smoke test verifies that Escape successfully closes the overlay (`aero_test_05_escape.png`). Enter cannot be directly verified in the headless environment because synthetic text typing is unreliable, but the XAML binding and default-button behavior are in place.
 
 ## Known Headless Limitations
 
@@ -56,7 +69,8 @@ Phase 1 core editor infrastructure is functional:
 
 - Application builds and launches.
 - Tab creation, multiple tabs, and find/replace overlay work via GUI shortcuts.
+- Escape closes the Find/Replace overlay.
 - Status bar displays cursor position and language.
 - Document lifecycle, dirty tracking, save/open, undo/redo, and find logic are verified by unit tests.
 
-Items that require a real desktop environment (file dialogs, live typing/undo in the editor surface) are not fully verifiable headlessly but are supported by passing automated tests.
+Items that require a real desktop environment (file dialogs, live typing/undo in the editor surface, Enter in the Find box) are not fully verifiable headlessly but are supported by passing automated tests and correct XAML bindings.
