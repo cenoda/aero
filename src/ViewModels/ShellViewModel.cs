@@ -32,7 +32,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocumentSaved>? _documentSavedHandler;
 
-[Reactive] public string StatusText { get; set; } = "Aero IDE";
+    [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
     [Reactive] public bool IsFileExplorerVisible { get; set; } = true;
     [Reactive] public bool IsTerminalVisible { get; set; }
@@ -66,7 +66,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
         OpenFileCommand = ReactiveCommand.CreateFromTask(OpenFileAsync);
-SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
+        SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         SaveAsCommand = ReactiveCommand.CreateFromTask(SaveAsAsync);
         CloseFileCommand = ReactiveCommand.Create(CloseFile);
         ExitCommand = ReactiveCommand.CreateFromTask(ExitAsync);
@@ -89,12 +89,12 @@ SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         _bus.Subscribe(_documentSavedHandler);
     }
 
-private void NewFile()
+    private void NewFile()
     {
         _editorViewModel.NewFile();
     }
 
-private async Task OpenFileAsync()
+    private async Task OpenFileAsync()
     {
         if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
             return;
@@ -103,7 +103,7 @@ private async Task OpenFileAsync()
         if (window == null)
             return;
 
-var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open File",
             AllowMultiple = false,
@@ -129,7 +129,7 @@ var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenO
         }
     }
 
-private async Task SaveAsync()
+    private async Task SaveAsync()
     {
         if (EditorViewModel.ActiveTab?.Document == null)
             return;
@@ -148,7 +148,7 @@ private async Task SaveAsync()
         }
     }
 
-private async Task SaveAsAsync() =>
+    private async Task SaveAsAsync() =>
         await SaveAsWithDialogAsync();
 
     private async Task SaveAsWithDialogAsync()
@@ -223,7 +223,7 @@ private async Task SaveAsAsync() =>
         _editorViewModel.ActivateTab(tabs[prevIdx]);
     }
 
-/// <summary>
+    /// <summary>
     /// Exit the application, prompting for each dirty document one at a time.
     /// Mirrors the CloseActiveTab flow: iterate dirty docs sequentially, await
     /// each dialog response, then shut down only after all dialogs are resolved.

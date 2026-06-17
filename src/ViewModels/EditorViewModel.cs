@@ -56,11 +56,11 @@ public class EditorViewModel : ReactiveObject, IDisposable
     /// </summary>
     public event Action<FindReplaceArgs>? FindReplaceRequested;
 
-public FindReplaceViewModel FindReplace { get; }
+    public FindReplaceViewModel FindReplace { get; }
 
     public ReactiveCommand<EditorTabViewModel, Unit> CloseTabCommand { get; }
 
-public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace)
+    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace)
     {
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
@@ -88,7 +88,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
     /// <summary>All open tabs.</summary>
     public ObservableCollection<EditorTabViewModel> Tabs => _tabs;
 
-/// <summary>Open a file.</summary>
+    /// <summary>Open a file.</summary>
     public async Task OpenFileAsync(string filePath)
     {
         var doc = await _documentManager.OpenDocumentAsync(filePath);
@@ -124,7 +124,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         await _documentManager.SaveDocumentAsAsync(ActiveTab.Document, filePath);
     }
 
-/// <summary>Close the active tab with dirty check.</summary>
+    /// <summary>Close the active tab with dirty check.</summary>
     public void CloseActiveTab()
     {
         if (ActiveTab?.Document == null)
@@ -171,7 +171,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         _documentManager.CloseDocument(tab.Document);
     }
 
-/// <summary>Prompt user for dirty document close decision.</summary>
+    /// <summary>Prompt user for dirty document close decision.</summary>
     private void PromptDirtyClose(TextDocument doc, Action onProceed)
     {
         var displayName = doc.DisplayName;
@@ -199,7 +199,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         _bus.Publish(new ConfirmDirtyClose(displayName, HandleResponse));
     }
 
-/// <summary>Save document and then close (async helper).</summary>
+    /// <summary>Save document and then close (async helper).</summary>
     private async Task SaveAndCloseAsync(TextDocument doc, Action onClose)
     {
         try
@@ -263,7 +263,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         UpdateStatus(doc);
     }
 
-/// <summary>Show the find/replace overlay.</summary>
+    /// <summary>Show the find/replace overlay.</summary>
     /// <param name="focusReplace">If true, focus the Replace field on open (Ctrl+H).</param>
     public void ShowFindReplace(bool focusReplace = false)
     {
@@ -313,7 +313,7 @@ public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindRep
         }
         else
         {
-var tab = new EditorTabViewModel(doc, _bus);
+            var tab = new EditorTabViewModel(doc, _bus);
             _tabs.Add(tab);
             ActiveTab = tab;
         }
@@ -375,7 +375,7 @@ var tab = new EditorTabViewModel(doc, _bus);
         UpdateStatus(tab?.Document);
     }
 
-/// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
+    /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
         if (_documentOpenedHandler != null)

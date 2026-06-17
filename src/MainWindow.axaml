@@ -73,12 +73,12 @@
                     BorderThickness="0,1,0,0"
                     Padding="8,4">
                 <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-<!-- Cursor position -->
+                    <!-- Cursor position -->
                     <TextBlock Grid.Column="0"
                               Text="{Binding EditorViewModel.CursorPosition}"
                               Margin="0,0,16,0"/>
                     
-<!-- Language -->
+                    <!-- Language -->
                     <TextBlock Grid.Column="1"
                               Text="{Binding EditorViewModel.Language}"
                               Margin="0,0,16,0"/>

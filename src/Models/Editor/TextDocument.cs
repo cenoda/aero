@@ -35,7 +35,7 @@ public class TextDocument
         _displayName = System.IO.Path.GetFileName(filePath);
     }
 
-/// <summary>The underlying AvaloniaEdit document.</summary>
+    /// <summary>The underlying AvaloniaEdit document.</summary>
     public AvaloniaEdit.Document.TextDocument InnerDocument => _document;
 
     /// <summary>Full path to the file (null for new unsaved documents).</summary>
@@ -129,7 +129,7 @@ public class TextDocument
     /// <summary>Redo the last undone action.</summary>
     public void Redo() => _document.UndoStack.Redo();
 
-/// <summary>Mark the document as clean (after save).</summary>
+    /// <summary>Mark the document as clean (after save).</summary>
     public void MarkAsClean()
     {
         // MarkAsOriginalFile preserves undo history (VS Code behavior)

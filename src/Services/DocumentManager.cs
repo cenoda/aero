@@ -70,7 +70,7 @@ public class DocumentManager
         return doc;
     }
 
-/// <summary>Create a new empty document.</summary>
+    /// <summary>Create a new empty document.</summary>
     public TextDocument NewDocument()
     {
         var doc = new TextDocument();
@@ -140,7 +140,7 @@ public class DocumentManager
         document.Language = DetectLanguage(filePath);
         document.MarkAsClean();
 
-_bus.Publish(new DocumentSaved(filePath, document));
+        _bus.Publish(new DocumentSaved(filePath, document));
     }
 
     /// <summary>Close a document.</summary>
@@ -195,7 +195,7 @@ _bus.Publish(new DocumentSaved(filePath, document));
         }
     }
 
-/// <summary>Clear the last dirty state dictionary (called on app exit).</summary>
+    /// <summary>Clear the last dirty state dictionary (called on app exit).</summary>
     public void ClearLastDirtyState()
     {
         _lastDirtyState.Clear();
