@@ -1,26 +1,24 @@
-# Dirty-Check on Close Implementation (ARCHIVED)
+# TODO: Keyboard-Only Editor Support
 
-> **Status:** All items completed. Archived 2026-06-17.
-> See `docs/issues/closed/ISSUE-001-dirty-close-no-dialog.md` for the full record.
+## Task: Make editor usable without mouse
 
-## Task
-Implement dirty-check prompt when closing tabs (CloseTab and CloseActiveTab) to prompt user with Save/Don't Save/Cancel options when closing dirty documents.
+### Phase 1: Find/Replace Overlay Keyboard Support ✓ DONE
+- [x] Add Enter key to trigger "Find Next" in Find/Replace overlay
+- [x] Add Escape key to close Find/Replace overlay
+- [x] Ensure Tab key navigates between search/replace fields (via TabIndex)
+- [x] Auto-focus Search field when overlay opens (Ctrl+F)
 
-## Steps
+### Phase 2: Tab Keyboard Support  
+- [x] Add keyboard shortcut to close current tab (already exists - Ctrl+W, Ctrl+F4)
+- [x] Make Ctrl+Tab/Ctrl+Shift+Tab work reliably for tab switching (verified)
+- [ ] Add Ctrl+K, Ctrl+W as alternate close shortcut (optional)
 
-1. [x] Add ConfirmDirtyClose message to Messages.cs
-2. [x] Modify EditorViewModel.CloseActiveTab to check dirty and prompt
-3. [x] Modify EditorViewModel.CloseTab to check dirty and prompt
-4. [x] Test the implementation (build succeeded)
+### Phase 3: Focus Management
+- [ ] Ensure Tab key navigates between editor and other controls
+- [ ] Verify Alt key activates menu bar
+- [ ] Check menu keyboard navigation (underlined mnemonics)
 
-## Implementation Details
-
-- When closing a dirty document, prompt user with three options:
-  - Save: Save the document first, then close
-  - Don't Save: Close without saving (discard changes)
-  - Cancel: Do not close the tab
-
-- Files modified:
-  - src/Core/Messages.cs - Added ConfirmDirtyClose message and DirtyCloseResponse constants
-  - src/ViewModels/EditorViewModel.cs - Implemented dirty-check logic in CloseTab/CloseActiveTab
-
+### Phase 4: Testing
+- [ ] Verify all keyboard shortcuts work
+- [ ] Test tab switching without mouse
+- [ ] Test find/replace without mouse

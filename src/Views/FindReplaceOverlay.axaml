@@ -6,6 +6,12 @@
              x:Class="Aero.Views.FindReplaceOverlay"
              x:DataType="vm:FindReplaceViewModel">
 
+    <!-- Keyboard shortcuts: Enter=Find Next, Escape=Close -->
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Enter" Command="{Binding FindNextCommand}"/>
+        <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}"/>
+    </UserControl.KeyBindings>
+
     <Border Background="#E8E8E8"
             BorderBrush="#CCCCCC"
             BorderThickness="1"
@@ -20,7 +26,8 @@
                 <TextBox x:Name="SearchTextBox"
                          Text="{Binding SearchText}"
                          Width="250"
-                         Watermark="Search text..."/>
+                         Watermark="Search text..."
+                         TabIndex="0"/>
             </StackPanel>
 
             <!-- Replace row -->
@@ -31,27 +38,36 @@
                 <TextBox x:Name="ReplaceTextBox"
                          Text="{Binding ReplaceText}"
                          Width="250"
-                         Watermark="Replace with..."/>
+                         Watermark="Replace with..."
+                         TabIndex="1"/>
             </StackPanel>
 
             <!-- Options -->
             <StackPanel Orientation="Horizontal" Spacing="16">
                 <CheckBox IsChecked="{Binding CaseSensitive}"
-                        Content="Match case"/>
+                        Content="Match case"
+                        TabIndex="2"/>
                 <CheckBox IsChecked="{Binding WholeWord}"
-                        Content="Whole word"/>
+                        Content="Whole word"
+                        TabIndex="3"/>
             </StackPanel>
 
-            <!-- Buttons -->
+            <!-- Buttons - Find Next is default for Enter key -->
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Find Next"
-                        Command="{Binding FindNextCommand}"/>
+                <Button x:Name="FindNextButton"
+                        Content="Find Next"
+                        Command="{Binding FindNextCommand}"
+                        IsDefault="True"
+                        TabIndex="4"/>
                 <Button Content="Replace"
-                        Command="{Binding ReplaceCommand}"/>
+                        Command="{Binding ReplaceCommand}"
+                        TabIndex="5"/>
                 <Button Content="Replace All"
-                        Command="{Binding ReplaceAllCommand}"/>
+                        Command="{Binding ReplaceAllCommand}"
+                        TabIndex="6"/>
                 <Button Content="Close"
-                        Command="{Binding CloseCommand}"/>
+                        Command="{Binding CloseCommand}"
+                        TabIndex="7"/>
             </StackPanel>
         </StackPanel>
     </Border>
