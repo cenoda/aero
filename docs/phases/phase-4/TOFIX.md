@@ -42,7 +42,9 @@ but has no document URI helper and no incrementing version number for
 **Required fix:** Add the minimum metadata required for LSP synchronization and
 verify that version updates happen exactly when editor text changes are sent.
 
-**Status:** [ ] OPEN
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now explicitly
+requires URI/version metadata on `TextDocument`. Implementation remains pending and must
+be verified during M2.
 
 ### R1.3 `didChange` sync mode is unspecified *(priority: high, BLOCKER for M2)*
 
@@ -65,7 +67,9 @@ layout region. A rushed layout change could bleed into Phase 5/8 concerns.
 read-only Problems view without introducing premature docking/general output
 infrastructure.
 
-**Status:** [ ] OPEN
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now explicitly
+requires the smallest possible bottom-panel layout. Implementation remains pending and
+must be verified during M4.
 
 ### R1.5 Diagnostic state ownership is not yet defined *(priority: high, BLOCKER for M3)*
 
@@ -75,10 +79,12 @@ or for flattening them into a workspace-wide list. If this state is split across
 `LSPSession`, `LSPManager`, and UI ViewModels, stale entries and duplicate update
 logic are likely.
 
-**Required fix:** Choose a single owner for diagnostic state (recommended:
-`LSPManager` or a dedicated diagnostic store) and keep the UI as a consumer only.
+**Required fix:** Keep `LSPManager` as the single owner for diagnostic state and keep
+the UI as a consumer only.
 
-**Status:** [ ] OPEN
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — `LSPManager` is now the single
+source of truth for diagnostics in the implementation plan. Implementation remains pending
+and must be verified during M3.
 
 ### R1.6 Completion UI seam is unclear *(priority: medium, BLOCKER for M5)*
 

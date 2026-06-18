@@ -134,6 +134,7 @@ Responsibilities:
 - resolve the language server command
 - route document lifecycle events to the correct session
 - expose completion requests for the active document
+- own the latest diagnostic state for Phase 4
 - publish diagnostic updates into the app layer
 
 Phase 4 session scope rule:
@@ -143,6 +144,15 @@ Phase 4 session scope rule:
 - if no folder is open, LSP features remain unavailable for that document in Phase 4
 
 This avoids premature project/solution inference before Phase 6.
+
+Phase 4 diagnostic ownership rule:
+
+- **`LSPManager` is the single source of truth for diagnostics**
+- it stores/replaces the latest diagnostics per file URI
+- UI ViewModels consume flattened/projected state only
+
+No separate `DiagnosticStore` service will be introduced in Phase 4 unless implementation
+pressure proves `LSPManager` too broad and a follow-up issue is opened.
 
 Suggested location:
 
@@ -181,6 +191,8 @@ Notes:
 - avoid making the model aware of transport details; keep it to metadata only
 - Phase 4 will use **full-document sync** for `didChange`, not incremental sync
 - version numbers still increment on each sent change even with full-document sync
+- `didSave` will be driven from the existing `DocumentManager.SaveDocumentAsync` /
+  `SaveDocumentAsAsync` success path, which already publishes `DocumentSaved`
 
 Reason for full sync choice:
 
@@ -263,6 +275,13 @@ Minimum acceptable Phase 4 completion UI:
 
 Request/response logging alone is **not sufficient** to claim the completion checklist item.
 
+Fallback rule:
+
+- if a caret-anchored native popup cannot be wired safely in M5, the minimum acceptable
+  fallback is a temporary visible completion overlay/list inside the editor area that shows
+  returned items and is documented as a Phase 4 limitation
+- a status-bar message by itself is **not sufficient**
+
 Optional but useful in the first cut:
 
 - selecting an item activates the file and moves the caret if the existing editor API
@@ -300,6 +319,7 @@ Gate:
 
 - application builds
 - a session can start for a configured C# server command
+- the session can shut down cleanly without hanging the app
 
 ## M2 — Document Synchronization
 
@@ -400,6 +420,8 @@ Gate:
 - `LSPManager` routes open/change/close to the session abstraction
 - diagnostics message updates ViewModel state correctly
 - active-document diagnostics render through the editor marker seam where testable
+- `LSPSession` request/response correlation is exercised against a fake JSON-RPC peer or
+  lightweight mock server so CI does not depend on `csharp-ls`
 
 ### Manual Smoke
 
@@ -427,6 +449,8 @@ Mitigation:
 - support a clearly documented command path/lookup strategy
 - fail gracefully with a visible status message
 - document installation in `README.md`
+- note clearly that opening a single `.cs` file without an opened folder does not enable
+  LSP in Phase 4 because `rootUri` is folder-scoped
 
 ### High Risk — Incorrect buffer sync
 
