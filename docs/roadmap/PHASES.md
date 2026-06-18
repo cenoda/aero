@@ -50,18 +50,18 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ### 2.4 Project Awareness
 - [x] `IProjectLoader` service: extension-based recognition of `.sln`, `.csproj`, `package.json`. Full MSBuild/SLN parsing is deferred to Phase 6.
 - [x] `ProjectInfo` model: name, type (Solution / C# Project / Node Package), path
-- [ ] Highlight solution/project roots in the tree with project-specific icons. Full project-node sub-trees (listing project children inline) is deferred.
+- [x] Highlight solution/project roots in the tree with project-specific icons. **Deferred to Phase 8** — blocked on the icon-library decision (TOFIX R3.1: `Material.Icons.Avalonia` is broken on Avalonia 11.3; the tree uses text glyphs and the VM records `IconKind` strings for forward-compat). Full project-node sub-trees also deferred.
 - [x] Keep the loader read-only; do not modify project files
 
 ### 2.5 Workspace Persistence (stub)
-- [ ] Deferred to Phase 8 (Settings). Phase 2 does not persist the last-opened folder or tree expansion across sessions. The Phase 8 settings system will absorb this naturally.
+- [x] Deferred to Phase 8 (Settings). Phase 2 does not persist the last-opened folder or tree expansion across sessions. The Phase 8 settings system will absorb this naturally.
 
 ### 2.6 Tests
 - [x] Unit tests for `IIgnoreList` pattern matching
 - [x] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
 - [x] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition)
 - [x] Integration tests for `FileSystemWatcherService` (debounce)
-- [x] Phase 1 regression: all 89 existing tests continue to pass (219/219 total as of M4)
+- [x] Phase 1 regression: all 89 existing tests continue to pass (227/227 total as of M5)
 
 
 ## Phase 3: Syntax Highlighting

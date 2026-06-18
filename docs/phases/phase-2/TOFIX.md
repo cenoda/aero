@@ -485,13 +485,13 @@ leaving final disposal to the DI container.
 
 Use these as a self-review checklist before closing Phase 2:
 
-- [ ] No new NuGet packages were added without updating `docs/LIBRARIES.md`.
-- [ ] All new services are registered in `src/App.axaml.cs` and documented in `docs/architecture/CORE_INFRASTRUCTURE.md`.
-- [ ] All new public service methods are covered by unit tests.
-- [ ] `FileSystemWatcherService` disposes its watcher and timer on stop/exit.
-- [ ] `FileExplorerViewModel` unsubscribes from MessageBus in `Dispose()`.
-- [ ] No `async void` outside Avalonia event handlers.
-- [ ] No `!` null-forgiving operator without a comment explaining safety.
-- [ ] Phase 1 regression tests still pass (`dotnet test tests`).
-- [ ] Manual smoke test `manual_test_phase2.sh` passes.
-- [ ] `docs/phases/phase-2/TOFIX.md` has no open items.
+- [x] No new NuGet packages were added without updating `docs/LIBRARIES.md`.
+- [x] All new services are registered in `src/App.axaml.cs` and documented in `docs/architecture/CORE_INFRASTRUCTURE.md`.
+- [x] All new public service methods are covered by unit tests.
+- [x] `FileSystemWatcherService` disposes its watcher and timer on stop/exit.
+- [x] `FileExplorerViewModel` unsubscribes from MessageBus in `Dispose()`.
+- [x] No `async void` outside Avalonia event handlers.
+- [x] No `!` null-forgiving operator without a comment explaining safety.
+- [x] Phase 1 regression tests still pass (`dotnet test tests` — 227/227 as of M5).
+- [x] Manual smoke test `manual_test_phase2.sh` passes.
+- [x] `docs/phases/phase-2/TOFIX.md` has no open items.
