@@ -55,6 +55,11 @@ public partial class App : Application
         // Services
         services.AddSingleton<DocumentManager>();
 
+        // Phase 2 — File Explorer & Project System (M1: services only)
+        services.AddSingleton<IIgnoreList, IgnoreList>();
+        services.AddSingleton<IFileSystemService, FileSystemService>();
+        services.AddSingleton<IProjectLoader, ProjectLoader>();
+
         // ViewModels
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<EditorViewModel>();

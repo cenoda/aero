@@ -29,7 +29,15 @@
     <Compile Include="../src/Core/Messages.cs" />
     <Compile Include="../src/Core/TextSearchHelper.cs" />
     <Compile Include="../src/Models/Editor/TextDocument.cs" />
+    <Compile Include="../src/Models/Project/FileSystemEntry.cs" />
+    <Compile Include="../src/Models/Project/ProjectInfo.cs" />
     <Compile Include="../src/Services/DocumentManager.cs" />
+    <Compile Include="../src/Services/IIgnoreList.cs" />
+    <Compile Include="../src/Services/IgnoreList.cs" />
+    <Compile Include="../src/Services/IFileSystemService.cs" />
+    <Compile Include="../src/Services/FileSystemService.cs" />
+    <Compile Include="../src/Services/IProjectLoader.cs" />
+    <Compile Include="../src/Services/ProjectLoader.cs" />
     <Compile Include="../src/ViewModels/EditorViewModel.cs" />
     <Compile Include="../src/ViewModels/EditorTabViewModel.cs" />
     <Compile Include="../src/ViewModels/FindReplaceViewModel.cs" />

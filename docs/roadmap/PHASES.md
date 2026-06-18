@@ -36,10 +36,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Context menu: **New File**, **New Folder**, **Delete**, **Rename** with name validation
 
 ### 2.2 Filtering & Large-Directory Safety
-- [ ] Default ignore list: `node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`
-- [ ] `IIgnoreList` / `IgnoreList` service with unit-testable pattern matching (custom code, no new NuGet)
-- [ ] Hide ignored folders from tree enumeration and `FileSystemWatcher` notifications
-- [ ] Async enumeration with `CancellationToken` so the UI never blocks
+- [x] Default ignore list: `node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`
+- [x] `IIgnoreList` / `IgnoreList` service with unit-testable pattern matching (custom code, no new NuGet)
+- [x] Hide ignored folders from tree enumeration and `FileSystemWatcher` notifications
+- [x] Async enumeration with `CancellationToken` so the UI never blocks
 
 ### 2.3 Live Sync
 - [ ] `IFileSystemWatcherService` wrapper over `FileSystemWatcher`
@@ -48,19 +48,20 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Graceful error handling: permission denied, deleted folder, inotify limits → status bar / log message; manual refresh still works
 
 ### 2.4 Project Awareness
-- [ ] `IProjectLoader` service: extension-based recognition of `.sln`, `.csproj`, `package.json`. Full MSBuild/SLN parsing is deferred to Phase 6.
-- [ ] `ProjectInfo` model: name, type (Solution / C# Project / Node Package), path
+- [x] `IProjectLoader` service: extension-based recognition of `.sln`, `.csproj`, `package.json`. Full MSBuild/SLN parsing is deferred to Phase 6.
+- [x] `ProjectInfo` model: name, type (Solution / C# Project / Node Package), path
 - [ ] Highlight solution/project roots in the tree with project-specific icons. Full project-node sub-trees (listing project children inline) is deferred.
-- [ ] Keep the loader read-only; do not modify project files
+- [x] Keep the loader read-only; do not modify project files
 
 ### 2.5 Workspace Persistence (stub)
 - [ ] Deferred to Phase 8 (Settings). Phase 2 does not persist the last-opened folder or tree expansion across sessions. The Phase 8 settings system will absorb this naturally.
 
 ### 2.6 Tests
-- [ ] Unit tests for `IIgnoreList` pattern matching
+- [x] Unit tests for `IIgnoreList` pattern matching
 - [ ] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
-- [ ] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition), `FileSystemWatcherService` (debounce)
-- [ ] Phase 1 regression: all 89 existing tests continue to pass
+- [x] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition)
+- [ ] Integration tests for `FileSystemWatcherService` (debounce) — pending M5
+- [x] Phase 1 regression: all 89 existing tests continue to pass (146/146 total as of M1)
 
 
 ## Phase 3: Syntax Highlighting

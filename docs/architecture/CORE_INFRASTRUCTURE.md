@@ -138,3 +138,26 @@ from a ViewModel — e.g. "Save / Don't Save / Cancel?" — is:
 The dialog itself is a small `Window` subclass with code-behind (no ViewModel)
 that returns the user's choice via `Close(response)`. See
 `src/Views/DirtyCloseDialog.axaml` and `src/Views/DirtyCloseDialog.axaml.cs`.
+
+---
+
+## Phase 2 Service Registrations
+
+The following services were added in Phase 2 M1 (File System Abstraction &
+Project Recognition). All registered as **singletons** in
+[`src/App.axaml.cs`](../../src/App.axaml.cs):
+
+| Service | Interface | Lifetime | Purpose |
+|---------|-----------|----------|---------|
+| `IgnoreList` | `IIgnoreList` | singleton | Pattern-based filtering of large/unwanted directories (`node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`, `*.tmp`). Custom code, no NuGet. Case-insensitive on Windows/macOS, case-sensitive on Linux. |
+| `FileSystemService` | `IFileSystemService` | singleton | Async wrapper over `System.IO` for enumeration, create/rename/delete. Every method takes a `CancellationToken`. Paths normalized via `Path.GetFullPath()`. Filters results through `IIgnoreList`. |
+| `ProjectLoader` | `IProjectLoader` | singleton | Extension-based recognition: `.sln`, `.csproj`, `package.json`. Read-only — does not modify project files. Full MSBuild / Node parsing deferred to Phase 6. |
+
+**Models added:**
+- `src/Models/Project/FileSystemEntry.cs` — plain record `{ Name, FullPath, Kind }`.
+- `src/Models/Project/ProjectInfo.cs` — plain record `{ Path, Name, Kind }` where `Kind ∈ { None, Solution, CSharpProject, NodeProject }`.
+
+**Consumer guidance:**
+- ViewModels receive `IFileSystemService` and `IProjectLoader` via constructor injection; they never touch `System.IO` directly.
+- Always pass a `CancellationToken` to every I/O method — empty directories will not observe a pre-cancelled token without an upfront check.
+- `IgnoreList.IsIgnored(path, isDirectory)` is the canonical "should this entry appear in the tree?" predicate.
