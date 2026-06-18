@@ -159,6 +159,8 @@ public class EditorViewModelLanguageTests
 
                 Assert.Equal("C#", tab.Document.Language);
                 Assert.Equal("csharp", tab.LanguageId);
+                // Status bar label must refresh on Save As, not lag until next caret move.
+                Assert.Equal("C#", vm.Language);
             }
             finally
             {

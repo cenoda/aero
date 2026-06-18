@@ -62,6 +62,20 @@ usings on one line, and `Aero.Languages` was unused (`LanguageId` is a plain
 **Fix:** Split the usings and removed the unused `using Aero.Languages;`.
 **Status:** ✅ RESOLVED (2026-06-19)
 
+### R1.3 Status-bar language lagged behind grammar on Save As *(priority: low-medium, found during exit review)*
+
+**Description:** On Save As (e.g. untitled → `foo.cs`), `OnDocumentSaved`
+refreshed `tab.LanguageId` (so the TextMate grammar switched and the editor
+highlighted as C#), but the status-bar `Language` property was only refreshed by
+`UpdateStatus` on caret move / tab activation / tab creation. Result: immediately
+after Save As the editor highlighted correctly while the status bar still showed
+"Plain Text" until the next interaction — a narrow label/grammar mismatch and a
+miss against the Phase 3 exit condition "status bar shows current language."
+**Fix:** `OnDocumentSaved` now also calls `UpdateStatus(msg.Document)` when the
+saved tab is the active tab. Extended `SaveAs_UpdatesTabLanguageId` to assert
+`vm.Language == "C#"` after Save As.
+**Status:** ✅ RESOLVED (2026-06-19)
+
 ---
 
 ## Persistent Checks

@@ -390,6 +390,13 @@ public class EditorViewModel : ReactiveObject, IDisposable
         if (tab != null)
         {
             tab.LanguageId = _languageDetection.Detect(msg.Document.FilePath).Id;
+
+            // Save As can change the document's language (e.g. untitled → foo.cs).
+            // DocumentManager already refreshed doc.Language; mirror it into the
+            // status bar now so the label doesn't lag behind the grammar until the
+            // next caret move or tab switch.
+            if (tab == ActiveTab)
+                UpdateStatus(msg.Document);
         }
     }
 
