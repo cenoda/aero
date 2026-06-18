@@ -143,23 +143,74 @@ public class FileExplorerViewModelTests : IDisposable
         Assert.Contains("2 entries", _vm.StatusText);
     }
 
-    // --- nested children ----------------------------------------------
+    // --- lazy-load (single-level root) -------------------------------
 
     [Fact]
-    public async Task LoadFolderAsync_RecursesIntoSubdirectories()
+    public async Task LoadFolderAsync_DirectoriesStartUnloaded()
     {
         var root = TempPath();
         Seed(
             Path.Combine(root, "src/"),
-            Path.Combine(root, "src", "app.cs"),
-            Path.Combine(root, "src", "Program.cs"));
+            Path.Combine(root, "src", "app.cs"));
 
         await _vm.LoadFolderAsync(root);
 
         var srcNode = Assert.Single(_vm.RootNodes);
         Assert.True(srcNode.IsDirectory);
-        Assert.Equal(2, srcNode.Children.Count);
-        Assert.All(srcNode.Children, c => Assert.False(c.IsDirectory));
+        Assert.False(srcNode.AreChildrenLoaded);
+    }
+
+    [Fact]
+    public async Task LoadFolderAsync_DirectoriesHaveOnlyPlaceholderChild()
+    {
+        // The placeholder exists solely so the TreeView renders an expander arrow
+        // for unloaded directories. The view sees one entry, the VM knows it's
+        // not real data.
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+
+        await _vm.LoadFolderAsync(root);
+
+        var srcNode = Assert.Single(_vm.RootNodes);
+        var child = Assert.Single(srcNode.Children);
+        Assert.True(child.IsPlaceholder);
+    }
+
+    [Fact]
+    public async Task LoadFolderAsync_FilesHaveNoChildren()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+
+        var node = Assert.Single(_vm.RootNodes);
+        Assert.False(node.IsDirectory);
+        Assert.True(node.AreChildrenLoaded); // files are "loaded" by definition
+        Assert.Empty(node.Children);
+    }
+
+    [Fact]
+    public async Task LoadFolderAsync_DoesNotEnumerateSubdirectories()
+    {
+        // Regression for R3.2: opening a folder must NOT eagerly walk every
+        // nested directory. This test seeds a deep tree and asserts only the
+        // root level is touched.
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "level1/"),
+            Path.Combine(root, "level1", "level2/"),
+            Path.Combine(root, "level1", "level2", "level3/"),
+            Path.Combine(root, "level1", "level2", "level3", "deep.txt"));
+
+        await _vm.LoadFolderAsync(root);
+
+        // Exactly one direct child (level1) and no further enumeration.
+        var level1 = Assert.Single(_vm.RootNodes);
+        Assert.Equal("level1", level1.Name);
+        // level1 has only its placeholder child — no level2 entry yet.
+        Assert.Single(level1.Children);
+        Assert.True(level1.Children[0].IsPlaceholder);
     }
 
     [Fact]
@@ -257,6 +308,126 @@ public class FileExplorerViewModelTests : IDisposable
             Assert.DoesNotContain("node_modules", names);
         }
         finally { vmWithIgnore.Dispose(); }
+    }
+
+    // --- EnsureChildrenLoadedAsync (lazy-load) -----------------------
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_PopulatesChildrenAndClearsPlaceholder()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "app.cs"),
+            Path.Combine(root, "src", "Program.cs"));
+
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+
+        Assert.True(srcNode.AreChildrenLoaded);
+        Assert.Equal(2, srcNode.Children.Count);
+        Assert.DoesNotContain(srcNode.Children, c => c.IsPlaceholder);
+        Assert.All(srcNode.Children, c => Assert.False(c.IsDirectory));
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_OnFile_IsNoOp()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        await _vm.EnsureChildrenLoadedAsync(fileNode);
+
+        Assert.Empty(fileNode.Children); // files never have children
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_DoubleCall_OnlyLoadsOnce()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+        var firstChildren = srcNode.Children.ToList();
+
+        // Second call: should be a no-op — children unchanged.
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+
+        Assert.Equal(firstChildren.Count, srcNode.Children.Count);
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_RapidExpandCollapses_CancelsPrevious()
+    {
+        // Set up a mock that blocks (we don't have a blocking primitive, so we
+        // simulate by issuing two EnsureChildrenLoadedAsync calls back-to-back
+        // and asserting the first one's children are replaced by the second's
+        // rather than duplicated).
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        // Fire two expansions concurrently. The second should win; the first's
+        // result must NOT land in node.Children (would cause duplicates).
+        var first = _vm.EnsureChildrenLoadedAsync(srcNode);
+        var second = _vm.EnsureChildrenLoadedAsync(srcNode);
+
+        await Task.WhenAll(first, second);
+
+        // Exactly one child (the seeded a.txt), no placeholder, no duplicates.
+        var child = Assert.Single(srcNode.Children);
+        Assert.False(child.IsPlaceholder);
+        Assert.Equal("a.txt", child.Name);
+        Assert.True(srcNode.AreChildrenLoaded);
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_LoadFolderCancelsInflightChildLoads()
+    {
+        // Starting a new root load must cancel any in-flight child expansions
+        // so the new tree starts clean.
+        var root = TempPath();
+        var newRoot = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        Assert.Equal("src", srcNode.Name);
+
+        // Start a child expansion, then immediately load a different folder.
+        var childLoadTask = _vm.EnsureChildrenLoadedAsync(srcNode);
+        Seed(Path.Combine(newRoot, "x.txt"));
+        await _vm.LoadFolderAsync(newRoot);
+
+        // Awaiting the cancelled child task is safe (swallows OperationCanceledException).
+        await childLoadTask;
+
+        // The new tree is just "x.txt".
+        var newNode = Assert.Single(_vm.RootNodes);
+        Assert.Equal("x.txt", newNode.Name);
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_NullNode_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _vm.EnsureChildrenLoadedAsync(null!));
     }
 
     // --- cancellation & switching folders ----------------------------

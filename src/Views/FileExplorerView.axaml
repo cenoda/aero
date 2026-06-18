@@ -79,7 +79,7 @@
                                        Opacity="0.6"
                                        VerticalAlignment="Center"
                                        FontFamily="Consolas, Courier New, monospace"/>
-                            <TextBlock Text="{Binding DisplayName}"
+                            <TextBlock Text="{Binding Name}"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"/>
                         </StackPanel>

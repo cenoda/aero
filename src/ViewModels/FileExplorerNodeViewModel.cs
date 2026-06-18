@@ -11,6 +11,19 @@ namespace Aero.ViewModels;
 /// </summary>
 public class FileExplorerNodeViewModel : ReactiveObject
 {
+    /// <summary>
+    /// Synthetic sentinel child inserted into a directory's <see cref="Children"/>
+    /// until the real children are loaded. The view shows the expander arrow
+    /// because the collection is non-empty; after the load completes the VM
+    /// replaces this placeholder with the real entries.
+    /// </summary>
+    public static readonly FileExplorerNodeViewModel PlaceholderChild =
+        new("\u2026", "", isDirectory: false, iconKind: "Placeholder")
+        {
+            IsPlaceholder = true,
+            AreChildrenLoaded = true,
+        };
+
     public FileExplorerNodeViewModel(
         string name,
         string fullPath,
@@ -39,6 +52,12 @@ public class FileExplorerNodeViewModel : ReactiveObject
     public string IconKind { get; }
 
     /// <summary>
+    /// True for the synthetic <see cref="PlaceholderChild"/>. Tests and the
+    /// view swap logic use this to distinguish the sentinel from real nodes.
+    /// </summary>
+    public bool IsPlaceholder { get; private init; }
+
+    /// <summary>
     /// Small text glyph shown to the left of the file name in the tree.
     /// Derived from <see cref="IconKind"/> so the VM remains the source of
     /// truth — the view just renders whatever this returns. When icons are
@@ -51,13 +70,11 @@ public class FileExplorerNodeViewModel : ReactiveObject
         "MicrosoftVisualStudio" => "◆",
         "LanguageCsharp" => "#",
         "Nodejs" => "⬡",
+        "Placeholder" => " ",
         _ => "•",
     };
 
-    /// <summary>Display label shown in the tree — currently identical to <see cref="Name"/>.</summary>
-    public string DisplayName => Name;
-
-    /// <summary>Children. Always non-null; empty for files.</summary>
+    /// <summary>Children. Always non-null; empty for files or unloaded directories.</summary>
     public ObservableCollection<FileExplorerNodeViewModel> Children { get; } = new();
 
     /// <summary>
@@ -67,9 +84,10 @@ public class FileExplorerNodeViewModel : ReactiveObject
     [Reactive] public bool IsExpanded { get; set; }
 
     /// <summary>
-    /// Whether children have been populated. Currently always <c>true</c> after
-    /// construction because Phase 2 uses eager enumeration. A future lazy-load
-    /// optimization would flip this to false until the first expand.
+    /// True when this node's <see cref="Children"/> reflect the actual disk.
+    /// For files, always <c>true</c>. For directories, <c>false</c> until
+    /// <see cref="Aero.ViewModels.FileExplorerViewModel.EnsureChildrenLoadedAsync"/>
+    /// populates them — this is what makes the explorer lazy-load-on-expand.
     /// </summary>
     [Reactive] public bool AreChildrenLoaded { get; set; } = true;
 }

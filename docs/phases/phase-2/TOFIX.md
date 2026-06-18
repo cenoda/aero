@@ -1,6 +1,6 @@
 # Phase 2 — To Fix
 
-> **Status:** Active — Round 1 ✅ closed, Round 2 ✅ closed, Round 3 (M2) ⏳ open.
+> **Status:** Active — Round 1 ✅ closed, Round 2 ✅ closed, Round 3 (M2 + M2.5) ✅ closed.
 > Resolve all open items before declaring Phase 2 complete.
 
 ---
@@ -164,9 +164,77 @@ lands, swap the XAML binding from `{Binding Glyph}` to
    Phase 2 (M3–M5 don't need richer visuals), revisit in Phase 8 UI
    Polish when the rest of the layout work is done.
 
-**Status:** ⏸ PAUSED — awaiting user decision. Until decided, M2 ships
-with the text-glyph approach (which is fully functional, just visually
-plain). See screenshot `manual_test_screenshots/aero_test_01_initial.png`.
+**Status:** ✅ DEFERRED TO PHASE 8 (resolved 2026-06-18).
+User chose option 3 (keep text glyphs through Phase 2, revisit in
+Phase 8 "UI Polish"). Avalonia 12 upgrade risk outweighs cosmetic
+benefit; Phase 8 is the natural home for a polish-cycle icon decision
+(theme system, Dock.Avalonia, etc. are all in flight then). The VM's
+`IconKind` strings are already a forward-compat hook — Phase 8 just
+swaps the XAML binding. See `docs/roadmap/PHASES.md` Phase 8 checklist
+for the eventual icon-library decision.
+
+---
+
+## Round 4 — M2 Review Follow-up (2026-06-18)
+
+Findings from a review-agent pass on M2. Two real items landed:
+one latent M3 blocker (R3.2), one cleanup. The M2 implementation was
+otherwise solid — cancellation discipline, off-thread dispatch,
+FolderOpened integration all correct.
+
+### R3.2 Eager recursive load becomes a hazard the moment M3 wires Open Folder *(priority: medium, would-have-blocked-M3)*
+`BuildNodeAsync` recursed into every non-ignored directory with no
+depth or node-count cap. M2 shipped this without consequence because
+no user-reachable folder could be opened yet (the picker is M3). The
+moment M3 wires Open Folder, a user pointing at their home directory
+or `/` would eagerly walk and materialize a VM + ObservableCollection
+for *every* file and folder. `IIgnoreList` only excludes build/VCS
+dirs (`bin`, `obj`, `node_modules`, `.git`) — it does nothing for
+large data/media/source trees.
+
+**Fix:** Switched from eager recursive walk to lazy-load-on-expand
+(M2.5 slice).
+
+Implementation:
+- `FileExplorerViewModel.BuildTreeAsync` removed; replaced with
+  `BuildRootLevelAsync` that enumerates ONLY the root folder.
+- New `EnsureChildrenLoadedAsync(node)` populates a single directory's
+  children on demand. Idempotent (`AreChildrenLoaded == true` → no-op).
+- `FileExplorerNodeViewModel.AreChildrenLoaded` flips to `false` on
+  construction for directories; view code-behind subscribes to
+  `TreeViewItem.Expanded` and calls `EnsureChildrenLoadedAsync` on
+  each new container.
+- Directories get a `PlaceholderChild` sentinel pre-added so the
+  TreeView renders the expander arrow before children are loaded.
+  The placeholder is removed during the actual load.
+- Per-node cancellation in a `ConcurrentDictionary` so rapid
+  expand/collapse cancels in-flight expansions cleanly.
+- `LoadFolderAsync` now cancels ALL in-flight child loads (not just
+  the root) so a stale child load can't write into a node that's
+  about to be discarded by the new tree.
+
+**Tests added (9 new, total 192/192):**
+- `LoadFolderAsync_DirectoriesStartUnloaded`
+- `LoadFolderAsync_DirectoriesHaveOnlyPlaceholderChild`
+- `LoadFolderAsync_FilesHaveNoChildren`
+- `LoadFolderAsync_DoesNotEnumerateSubdirectories` (R3.2 regression test)
+- `EnsureChildrenLoadedAsync_PopulatesChildrenAndClearsPlaceholder`
+- `EnsureChildrenLoadedAsync_OnFile_IsNoOp`
+- `EnsureChildrenLoadedAsync_DoubleCall_OnlyLoadsOnce`
+- `EnsureChildrenLoadedAsync_RapidExpandCollapses_CancelsPrevious`
+- `EnsureChildrenLoadedAsync_LoadFolderCancelsInflightChildLoads`
+- `EnsureChildrenLoadedAsync_NullNode_Throws`
+
+**Status:** ✅ RESOLVED
+
+### R3.3 Unused `using System.Linq;` and redundant `DisplayName` pass-through *(priority: trivial, cleanup)*
+Reviewer noted the same hygiene issue as Phase 1 R4.4 (unused LINQ
+import) plus a redundant `DisplayName => Name` accessor that was
+unused by the view (the view bound to `Name` directly anyway).
+**Fix:** Removed `using System.Linq;`. Removed `DisplayName` from the
+node VM and switched the view's `TextBlock` binding from
+`{Binding DisplayName}` to `{Binding Name}`.
+**Status:** ✅ RESOLVED (folded into M2.5)
 
 ---
 

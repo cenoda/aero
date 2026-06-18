@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
@@ -17,9 +17,10 @@ using IMessageBus = Aero.Core.IMessageBus;
 namespace Aero.ViewModels;
 
 /// <summary>
-/// ViewModel for the file explorer sidebar. Owns the single workspace tree,
-/// builds it off the UI thread, and cancels any in-flight load when a new
-/// folder is opened.
+/// ViewModel for the file explorer sidebar. Owns the single workspace tree
+/// and populates it lazily on expand — opening a folder only enumerates its
+/// direct children, and each subdirectory's contents load when first expanded.
+/// This keeps the load bounded regardless of workspace depth.
 /// </summary>
 public class FileExplorerViewModel : ReactiveObject, IDisposable
 {
@@ -30,8 +31,18 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     // Stored handlers for unsubscribe in Dispose()
     private Action<FolderOpened>? _folderOpenedHandler;
 
-    // Cancellation source for the in-flight load (null when idle).
+    // Cancellation source for the in-flight root load (null when idle).
     private CancellationTokenSource? _loadCts;
+
+    // Per-node cancellation sources for in-flight child expansions. Cleared
+    // when the load completes. Bounded: at most one entry per concurrently
+    // loading node — the dictionary is the source of truth.
+    private readonly ConcurrentDictionary<FileExplorerNodeViewModel, CancellationTokenSource> _childLoadCts = new();
+
+    // Project roots discovered at root-load time, cached so child expansion
+    // can match file entries without re-walking the workspace.
+    private IReadOnlyList<ProjectInfo> _rootProjects = Array.Empty<ProjectInfo>();
+
     private bool _disposed;
 
     [Reactive] public string? RootPath { get; set; }
@@ -63,18 +74,23 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
     /// <summary>
     /// Load and display the tree for the given folder. Cancels any in-flight
-    /// load before starting. Runs the enumeration off the UI thread.
+    /// root or child load before starting. Runs enumeration off the UI thread.
+    ///
+    /// Only the direct children of <paramref name="path"/> are enumerated —
+    /// subdirectories are populated lazily by
+    /// <see cref="EnsureChildrenLoadedAsync"/>. This is the fix for the R3.2
+    /// unbounded-eager-load hazard: opening a large tree no longer walks every
+    /// file and folder synchronously.
     /// </summary>
     public async Task LoadFolderAsync(string path, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(path))
             return;
 
-        // Cancel any previous load. Disposing the old CTS after creating the
-        // new one ensures we don't tear down the new token by accident.
-        var oldCts = Interlocked.Exchange(ref _loadCts, null);
-        oldCts?.Cancel();
-        oldCts?.Dispose();
+        // Cancel any in-flight root load AND any in-flight child expansions.
+        // The new load replaces the entire tree — stale child loads would
+        // populate nodes that are about to be discarded.
+        CancelAllInFlightLoads();
 
         var newCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         Interlocked.Exchange(ref _loadCts, newCts);
@@ -89,8 +105,8 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             // Run the synchronous enumeration off the UI thread. The
             // FileSystemService is intentionally not self-offloading (see
             // FileSystemService.cs comments), so we own that responsibility.
-            var nodes = await Task.Run(
-                () => BuildTreeAsync(path, token),
+            var (nodes, projects) = await Task.Run(
+                () => BuildRootLevelAsync(path, token),
                 token);
 
             // If a newer load superseded us while we awaited, drop this result.
@@ -101,6 +117,8 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             RootNodes.Clear();
             foreach (var node in nodes)
                 RootNodes.Add(node);
+
+            _rootProjects = projects;
 
             // Normalize the root path (R1.5: future path deduplication).
             RootPath = Path.GetFullPath(path);
@@ -117,6 +135,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             StatusText = $"Load failed: {ex.Message}";
             // Clear any partial tree on hard failure so the UI doesn't show stale nodes.
             RootNodes.Clear();
+            _rootProjects = Array.Empty<ProjectInfo>();
             RootPath = null;
         }
         finally
@@ -128,6 +147,76 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
                 newCts.Dispose();
             }
             IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Ensure <paramref name="node"/>'s direct children are loaded. Called by
+    /// the view when a directory node is expanded. Idempotent: subsequent
+    /// calls on a loaded node are a no-op.
+    /// </summary>
+    public async Task EnsureChildrenLoadedAsync(FileExplorerNodeViewModel node)
+    {
+        if (node is null) throw new ArgumentNullException(nameof(node));
+        if (!node.IsDirectory) return;
+        if (node.AreChildrenLoaded) return;
+
+        // Cancel any in-flight expansion of this node (rapid double-expand)
+        // before starting a new one. Using TryRemove + a fresh CTS below
+        // makes this safe even when the same node is expanded repeatedly.
+        if (_childLoadCts.TryRemove(node, out var oldCts))
+        {
+            oldCts.Cancel();
+            oldCts.Dispose();
+        }
+
+        var cts = new CancellationTokenSource();
+        _childLoadCts[node] = cts;
+        var token = cts.Token;
+
+        try
+        {
+            var entries = await Task.Run(
+                () => _fileSystem.GetDirectoryEntriesAsync(node.FullPath, token),
+                token);
+
+            token.ThrowIfCancellationRequested();
+
+            // Swap children on the UI thread. ObservableCollection is not
+            // thread-safe. The placeholder (if present) is removed and the
+            // real children added in one pass.
+            node.Children.Clear();
+            foreach (var entry in entries)
+            {
+                token.ThrowIfCancellationRequested();
+                node.Children.Add(CreateNodeForEntry(entry));
+            }
+
+            // Only mark loaded AFTER children are visible — a cancelled load
+            // leaves AreChildrenLoaded=false so the next expand can retry.
+            node.AreChildrenLoaded = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer expansion or a parent re-load cancelled us. Children
+            // remain in their previous state (placeholder + empty list). Do
+            // NOT mark AreChildrenLoaded so a subsequent expand retries.
+        }
+        catch (Exception)
+        {
+            // Hard failure: keep the placeholder so the user can retry by
+            // collapsing + expanding. The status bar would be cluttered if
+            // we surfaced every child-load failure; the root load already
+            // reports workspace-level failures.
+        }
+        finally
+        {
+            // Remove our CTS only if it's still ours (a newer call may have
+            // replaced it).
+            if (_childLoadCts.TryRemove(new KeyValuePair<FileExplorerNodeViewModel, CancellationTokenSource>(node, cts)))
+            {
+                cts.Dispose();
+            }
         }
     }
 
@@ -146,10 +235,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             return;
         _disposed = true;
 
-        // Cancel any in-flight load so it doesn't write to disposed state.
-        _loadCts?.Cancel();
-        _loadCts?.Dispose();
-        _loadCts = null;
+        CancelAllInFlightLoads();
 
         if (_folderOpenedHandler != null)
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
@@ -158,57 +244,71 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     // --- tree construction ---------------------------------------------
 
     /// <summary>
-    /// Build the full tree rooted at <paramref name="rootPath"/>. Synchronous
-    /// helper called via <c>Task.Run</c> — does NOT touch the UI thread or
-    /// any ObservableCollection.
+    /// Enumerate <paramref name="rootPath"/>'s direct children only. For each
+    /// child directory, the placeholder child is added so the TreeView shows
+    /// the expander arrow; the actual grandchildren load on demand.
     /// </summary>
-    private async Task<IReadOnlyList<FileExplorerNodeViewModel>> BuildTreeAsync(
-        string rootPath,
-        CancellationToken ct)
+    private async Task<(IReadOnlyList<FileExplorerNodeViewModel> Nodes, IReadOnlyList<ProjectInfo> Projects)>
+        BuildRootLevelAsync(string rootPath, CancellationToken ct)
     {
-        // One-level-deep project roots so we can choose specific icons for them.
+        // Project roots discovered at the workspace top level. Cached on the
+        // VM for child expansions to reuse.
         var projects = _projectLoader.DetectProjects(rootPath, ct);
 
-        // Recursive enumeration. We don't use a TreeNode abstraction because
-        // the VM tree shape is shallow — directories always expand to their
-        // direct children. Eager loading + IgnoreList keeps this bounded.
         var entries = await _fileSystem.GetDirectoryEntriesAsync(rootPath, ct);
 
         var nodes = new List<FileExplorerNodeViewModel>(entries.Count);
         foreach (var entry in entries)
         {
             ct.ThrowIfCancellationRequested();
-            nodes.Add(await BuildNodeAsync(entry, projects, ct));
+            nodes.Add(CreateNodeForEntry(entry, projects));
         }
-        return nodes;
+        return (nodes, projects);
     }
 
-    private async Task<FileExplorerNodeViewModel> BuildNodeAsync(
+    /// <summary>
+    /// Build a node for a single <see cref="FileSystemEntry"/>. Directories
+    /// get the placeholder child so the TreeView shows the expander arrow.
+    /// </summary>
+    private FileExplorerNodeViewModel CreateNodeForEntry(
         FileSystemEntry entry,
-        IReadOnlyList<ProjectInfo> projects,
-        CancellationToken ct)
+        IReadOnlyList<ProjectInfo>? projects = null)
     {
         var node = new FileExplorerNodeViewModel(
             entry.Name,
             entry.FullPath,
             entry.Kind == FileSystemEntryKind.Directory,
-            IconFor(entry, projects));
+            IconFor(entry, projects ?? _rootProjects));
 
         if (entry.Kind == FileSystemEntryKind.Directory)
         {
-            // Eager enumeration: recurse to show nested folders/files in the
-            // initial tree (PROJECT_PLAN §5.1). The IIgnoreList bounds the
-            // walk — `node_modules`, `bin`, `obj`, etc. are skipped at the
-            // service layer, so this stays tractable for normal workspaces.
-            var children = await _fileSystem.GetDirectoryEntriesAsync(entry.FullPath, ct);
-            foreach (var child in children)
-            {
-                ct.ThrowIfCancellationRequested();
-                node.Children.Add(await BuildNodeAsync(child, projects, ct));
-            }
+            // Mark as not-yet-loaded and seed the placeholder so the TreeView
+            // renders an expander arrow. EnsureChildrenLoadedAsync will swap
+            // this out when the directory is expanded.
+            node.AreChildrenLoaded = false;
+            node.Children.Add(FileExplorerNodeViewModel.PlaceholderChild);
         }
 
         return node;
+    }
+
+    private void CancelAllInFlightLoads()
+    {
+        // Root load
+        var oldRootCts = Interlocked.Exchange(ref _loadCts, null);
+        oldRootCts?.Cancel();
+        oldRootCts?.Dispose();
+
+        // Child loads — snapshot then clear so we don't fight a concurrent
+        // EnsureChildrenLoadedAsync that's adding entries.
+        foreach (var kvp in _childLoadCts)
+        {
+            if (_childLoadCts.TryRemove(kvp.Key, out var cts))
+            {
+                cts.Cancel();
+                cts.Dispose();
+            }
+        }
     }
 
     private static string IconFor(FileSystemEntry entry, IReadOnlyList<ProjectInfo> projects)
