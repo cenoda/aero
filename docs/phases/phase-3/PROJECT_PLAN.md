@@ -15,10 +15,10 @@ Do not write Phase 3 code until all of these are true:
 |------|----------|
 | `docs/roadmap/PHASES.md` Phase 2 checklist all `[x]` | ✅ |
 | `docs/phases/phase-2/TOFIX.md` all closed (Rounds 1–8) | ✅ |
-| `dotnet build src/aero.csproj` succeeds with 0 errors | ⬜ verify at M0 |
-| `dotnet test tests` passes (227/227 as of Phase 2 M5) | ⬜ verify at M0 |
-| `./manual_test_phase2.sh` smoke test completes | ⬜ verify at M0 |
-| `docs/issues/INDEX.md` has no open blockers | ⬜ verify at M0 |
+| `dotnet build src/aero.csproj` succeeds with 0 errors | ✅ verified at M0 |
+| `dotnet test tests` passes (227/227 as of Phase 2 M5) | ✅ verified at M0 |
+| `./manual_test_phase2.sh` smoke test completes | ✅ verified at M0 |
+| `docs/issues/INDEX.md` has no open blockers | ✅ verified at M0 |
 
 **First Phase 3 file created:** `docs/phases/phase-3/TOFIX.md` (done) — so every
 review finding has a home before code lands.
