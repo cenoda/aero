@@ -4,6 +4,7 @@ Quick-scan list of all issues. Update status here when opening/closing.
 
 | # | Title | Label | Priority | Status | Path |
 |---|-------|-------|----------|--------|------|
+| 009 | Cannot verify M4 context-menu → dialog flow under headless Xvfb | CHORE | medium | open | `open/ISSUE-009-headless-contextmenu-dialog-verification.md` |
 | 008 | Editor content area blank — missing AvaloniaEdit theme | BUG | critical | closed | `closed/ISSUE-008-editor-layout-no-content.md` |
 | 007 | Tab close button binding crashes app when a tab is created | BUG | critical | closed | `closed/ISSUE-007-tab-close-binding-crash.md` |
 | 001 | Dirty-close dialog never shown — tab close silently no-ops | BUG | critical | closed | `closed/ISSUE-001-dirty-close-no-dialog.md` |
