@@ -306,6 +306,51 @@ Findings from the plan review against the live codebase and prior phases.
 
 ---
 
+## Round 4 — Independent Review (2026-06-19)
+
+Findings from independent review against the live codebase.
+
+### R4.1 CliWrap already in csproj *(priority: low)*
+
+**Description:** `CliWrap` is already present in `src/aero.csproj` (line 48) under Infrastructure.
+The plan said it "lands in Phase 5" but it's already referenced — just not used.
+
+**Required fix:** Reconcile wording: CliWrap is already referenced but not used in Phase 4;
+LSP uses raw `Process`.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — updated §4 to clarify CliWrap is pre-positioned but unused.
+
+### R4.2 Singleton LSPManager disposal depends on eager instantiation *(priority: high, BLOCKER for M1)*
+
+**Description:** `ServiceProvider` only disposes singletons it actually constructed. If `LSPManager`
+self-subscribes to `FolderOpened` and nothing injects it, it's never instantiated — so neither
+its subscription nor its `Dispose()` ever runs.
+
+**Required fix:** Resolve `LSPManager` eagerly in `OnFrameworkInitializationCompleted` (like `ShellViewModel`)
+to ensure it's constructed and subscribed before any folder is opened.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added eager resolution requirement to LSPManager Disposal section.
+
+### R4.3 Thread-marshaling snippet not test-safe *(priority: medium)*
+
+**Description:** The plan shows bare `Dispatcher.UIThread.Post(...)` which throws in headless unit tests.
+The real codebase pattern uses `GetUiDispatcher()` with a null-check.
+
+**Required fix:** Use the guarded pattern from `ShellViewModel.StatusMessage`.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — updated Thread Safety section with test-safe pattern.
+
+### R4.4 FolderOpened idempotency *(priority: medium)*
+
+**Description:** `FolderOpened` fires on re-open or manual refresh of the same path. LSP session
+(re)creation must be idempotent — don't spawn a second server for the same rootUri.
+
+**Required fix:** Track active sessions by rootUri; reuse existing session if one already exists.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added idempotency risk and mitigation to §9.
+
+---
+
 ## Persistent Checks
 
 Use these as the self-review checklist before closing Phase 4:

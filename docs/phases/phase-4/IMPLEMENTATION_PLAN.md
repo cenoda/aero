@@ -96,14 +96,17 @@ Reason:
 Adding `StreamJsonRpc` is a **new dependency**, but it is already pre-approved by
 `docs/LIBRARIES.md` for this phase, so no additional dependency decision is needed.
 
-### CliWrap Not Used in Phase 4
+### CliWrap Already Referenced, Not Used
 
-`docs/LIBRARIES.md` lists `CliWrap` alongside `StreamJsonRpc` for Phase 4 and notes it
-is usable "for LSP spawning too." Phase 4 will **not** use `CliWrap`: a language server is
-a long-lived, bidirectional stdio process, which is better served by a raw `Process` (full
-control over the persistent stdin/stdout streams and lifetime). `CliWrap` is oriented toward
-run-to-completion command execution and is deferred to Phase 5 (Output Panel / process runner).
-`docs/LIBRARIES.md` should be updated to reflect that `CliWrap` lands in Phase 5, not Phase 4.
+`CliWrap` is already present in `src/aero.csproj` (line 48) under Infrastructure, but Phase 4
+will **not** use it for LSP spawning. A language server is a long-lived, bidirectional stdio process,
+which is better served by a raw `Process` (full control over persistent stdin/stdout streams and
+lifetime). `CliWrap` is oriented toward run-to-completion command execution and remains available
+for Phase 5 (Output Panel / process runner).
+
+The same situation applies to other packages already in `aero.csproj` ahead of their documented
+phase: `Dock.Avalonia`, `Microsoft.Extensions.Configuration.Json`, `Microsoft.Extensions.Logging`.
+These are pre-positioned but not yet used — the docs reflect when they become active.
 
 ### Language Server Choice
 
@@ -342,15 +345,23 @@ Do **not** bypass the existing app messaging style with static state.
 ### Thread Safety
 
 `StreamJsonRpc` delivers `publishDiagnostics` on a background thread. All diagnostic updates that touch
-UI-bound collections or editor markers must marshal to the UI thread using `Dispatcher.UIThread`:
+UI-bound collections or editor markers must marshal to the UI thread. Use the test-safe pattern from `ShellViewModel.StatusMessage`:
 
 ```csharp
-Dispatcher.UIThread.Post(() => {
-    // update ObservableCollection, set editor markers
-});
+var dispatcher = GetUiDispatcher(); // returns Avalonia.Threading.Dispatcher.UIThread or null
+if (dispatcher != null && !dispatcher.CheckAccess())
+{
+    dispatcher.Post(() => {
+        // update ObservableCollection, set editor markers
+    });
+}
+else
+{
+    // already on UI thread or no dispatcher (headless test)
+}
 ```
 
-This matches the existing pattern in `ShellViewModel.StatusMessage`.
+This guarded pattern avoids throwing in headless unit tests.
 
 ---
 
@@ -463,6 +474,12 @@ Gate:
 existing DI disposal path in `App.OnDesktopExit`. Process kill must be bounded with a timeout
 to prevent hanging app exit.
 
+**Eager resolution required:** `ServiceProvider` only disposes singletons it actually constructed.
+If `LSPManager` self-subscribes to `FolderOpened` but nothing injects it, it's never instantiated —
+so neither its subscription nor its `Dispose()` ever runs. Resolve `LSPManager` eagerly in
+`OnFrameworkInitializationCompleted` (like `ShellViewModel`) to ensure it's constructed and
+subscribed before any folder is opened.
+
 ### Bottom Panel Reuse
 
 The bottom panel region should be implemented as a reusable container (not Problems-only) to avoid
@@ -547,6 +564,17 @@ Mitigation:
 
 - keep Phase 4 Problems panel read-only and minimal
 - do not build a generalized output/log docking system yet
+
+### Medium Risk — FolderOpened idempotency
+
+`FolderOpened` fires on re-open or manual refresh of the same path. LSP session (re)creation
+must be idempotent — don't spawn a second server for the same rootUri.
+
+Mitigation:
+
+- track active sessions by rootUri
+- reuse existing session if one already exists for the path
+- close and recreate only on explicit folder close or path change
 
 ---
 
