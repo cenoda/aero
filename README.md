@@ -91,7 +91,7 @@ The IDE is fully functional without agents. Agents are plugins.
 
 ## Development Status
 
-**Current phase: Phase 2 (File Explorer & Project System)**
+**Current phase: Phase 3 (Syntax Highlighting)**
 
 | Phase | Status |
 |-------|--------|

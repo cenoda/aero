@@ -20,12 +20,12 @@ Add a file explorer panel and project recognition so the IDE feels like a worksp
 
 ## Checklist
 
-- [ ] **FileExplorer panel** — tree view of a folder
-- [ ] **Open Folder** — File → Open Folder, populates the tree
-- [ ] **FileSystemWatcher** — auto-refresh on external changes
-- [ ] **ProjectLoader** — recognize .sln, .csproj, package.json
-- [ ] Context menu: New File, New Folder, Delete, Rename
-- [ ] Click file in tree → opens in editor
+- [x] **FileExplorer panel** — tree view of a folder
+- [x] **Open Folder** — File → Open Folder, populates the tree
+- [x] **FileSystemWatcher** — auto-refresh on external changes
+- [x] **ProjectLoader** — recognize .sln, .csproj, package.json
+- [x] Context menu: New File, New Folder, Delete, Rename
+- [x] Click file in tree → opens in editor
 
 ## Related Documents
 

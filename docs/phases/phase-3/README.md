@@ -25,6 +25,8 @@ Add syntax highlighting for common languages via TextMate grammars.
 - [ ] Auto-detect language from file extension
 - [ ] Status bar shows current language
 
+> **Status:** Active — Planning
+
 ## Related Documents
 
 - `docs/LIBRARIES.md` — AvaloniaEdit.TextMate, TextMateSharp.Grammars
