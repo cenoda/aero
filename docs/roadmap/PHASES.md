@@ -22,12 +22,46 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Status bar shows cursor position (Ln X, Col Y)
 
 ## Phase 2: File Explorer & Project System
-- [ ] **FileExplorer panel** — tree view of a folder
-- [ ] **Open Folder** — File → Open Folder, populates the tree
-- [ ] **FileSystemWatcher** — auto-refresh on external changes
-- [ ] **ProjectLoader** — recognize .sln, .csproj, package.json
-- [ ] Context menu: New File, New Folder, Delete, Rename
-- [ ] Click file in tree → opens in editor
+
+> Goal: Add a performant, project-aware **File Explorer** sidebar that is ready for syntax highlighting, LSP, and build integration.
+> Entry condition: Phase 1 is complete.
+> Implementation details: [`PHASE2_IMPLEMENTATION_PLAN.md`](PHASE2_IMPLEMENTATION_PLAN.md).
+
+### 2.1 Tree UI & File Operations
+- [ ] Add a virtualized `FileExplorerView` sidebar (`TreeView`)
+- [ ] `FileSystemNode` model: file vs directory, name, full path, children, expansion state
+- [ ] Lazy-load directory contents asynchronously when a node expands
+- [ ] `File → Open Folder` command; validate the folder exists
+- [ ] Click file in tree → open in editor (publish `OpenDocumentRequest`)
+- [ ] Context menu: **New File**, **New Folder**, **Delete**, **Rename** with input validation
+
+### 2.2 Filtering & Large-Directory Safety
+- [ ] Default ignore list: `node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`
+- [ ] `IgnoreList` service with unit-testable pattern matching
+- [ ] Hide ignored folders from tree enumeration and `FileSystemWatcher` notifications
+- [ ] Use async/lazy enumeration so the UI never blocks on large directories
+
+### 2.3 Live Sync
+- [ ] `FileSystemWatcherService` wrapper over `FileSystemWatcher`
+- [ ] Debounce/batch rapid events (e.g., 200–500 ms window)
+- [ ] Refresh only the affected subtree when possible
+- [ ] Graceful error handling: permission denied, deleted folder, locked file → status bar / log message
+
+### 2.4 Project Awareness
+- [ ] `ProjectLoader` service: parse `.sln`, `.csproj`, and `package.json` enough to **display project nodes** and **map files to projects**
+- [ ] `ProjectNode` model: name, type (Solution / C# Project / Node Package), file paths
+- [ ] Show project nodes in the tree alongside the raw folder structure
+- [ ] Keep the loader read-only; do not modify project files
+
+### 2.5 Workspace Persistence (stub)
+- [ ] Remember the last-opened folder across sessions
+- [ ] Persist expanded paths and selected path per workspace (Phase 8 settings can absorb this later)
+
+### 2.6 Tests
+- [ ] Unit tests for `ProjectLoader` parsing
+- [ ] Unit tests for `IgnoreList` matching logic
+- [ ] Unit tests for watcher event debouncing / batching
+
 
 ## Phase 3: Syntax Highlighting
 - [ ] **LanguageDefinition** registry (C#, JSON, XML, Markdown, etc.)
