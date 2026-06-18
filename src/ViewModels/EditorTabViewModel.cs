@@ -1,8 +1,6 @@
 using System;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
 using Aero.Models.Editor;
-using Aero.Core;
 using IMessageBus = Aero.Core.IMessageBus;
 using DocMsg = Aero.Core;
 
@@ -64,8 +62,8 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
     public TextDocument Document => _document;
 
     /// <summary>Display name for the tab (filename + dirty indicator).</summary>
-    public string Title => _document.IsDirty 
-        ? _document.DisplayName + " *" 
+    public string Title => _document.IsDirty
+        ? _document.DisplayName + " *"
         : _document.DisplayName;
 
     /// <summary>The file path (may be null for new documents).</summary>

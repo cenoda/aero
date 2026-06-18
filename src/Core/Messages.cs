@@ -16,10 +16,10 @@ public record DocumentClosed(string FilePath, Aero.Models.Editor.TextDocument Do
 public record ActiveDocumentChanged(Aero.Models.Editor.TextDocument? Document);
 
 /// <summary>A document was modified (has unsaved changes).</summary>
-public record DocumentModified(string FilePath, Aero.Models.Editor.TextDocument? Document);
+public record DocumentModified(string FilePath, Aero.Models.Editor.TextDocument Document);
 
 /// <summary>A document was saved.</summary>
-public record DocumentSaved(string FilePath, Aero.Models.Editor.TextDocument? Document);
+public record DocumentSaved(string FilePath, Aero.Models.Editor.TextDocument Document);
 
 /// <summary>A document is about to close (can be cancelled).</summary>
 public record DocumentClosing(string FilePath);
@@ -29,7 +29,7 @@ public record DocumentClosing(string FilePath);
 /// Response: "Save", "Don'tSave", or "Cancel".
 /// </summary>
 public record ConfirmDirtyClose(
-    string FileName, 
+    string FileName,
     Action<string> OnResponse);
 
 /// <summary>

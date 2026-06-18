@@ -13,11 +13,6 @@ public partial class App : Application
 {
     private IServiceProvider? _services;
 
-/// <summary>Global DI service provider — available after OnFrameworkInitializationCompleted.</summary>
-    internal static IServiceProvider Services =>
-        ((App)Current!)._services
-        ?? throw new InvalidOperationException("Services not yet initialized.");
-
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -34,9 +29,20 @@ public partial class App : Application
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
+
+            // Dispose the DI container on application exit so all IDisposable
+            // singletons (ShellViewModel, EditorViewModel, ...) get torn down and
+            // their MessageBus subscriptions released. Covers both exit paths:
+            // the Exit menu command and the window close ("X") button.
+            desktop.Exit += OnDesktopExit;
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        (_services as IDisposable)?.Dispose();
     }
 
     private static ServiceProvider BuildServices()

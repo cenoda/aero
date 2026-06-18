@@ -16,7 +16,6 @@ public class TextDocument
     private bool _isNew = true;
     private string _language = "Plain Text";
     private string _displayName = "Untitled";
-    private string _content = string.Empty;
 
     public TextDocument() : this(string.Empty)
     {
@@ -24,8 +23,7 @@ public class TextDocument
 
     public TextDocument(string content)
     {
-        _content = content ?? string.Empty;
-        _document = new AvaloniaEdit.Document.TextDocument(_content);
+        _document = new AvaloniaEdit.Document.TextDocument(content ?? string.Empty);
     }
 
     public TextDocument(string content, string filePath) : this(content)
@@ -78,27 +76,24 @@ public class TextDocument
     }
 
     /// <summary>
-    /// The text content. When accessed from a non-UI thread (e.g. unit tests
-    /// without an Avalonia dispatcher), falls back to a cached plain-text copy
-    /// to avoid AvaloniaEdit.TextDocument.VerifyAccess() failures.
+    /// The text content, backed directly by the underlying AvaloniaEdit document.
+    /// AvaloniaEdit's <c>TextDocument</c> is thread-affine: this must be accessed on
+    /// the thread that owns the document (the UI thread in the running app). Off-thread
+    /// access throws <see cref="InvalidOperationException"/> — that is intentional
+    /// fail-fast behaviour rather than returning a stale cached copy.
     /// </summary>
     public string Content
     {
-        get
-        {
-            try { return _document.Text; }
-            catch (InvalidOperationException) { return _content; }
-        }
-        set
-        {
-            _content = value ?? string.Empty;
-            try { _document.Text = _content; }
-            catch (InvalidOperationException) { /* non-UI thread — keep _content */ }
-        }
+        get => _document.Text;
+        set => _document.Text = value ?? string.Empty;
     }
 
     /// <summary>Current caret offset in the document (managed by TextEditor, updated externally).</summary>
     public int CaretOffset { get; set; }
+
+    // Selection and undo/redo surface below is not yet wired in Phase 1, but it is
+    // intentionally reserved for Phase 2+ (status-bar selection info, command enabling).
+    // Do not remove without confirming it is no longer planned.
 
     /// <summary>Starting offset of the selection (managed by TextEditor, updated externally).</summary>
     public int SelectionStart { get; set; }
@@ -110,8 +105,8 @@ public class TextDocument
     public bool HasSelection => SelectionLength > 0;
 
     /// <summary>Selected text (if any, from document).</summary>
-    public string SelectedText => HasSelection 
-        ? _document.GetText(SelectionStart, SelectionLength) 
+    public string SelectedText => HasSelection
+        ? _document.GetText(SelectionStart, SelectionLength)
         : string.Empty;
 
     /// <summary>Undo stack for this document.</summary>

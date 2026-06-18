@@ -81,17 +81,20 @@ public class DocumentManagerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task OpenDocumentAsync_ReadsFileContent()
+    public void OpenDocumentAsync_ReadsFileContent()
     {
-        var (dm, _) = Create();
-        var tmp = Path.GetTempFileName();
-        try
+        SingleThread.Run(async () =>
         {
-            await File.WriteAllTextAsync(tmp, "hello world");
-            var doc = await dm.OpenDocumentAsync(tmp);
-            Assert.Equal("hello world", doc.Content);
-        }
-        finally { File.Delete(tmp); }
+            var (dm, _) = Create();
+            var tmp = Path.GetTempFileName();
+            try
+            {
+                await File.WriteAllTextAsync(tmp, "hello world");
+                var doc = await dm.OpenDocumentAsync(tmp);
+                Assert.Equal("hello world", doc.Content);
+            }
+            finally { File.Delete(tmp); }
+        });
     }
 
     [Fact]
@@ -282,50 +285,59 @@ public class DocumentManagerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task SaveDocumentAsync_WritesContentToFile()
+    public void SaveDocumentAsync_WritesContentToFile()
     {
-        var (dm, _) = Create();
-        var tmp = Path.GetTempFileName();
-        try
+        SingleThread.Run(async () =>
         {
-            var doc = await dm.OpenDocumentAsync(tmp);
-            doc.Content = "saved content";
-            dm.MarkDirty(doc);
+            var (dm, _) = Create();
+            var tmp = Path.GetTempFileName();
+            try
+            {
+                var doc = await dm.OpenDocumentAsync(tmp);
+                doc.Content = "saved content";
+                dm.MarkDirty(doc);
 
-            await dm.SaveDocumentAsync(doc);
+                await dm.SaveDocumentAsync(doc);
 
-            Assert.Equal("saved content", await File.ReadAllTextAsync(tmp));
-        }
-        finally { File.Delete(tmp); }
+                Assert.Equal("saved content", await File.ReadAllTextAsync(tmp));
+            }
+            finally { File.Delete(tmp); }
+        });
     }
 
     [Fact]
-    public async Task SaveDocumentAsync_ClearsDirtyFlag()
+    public void SaveDocumentAsync_ClearsDirtyFlag()
     {
-        var (dm, _) = Create();
-        var tmp = Path.GetTempFileName();
-        try
+        SingleThread.Run(async () =>
         {
-            var doc = await dm.OpenDocumentAsync(tmp);
-            dm.MarkDirty(doc);
-            await dm.SaveDocumentAsync(doc);
-            Assert.False(doc.IsDirty);
-        }
-        finally { File.Delete(tmp); }
+            var (dm, _) = Create();
+            var tmp = Path.GetTempFileName();
+            try
+            {
+                var doc = await dm.OpenDocumentAsync(tmp);
+                dm.MarkDirty(doc);
+                await dm.SaveDocumentAsync(doc);
+                Assert.False(doc.IsDirty);
+            }
+            finally { File.Delete(tmp); }
+        });
     }
 
     [Fact]
-    public async Task SaveDocumentAsync_PublishesDocumentSaved()
+    public void SaveDocumentAsync_PublishesDocumentSaved()
     {
-        var (dm, bus) = Create();
-        var tmp = Path.GetTempFileName();
-        try
+        SingleThread.Run(async () =>
         {
-            var doc = await dm.OpenDocumentAsync(tmp);
-            await dm.SaveDocumentAsync(doc);
-            Assert.Single(bus.MessagesOf<DocumentSaved>());
-        }
-        finally { File.Delete(tmp); }
+            var (dm, bus) = Create();
+            var tmp = Path.GetTempFileName();
+            try
+            {
+                var doc = await dm.OpenDocumentAsync(tmp);
+                await dm.SaveDocumentAsync(doc);
+                Assert.Single(bus.MessagesOf<DocumentSaved>());
+            }
+            finally { File.Delete(tmp); }
+        });
     }
 
     [Fact]

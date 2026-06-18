@@ -29,6 +29,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private Action<FolderOpened>? _folderOpenedHandler;
     private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocumentSaved>? _documentSavedHandler;
+    private bool _disposed;
 
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
@@ -256,7 +257,10 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
             _bus.Publish(new ConfirmDirtyClose(doc.DisplayName, response => tcs.TrySetResult(response)));
 
-            var response = await tcs.Task;
+            // Guard against an unhandled confirmation message (no subscriber). Default to
+            // Cancel so we do not discard unsaved work if the dialog infrastructure is missing.
+            var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+            var response = completedTask == tcs.Task ? await tcs.Task : DirtyCloseResponse.Cancel;
 
             if (response == DirtyCloseResponse.Save)
             {
@@ -380,7 +384,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private void OnDocumentSaved(DocumentSaved msg)
     {
         var doc = msg.Document;
-        if (doc == null || doc != EditorViewModel.ActiveTab?.Document)
+        if (doc != EditorViewModel.ActiveTab?.Document)
             return;
 
         WindowTitle = $"Aero - {doc.DisplayName}";
@@ -390,6 +394,10 @@ public class ShellViewModel : ReactiveObject, IDisposable
     /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+        _disposed = true;
+
         if (_folderOpenedHandler != null)
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
         if (_activeDocumentChangedHandler != null)

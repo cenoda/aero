@@ -42,6 +42,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.DocumentOpened>? _documentOpenedHandler;
     private Action<DocMsg.DocumentClosed>? _documentClosedHandler;
     private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
+    private bool _disposed;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
     [Reactive] public string CursorPosition { get; set; } = "Ln 1, Col 1";
@@ -378,6 +379,10 @@ public class EditorViewModel : ReactiveObject, IDisposable
     /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+        _disposed = true;
+
         if (_documentOpenedHandler != null)
             _bus.Unsubscribe<DocMsg.DocumentOpened>(_documentOpenedHandler);
         if (_documentClosedHandler != null)
