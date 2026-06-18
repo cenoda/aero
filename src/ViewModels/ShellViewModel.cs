@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -44,6 +45,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     // Commands
     public ReactiveCommand<Unit, Unit> NewFileCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenFileCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenFolderCommand { get; }
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<Unit, Unit> SaveAsCommand { get; }
     public ReactiveCommand<Unit, Unit> CloseFileCommand { get; }
@@ -72,6 +74,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
         OpenFileCommand = ReactiveCommand.CreateFromTask(OpenFileAsync);
+        OpenFolderCommand = ReactiveCommand.CreateFromTask(OpenFolderAsync);
         SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         SaveAsCommand = ReactiveCommand.CreateFromTask(SaveAsAsync);
         CloseFileCommand = ReactiveCommand.Create(CloseFile);
@@ -98,6 +101,37 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private void NewFile()
     {
         _editorViewModel.NewFile();
+    }
+
+    private async Task OpenFolderAsync()
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        var window = desktop.MainWindow;
+        if (window == null)
+            return;
+
+        var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open Folder",
+            AllowMultiple = false
+        });
+
+        if (folders.Count > 0)
+        {
+            var path = folders[0].Path.LocalPath;
+            try
+            {
+                var normalizedPath = Path.GetFullPath(path);
+                _bus.Publish(new FolderOpened(normalizedPath));
+                StatusText = $"Opened folder: {normalizedPath}";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Open folder failed: {ex.Message}";
+            }
+        }
     }
 
     private async Task OpenFileAsync()

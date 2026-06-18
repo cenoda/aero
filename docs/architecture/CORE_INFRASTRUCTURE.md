@@ -44,7 +44,7 @@ var services = new ServiceCollection();
 services.AddSingleton<IMessageBus, MessageBus>();
 services.AddSingleton<DocumentManager>();
 services.AddSingleton<SettingsService>();
-services.AddTransient<FileExplorerViewModel>();
+services.AddSingleton<FileExplorerViewModel>();
 
 var provider = services.BuildServiceProvider();
 ```
@@ -79,6 +79,10 @@ public record BuildFinished(int ExitCode, string Output);
 public record ThemeChanged(string ThemeName);
 public record FolderOpened(string Path);
 ```
+
+`FolderOpened` is published by `ShellViewModel.OpenFolderCommand` (File → Open Folder / Ctrl+Shift+O)
+and by an optional CLI startup-folder argument in `App.axaml.cs`. `FileExplorerViewModel` subscribes
+and loads the workspace tree.
 
 ## Startup Sequence
 

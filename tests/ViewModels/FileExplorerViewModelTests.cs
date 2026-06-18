@@ -21,13 +21,15 @@ public class FileExplorerViewModelTests : IDisposable
     private readonly StubMessageBus _bus = new();
     private readonly MockFileSystemService _fs;
     private readonly StubProjectLoader _projects;
+    private readonly DocumentManager _documentManager;
     private readonly FileExplorerViewModel _vm;
 
     public FileExplorerViewModelTests()
     {
         _fs = new MockFileSystemService(new IgnoreList(new string[0]));
         _projects = new StubProjectLoader();
-        _vm = new FileExplorerViewModel(_fs, _projects, _bus);
+        _documentManager = new DocumentManager(_bus);
+        _vm = new FileExplorerViewModel(_fs, _projects, _documentManager, _bus);
     }
 
     public void Dispose() => _vm.Dispose();
@@ -106,6 +108,17 @@ public class FileExplorerViewModelTests : IDisposable
         // Directories before files (per service contract).
         Assert.True(_vm.RootNodes[0].IsDirectory);
         Assert.Equal("src", _vm.RootNodes[0].Name);
+    }
+
+    [Fact]
+    public async Task LoadFolderAsync_SetsHasRootPath()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+
+        await _vm.LoadFolderAsync(root);
+
+        Assert.True(_vm.HasRootPath);
     }
 
     [Fact]
@@ -292,7 +305,7 @@ public class FileExplorerViewModelTests : IDisposable
         // wanted and unwanted paths; verify only wanted reach the VM.
         var root = TempPath();
         var mock = new MockFileSystemService(new IgnoreList(new[] { "bin", "node_modules" }));
-        var vmWithIgnore = new FileExplorerViewModel(mock, _projects, _bus);
+        var vmWithIgnore = new FileExplorerViewModel(mock, _projects, _documentManager, _bus);
         try
         {
             mock.AddDirectory(Path.Combine(root, "src"));
@@ -487,6 +500,7 @@ public class FileExplorerViewModelTests : IDisposable
 
         Assert.NotNull(_vm.ErrorMessage);
         Assert.Null(_vm.RootPath);
+        Assert.False(_vm.HasRootPath);
         Assert.Empty(_vm.RootNodes);
     }
 
@@ -544,6 +558,61 @@ public class FileExplorerViewModelTests : IDisposable
         // importantly, no exception should escape and RootPath stays null.
         _bus.Publish(new FolderOpened(root));
         Assert.Null(_vm.RootPath);
+    }
+
+    // --- file activation ---------------------------------------------
+
+    [Fact]
+    public async Task OpenSelectedFileAsync_NormalizesDotDotPath()
+    {
+        // R1.5: FileExplorerViewModel must normalize paths before handing them
+        // to DocumentManager so the same file opened via different relative
+        // forms does not create duplicate tabs.
+        var root = TempPath();
+        Directory.CreateDirectory(root);
+        var realFile = Path.Combine(root, "a.txt");
+        await File.WriteAllTextAsync(realFile, "hello");
+
+        var nonNormalized = Path.Combine(root, "..", Path.GetFileName(root), "a.txt");
+
+        _vm.SelectedNode = new FileExplorerNodeViewModel("a.txt", nonNormalized, false, "FileDocument");
+        await _vm.OpenSelectedFileAsync();
+
+        var doc = Assert.Single(_documentManager.Documents);
+        Assert.Equal(Path.GetFullPath(realFile), doc.FilePath);
+    }
+
+    [Fact]
+    public async Task OpenSelectedFileAsync_Directory_DoesNothing()
+    {
+        _vm.SelectedNode = new FileExplorerNodeViewModel("src", "/tmp/src", true, "Folder");
+        await _vm.OpenSelectedFileAsync();
+        Assert.Empty(_documentManager.Documents);
+    }
+
+    [Fact]
+    public async Task OpenSelectedFileAsync_NullSelectedNode_DoesNothing()
+    {
+        _vm.SelectedNode = null;
+        await _vm.OpenSelectedFileAsync();
+        Assert.Empty(_documentManager.Documents);
+    }
+
+    [Fact]
+    public async Task OpenFileAsync_NormalizesBeforeOpening()
+    {
+        var root = TempPath();
+        Directory.CreateDirectory(root);
+        var realFile = Path.Combine(root, "a.txt");
+        await File.WriteAllTextAsync(realFile, "hello");
+
+        var nonNormalized = Path.Combine(root, "..", Path.GetFileName(root), "a.txt");
+        var node = new FileExplorerNodeViewModel("a.txt", nonNormalized, false, "FileDocument");
+
+        await _vm.OpenFileAsync(node);
+
+        var doc = Assert.Single(_documentManager.Documents);
+        Assert.Equal(Path.GetFullPath(realFile), doc.FilePath);
     }
 
     // --- small async helper ------------------------------------------

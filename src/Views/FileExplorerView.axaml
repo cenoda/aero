@@ -48,7 +48,7 @@
 
             <!-- Empty-state hint -->
             <TextBlock Text="No folder open. Use File → Open Folder (Ctrl+Shift+O)."
-                       IsVisible="{Binding !RootPath}"
+                       IsVisible="{Binding !HasRootPath}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        TextWrapping="Wrap"

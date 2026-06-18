@@ -29,8 +29,8 @@ If a file is open in an editor tab and the user renames or deletes it via the tr
 
 ### R1.5 Path normalization for duplicate detection *(priority: low, target: M3)*
 `DocumentManager.OpenDocumentAsync` dedupes by exact `FilePath` string equality. Paths from the tree (different casing on case-insensitive FS, trailing separators, symlink targets) may not match paths from the file picker, causing duplicate tabs. The fix should NOT touch `DocumentManager` (Phase 1 freeze). Instead, normalize with `Path.GetFullPath()` at the `FileExplorerViewModel` call site before calling `OpenDocumentAsync`.
-**Fix:** Add `Path.GetFullPath()` normalization in `FileExplorerViewModel` when opening files. Add a test with a path containing `..` or trailing separator.
-**Status:** 📋 TODO — implement in M3
+**Fix:** Added `Path.GetFullPath()` normalization in `FileExplorerViewModel.OpenFileAsync()` (called by `OpenSelectedFileAsync()`). Added tests with `..` relative paths: `OpenSelectedFileAsync_NormalizesDotDotPath`, `OpenFileAsync_NormalizesBeforeOpening`.
+**Status:** ✅ RESOLVED (2026-06-18)
 
 ### R1.6 PHASES.md not reconciled with PROJECT_PLAN scope *(priority: critical)*
 `PHASES.md` §2 still described lazy loading, `OpenDocumentRequest` message, full project parsing, and workspace persistence — none of which PROJECT_PLAN ships.
@@ -235,6 +235,46 @@ unused by the view (the view bound to `Name` directly anyway).
 node VM and switched the view's `TextBlock` binding from
 `{Binding DisplayName}` to `{Binding Name}`.
 **Status:** ✅ RESOLVED (folded into M2.5)
+
+---
+
+## Round 5 — M3 Review (2026-06-18)
+
+Findings from implementing M3 (Open Folder & File Activation). All items
+resolved; no open blockers.
+
+### R5.1 `File → Open Folder` picker and `FolderOpened` message flow *(priority: critical)*
+Added `OpenFolderCommand` to `ShellViewModel` using Avalonia's
+`IStorageProvider.OpenFolderPickerAsync`. On selection it publishes the
+existing `FolderOpened(Path)` message; `FileExplorerViewModel` subscribes
+and loads the tree. Verified end-to-end via the new
+`manual_test_phase2_m3.sh` smoke test (tree loads, directory expands,
+file opens in a tab).
+
+Also added an optional CLI startup folder: passing a directory path as the
+first argument opens that folder immediately. This is additive and made
+headless verification of the load/expand/activate path reliable under
+Xvfb.
+**Status:** ✅ RESOLVED
+
+### R5.2 `{Binding !RootPath}` did not update the empty-state hint *(priority: medium)*
+After loading a folder, `FileExplorerViewModel.StatusText` updated to
+"N entries" but the "No folder open" hint remained visible and the
+`TreeView` rendered the loaded items. The `IsVisible` binding
+`{Binding !RootPath}` on the hint did not react to the `string? RootPath`
+property change even though `[Reactive]` was weaving notifications.
+Switching to a dedicated boolean `HasRootPath` property (set in lockstep
+with `RootPath`) and binding `{Binding !HasRootPath}` resolved it,
+matching the existing `EditorViewModel.HasDocument` pattern.
+**Status:** ✅ RESOLVED (2026-06-18)
+
+### R5.3 Per-container double-click wiring missed lazy-loaded child items *(priority: medium)*
+Initial M3 attached `DoubleTapped` inside `ContainerPrepared`. Root items
+received the handler, but child `TreeViewItem`s created during lazy
+expansion did not reliably open on double-click. Moved the handler to the
+`TreeView` itself and walked the visual tree from `e.Source` to the
+containing `TreeViewItem`. This covers root and nested items uniformly.
+**Status:** ✅ RESOLVED (2026-06-18)
 
 ---
 

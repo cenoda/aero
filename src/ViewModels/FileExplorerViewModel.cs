@@ -26,6 +26,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 {
     private readonly IFileSystemService _fileSystem;
     private readonly IProjectLoader _projectLoader;
+    private readonly DocumentManager _documentManager;
     private readonly IMessageBus _bus;
 
     // Stored handlers for unsubscribe in Dispose()
@@ -46,6 +47,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     private bool _disposed;
 
     [Reactive] public string? RootPath { get; set; }
+    [Reactive] public bool HasRootPath { get; set; }
     [Reactive] public bool IsLoading { get; set; }
     [Reactive] public string? ErrorMessage { get; set; }
     [Reactive] public FileExplorerNodeViewModel? SelectedNode { get; set; }
@@ -55,17 +57,21 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     public ObservableCollection<FileExplorerNodeViewModel> RootNodes { get; } = new();
 
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenSelectedFileCommand { get; }
 
     public FileExplorerViewModel(
         IFileSystemService fileSystem,
         IProjectLoader projectLoader,
+        DocumentManager documentManager,
         IMessageBus bus)
     {
         _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         _projectLoader = projectLoader ?? throw new ArgumentNullException(nameof(projectLoader));
+        _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
 
         RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync);
+        OpenSelectedFileCommand = ReactiveCommand.CreateFromTask(OpenSelectedFileAsync);
 
         // Subscribe to folder-opened messages from the shell (File → Open Folder).
         _folderOpenedHandler = msg => _ = LoadFolderAsync(msg.Path);
@@ -122,6 +128,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
             // Normalize the root path (R1.5: future path deduplication).
             RootPath = Path.GetFullPath(path);
+            HasRootPath = true;
             StatusText = $"{nodes.Count} entries";
         }
         catch (OperationCanceledException)
@@ -137,6 +144,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             RootNodes.Clear();
             _rootProjects = Array.Empty<ProjectInfo>();
             RootPath = null;
+            HasRootPath = false;
         }
         finally
         {
@@ -218,6 +226,26 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
                 cts.Dispose();
             }
         }
+    }
+
+    /// <summary>Open the currently selected file node in the editor.</summary>
+    public async Task OpenSelectedFileAsync()
+    {
+        var selected = SelectedNode;
+        if (selected == null || selected.IsDirectory)
+            return;
+
+        await OpenFileAsync(selected);
+    }
+
+    /// <summary>Open a single file node, normalizing the path first (R1.5).</summary>
+    public async Task OpenFileAsync(FileExplorerNodeViewModel node)
+    {
+        if (node == null) throw new ArgumentNullException(nameof(node));
+        if (node.IsDirectory) return;
+
+        var normalizedPath = Path.GetFullPath(node.FullPath);
+        await _documentManager.OpenDocumentAsync(normalizedPath);
     }
 
     /// <summary>Manually re-enumerate the current root folder.</summary>

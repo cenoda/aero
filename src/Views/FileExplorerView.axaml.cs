@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Aero.ViewModels;
 
@@ -28,6 +29,8 @@ public partial class FileExplorerView : UserControl
         if (this.FindControl<TreeView>("ExplorerTree") is { } tree)
         {
             tree.ContainerPrepared += OnTreeContainerPrepared;
+            tree.KeyDown += OnTreeKeyDown;
+            tree.DoubleTapped += OnTreeDoubleTapped;
         }
     }
 
@@ -38,6 +41,56 @@ public partial class FileExplorerView : UserControl
             item.Expanded -= OnItemExpanded;
             item.Expanded += OnItemExpanded;
         }
+    }
+
+    private async void OnTreeDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        // async void allowed here: this is an Avalonia event handler.
+        if (DataContext is not FileExplorerViewModel vm) return;
+
+        // Walk up the visual tree from the source element to find the
+        // TreeViewItem that was double-clicked. This works for both root
+        // items and lazily-loaded child items without per-container hooks.
+        var source = e.Source as Avalonia.Visual;
+        while (source != null && source is not TreeViewItem)
+        {
+            source = Avalonia.VisualTree.VisualExtensions.GetVisualParent(source);
+        }
+
+        if (source is not TreeViewItem item) return;
+        if (item.DataContext is not FileExplorerNodeViewModel node) return;
+
+        // Directories expand/collapse via the TreeView's default behavior.
+        // Only file nodes trigger editor activation.
+        if (!node.IsDirectory)
+        {
+            e.Handled = true;
+            await vm.OpenFileAsync(node);
+        }
+    }
+
+    private async void OnTreeKeyDown(object? sender, KeyEventArgs e)
+    {
+        // async void allowed here: this is an Avalonia event handler.
+        if (e.Key != Key.Enter)
+            return;
+
+        if (DataContext is not FileExplorerViewModel vm) return;
+        var selected = vm.SelectedNode;
+        if (selected == null)
+            return;
+
+        if (selected.IsDirectory)
+        {
+            // Enter on a directory toggles expansion, just like double-click.
+            selected.IsExpanded = !selected.IsExpanded;
+        }
+        else
+        {
+            await vm.OpenSelectedFileAsync();
+        }
+
+        e.Handled = true;
     }
 
     private async void OnItemExpanded(object? sender, RoutedEventArgs e)

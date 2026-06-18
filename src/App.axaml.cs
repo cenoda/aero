@@ -30,6 +30,14 @@ public partial class App : Application
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
 
+            // Optional startup folder: `aero /path/to/folder` opens that folder
+            // immediately (useful for manual/automated smoke tests). This is
+            // additive to the File → Open Folder picker flow implemented in M3.
+            if (desktop.Args is { Length: > 0 } args && System.IO.Directory.Exists(args[0]))
+            {
+                bus.Publish(new FolderOpened(System.IO.Path.GetFullPath(args[0])));
+            }
+
             // Dispose the DI container on application exit so all IDisposable
             // singletons (ShellViewModel, EditorViewModel, ...) get torn down and
             // their MessageBus subscriptions released. Covers both exit paths:
@@ -55,7 +63,7 @@ public partial class App : Application
         // Services
         services.AddSingleton<DocumentManager>();
 
-        // Phase 2 — File Explorer & Project System (M1: services only)
+        // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
         services.AddSingleton<IIgnoreList, IgnoreList>();
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddSingleton<IProjectLoader, ProjectLoader>();
