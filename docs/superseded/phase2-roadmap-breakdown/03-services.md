@@ -1,8 +1,10 @@
-# 3. Services
+# ⛔ SUPERSEDED — 3. Services
 
-> **Parent:** [Phase 2 README](./README.md)
->
-> **New files in:** `src/Services/`
+> See [`../../../phases/phase-2/PROJECT_PLAN.md`](../../../phases/phase-2/PROJECT_PLAN.md) for the authoritative service contracts.
+> Superseded: `IIgnoreList`, `IFileSystemService.EnumerateDirectoryAsync`, `IFileSystemWatcherService` with ignore list, `IProjectLoader.LoadProjectsAsync`, `IWorkspaceService`.
+> PROJECT_PLAN uses: `IFileSystemService.GetDirectoryEntriesAsync`, `IFileSystemWatcherService` without ignore list, `IProjectLoader.DetectProjectKind()` + `DetectProjects()`.
+
+---
 
 ---
 
@@ -18,12 +20,14 @@
 public interface IIgnoreList
 {
     bool IsIgnored(string path, bool isDirectory);
+    void AddPattern(string pattern); // for user-defined patterns (settings in Phase 8)
 }
 ```
 
 ### Behavior
 - Default patterns: `node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`, `*.tmp`.
-- Case-insensitive on Windows, case-sensitive elsewhere.
+- `AddPattern` appends user-defined patterns. Patterns added later are evaluated after defaults.
+- Case-insensitive on Windows (`OperatingSystem.IsWindows()`), case-sensitive elsewhere. Detect at construction time.
 - Treat directory patterns as matching both the folder itself and anything inside it.
 - Keep the implementation simple (name matching + limited glob) so it is unit-testable without a real disk.
 
@@ -60,6 +64,7 @@ public interface IFileSystemService
 ### Behavior
 - `EnumerateDirectoryAsync` returns items as they are read (streaming).
 - All methods catch `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException` and return empty/false or throw a domain exception such as `FileSystemException` with a friendly message.
+- Symlinks/junctions: do NOT follow directory symlinks to avoid infinite loops. Treat symlinked directories as leaf nodes with a special icon hint (`FileSystemNodeKind.Symlink` or a `bool IsSymlink` flag in `FileSystemNode`).
 
 ### Acceptance
 - Enumeration skips ignored entries.

@@ -28,6 +28,7 @@ Do not write Phase 2 code until all of these are true:
 - Left sidebar file explorer panel with a `TreeView`.
 - `File → Open Folder` using Avalonia's folder picker.
 - Tree nodes: directories and files, with Material icons.
+- Pattern-based ignore list (`node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`) — eager loading means large ignore targets freeze the UI without this. Custom code, not a NuGet dependency (satisfies ADR-7).
 - Lightweight project recognition for `.sln`, `.csproj`, `package.json`.
 - Double-click a file → open in editor (reuse `DocumentManager`).
 - Context menu: **New File**, **New Folder**, **Rename**, **Delete**.
@@ -63,6 +64,8 @@ Services (new)              ViewModels (new)           Views (new)
 IFileSystemService          FileExplorerViewModel      FileExplorerView
 IFileSystemWatcherService   FileExplorerNodeViewModel  TextInputDialog
 IProjectLoader                                         ConfirmDialog
+IIgnoreList
+IgnoreList
 
 MessageBus (add to src/Core/Messages.cs)
 ─────────────────────────────────────────────────────────────────────
@@ -116,6 +119,29 @@ public record ProjectInfo(
 
 ### 5.2 Services
 
+#### `IIgnoreList` / `IgnoreList`
+
+```csharp
+// src/Services/IIgnoreList.cs
+public interface IIgnoreList
+{
+    bool IsIgnored(string path, bool isDirectory);
+    void AddPattern(string pattern);
+}
+```
+
+```csharp
+// src/Services/IgnoreList.cs
+// Default patterns: "node_modules", "bin", "obj", ".git", ".vs", "packages", "*.tmp".
+// Case-insensitive on Windows (OperatingSystem.IsWindows()), case-sensitive elsewhere.
+// Directory patterns match both the folder AND anything inside it.
+// Simple name/prefix matching; no full glob. Unit-testable without real disk.
+```
+
+**Why it's here despite ADR-7:** Eager loading + large ignored directories = UI freeze. This is custom code (~60 lines), no NuGet package, so ADR-7 is satisfied. `FileSystemService` filters `GetDirectoryEntriesAsync` through `IIgnoreList` before returning entries. The watcher also skips ignored paths.
+
+#### `IFileSystemService` / `FileSystemService`
+
 ```csharp
 // src/Services/IFileSystemService.cs
 public interface IFileSystemService
@@ -146,6 +172,7 @@ public interface IFileSystemWatcherService : IDisposable
 - Debounces events: after the last event, wait **300 ms**, then publish `FolderChanged(path)`.
 - Handles the `Error` event by stopping the watcher, logging, and surfacing a status warning. Manual refresh remains available.
 - `Watch(path)` stops any previous watcher first; there is only one active workspace folder at a time.
+- Filters out events whose paths match `IIgnoreList.IsIgnored()`.
 
 ```csharp
 // src/Services/IProjectLoader.cs
@@ -207,10 +234,10 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
 ### 5.4 Views
 
-- **`FileExplorerView.axaml`** — `TreeView` with a `TreeDataTemplate` binding `Children`, `ContextMenu` bound to VM commands, `MaterialIcon` for icons.
+- **`FileExplorerView.axaml`** — `TreeView` with a `TreeDataTemplate` binding `Children`, `ContextMenu` bound to VM commands, `MaterialIcon` for icons. Keyboard accessibility: Arrow keys navigate, Enter opens file, Delete triggers delete, F2 triggers rename.
 - **`TextInputDialog.axaml`** — reusable text prompt (OK/Cancel), used for New and Rename.
 - **`ConfirmDialog.axaml`** — reusable yes/no confirmation, used for Delete.
-- **`MainWindow.axaml`** — restructure the content area into a 3-column `Grid`: sidebar (250 px), `GridSplitter`, editor. Keep the existing menu and status bar untouched.
+- **`MainWindow.axaml`** — restructure the content area into a 3-column `Grid`: sidebar (250 px), `GridSplitter`, editor. Keep the existing menu and status bar untouched. NOTE: This fixed Grid layout is temporary scaffolding; Phase 8 replaces it with `Dock.Avalonia`.
 
 ### 5.5 Messages
 
@@ -247,6 +274,8 @@ public record ConfirmDelete(
 | `src/Services/FileSystemService.cs` | new | File I/O implementation |
 | `src/Services/IFileSystemWatcherService.cs` | new | Watcher abstraction |
 | `src/Services/FileSystemWatcherService.cs` | new | Debounced watcher implementation |
+| `src/Services/IIgnoreList.cs` | new | Ignore list interface |
+| `src/Services/IgnoreList.cs` | new | Ignore list implementation |
 | `src/Services/IProjectLoader.cs` | new | Project recognition abstraction |
 | `src/Services/ProjectLoader.cs` | new | Project recognition implementation |
 | `src/ViewModels/FileExplorerViewModel.cs` | new | Explorer panel VM |
@@ -265,6 +294,7 @@ public record ConfirmDelete(
 | `tests/Stubs/MockFileSystemService.cs` | new | In-memory file system for VM tests |
 | `tests/Stubs/MockFileSystemWatcherService.cs` | new | Testable watcher stub |
 | `tests/Services/FileSystemServiceTests.cs` | new | Real temp-dir tests |
+| `tests/Services/IgnoreListTests.cs` | new | Pattern matching tests |
 | `tests/Services/ProjectLoaderTests.cs` | new | Recognition tests |
 | `tests/Services/FileSystemWatcherServiceTests.cs` | new | Debounce/integration tests |
 | `tests/ViewModels/FileExplorerViewModelTests.cs` | new | VM behavior tests |
@@ -284,9 +314,9 @@ Each milestone ends with **`dotnet build src` + `dotnet test tests` + a 30-secon
 - Create empty new files/folders so the project compiles at each step.
 
 ### M1 — File System Abstraction & Project Recognition
-- Implement `IFileSystemService`, `FileSystemService`, `IProjectLoader`, `ProjectLoader`, and models.
+- Implement `IIgnoreList`, `IgnoreList`, `IFileSystemService`, `FileSystemService`, `IProjectLoader`, `ProjectLoader`, and models.
 - Add unit tests using temp directories.
-- **Gate:** `FileSystemServiceTests` and `ProjectLoaderTests` pass.
+- **Gate:** `IgnoreListTests`, `FileSystemServiceTests`, and `ProjectLoaderTests` pass.
 
 ### M2 — Tree ViewModel & Panel UI
 - Implement `FileExplorerNodeViewModel` and `FileExplorerViewModel`.

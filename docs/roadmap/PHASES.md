@@ -25,42 +25,42 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 
 > Goal: Add a performant, project-aware **File Explorer** sidebar that is ready for syntax highlighting, LSP, and build integration.
 > Entry condition: Phase 1 is complete.
-> Implementation details: [`PHASE2_IMPLEMENTATION_PLAN.md`](PHASE2_IMPLEMENTATION_PLAN.md).
+> Implementation details: [`docs/phases/phase-2/PROJECT_PLAN.md`](../phases/phase-2/PROJECT_PLAN.md).
 
 ### 2.1 Tree UI & File Operations
-- [ ] Add a virtualized `FileExplorerView` sidebar (`TreeView`)
-- [ ] `FileSystemNode` model: file vs directory, name, full path, children, expansion state
-- [ ] Lazy-load directory contents asynchronously when a node expands
-- [ ] `File → Open Folder` command; validate the folder exists
-- [ ] Click file in tree → open in editor (publish `OpenDocumentRequest`)
-- [ ] Context menu: **New File**, **New Folder**, **Delete**, **Rename** with input validation
+- [ ] `FileExplorerView` sidebar with `TreeView`, keyboard navigation, and Material icons
+- [ ] `FileSystemEntry` model: file vs directory, name, full path
+- [ ] Eager tree load (full enumeration off UI thread). Lazy load on expand is deferred — `IIgnoreList` prevents `node_modules`/`bin`/`obj` freezes in the common case; large-monorepo optimization is a follow-up.
+- [ ] `File → Open Folder` command via Avalonia folder picker (`Ctrl+Shift+O`)
+- [ ] Click file in tree → open in editor via `DocumentManager.OpenDocumentAsync`
+- [ ] Context menu: **New File**, **New Folder**, **Delete**, **Rename** with name validation
 
 ### 2.2 Filtering & Large-Directory Safety
 - [ ] Default ignore list: `node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`
-- [ ] `IgnoreList` service with unit-testable pattern matching
+- [ ] `IIgnoreList` / `IgnoreList` service with unit-testable pattern matching (custom code, no new NuGet)
 - [ ] Hide ignored folders from tree enumeration and `FileSystemWatcher` notifications
-- [ ] Use async/lazy enumeration so the UI never blocks on large directories
+- [ ] Async enumeration with `CancellationToken` so the UI never blocks
 
 ### 2.3 Live Sync
-- [ ] `FileSystemWatcherService` wrapper over `FileSystemWatcher`
-- [ ] Debounce/batch rapid events (e.g., 200–500 ms window)
-- [ ] Refresh only the affected subtree when possible
-- [ ] Graceful error handling: permission denied, deleted folder, locked file → status bar / log message
+- [ ] `IFileSystemWatcherService` wrapper over `FileSystemWatcher`
+- [ ] Debounce/batch rapid events (300 ms default window)
+- [ ] Publish `FolderChanged` for full subtree refresh; per-node refresh is deferred (reloading the root is fast enough for Phase 2)
+- [ ] Graceful error handling: permission denied, deleted folder, inotify limits → status bar / log message; manual refresh still works
 
 ### 2.4 Project Awareness
-- [ ] `ProjectLoader` service: parse `.sln`, `.csproj`, and `package.json` enough to **display project nodes** and **map files to projects**
-- [ ] `ProjectNode` model: name, type (Solution / C# Project / Node Package), file paths
-- [ ] Show project nodes in the tree alongside the raw folder structure
+- [ ] `IProjectLoader` service: extension-based recognition of `.sln`, `.csproj`, `package.json`. Full MSBuild/SLN parsing is deferred to Phase 6.
+- [ ] `ProjectInfo` model: name, type (Solution / C# Project / Node Package), path
+- [ ] Highlight solution/project roots in the tree with project-specific icons. Full project-node sub-trees (listing project children inline) is deferred.
 - [ ] Keep the loader read-only; do not modify project files
 
 ### 2.5 Workspace Persistence (stub)
-- [ ] Remember the last-opened folder across sessions
-- [ ] Persist expanded paths and selected path per workspace (Phase 8 settings can absorb this later)
+- [ ] Deferred to Phase 8 (Settings). Phase 2 does not persist the last-opened folder or tree expansion across sessions. The Phase 8 settings system will absorb this naturally.
 
 ### 2.6 Tests
-- [ ] Unit tests for `ProjectLoader` parsing
-- [ ] Unit tests for `IgnoreList` matching logic
-- [ ] Unit tests for watcher event debouncing / batching
+- [ ] Unit tests for `IIgnoreList` pattern matching
+- [ ] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
+- [ ] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition), `FileSystemWatcherService` (debounce)
+- [ ] Phase 1 regression: all 89 existing tests continue to pass
 
 
 ## Phase 3: Syntax Highlighting

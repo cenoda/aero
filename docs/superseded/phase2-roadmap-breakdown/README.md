@@ -1,12 +1,9 @@
-# Phase 2 — File Explorer & Project System
+# ⛔ SUPERSEDED — Phase 2 Breakdown (roadmap version)
 
-> **Parent:** [PHASE2_IMPLEMENTATION_PLAN.md](../PHASE2_IMPLEMENTATION_PLAN.md)
->
-> This README is the entry point for the Phase 2 breakdown. Each section below links to a dedicated file with detailed tasks, acceptance criteria, and test plans.
+> **Status:** Superseded by [`docs/phases/phase-2/PROJECT_PLAN.md`](../../phases/phase-2/PROJECT_PLAN.md).
+> See [`../phase2-roadmap-plan.md`](../phase2-roadmap-plan.md) for the reconciliation summary.
+> **DO NOT implement from these files.**
 
----
-
-## Sections
 
 | # | File | Content |
 |---|------|---------|
@@ -15,7 +12,7 @@
 | 2 | [02-models.md](./02-models.md) | `FileSystemNode`, `ProjectNode`, and supporting enums |
 | 3 | [03-services.md](./03-services.md) | `IgnoreList`, `FileSystemService`, `FileSystemWatcherService`, `ProjectLoader`, `WorkspaceService` |
 | 4 | [04-viewmodels.md](./04-viewmodels.md) | `FileTreeNodeViewModel`, `FileExplorerViewModel`, `ShellViewModel` changes |
-| 5 | [05-views-and-layout.md](./05-views-and-layout.md) | `FileExplorerView`, `InputDialog`, `MainWindow` layout changes |
+| 5 | [05-views-and-layout.md](./05-views-and-layout.md) | `FileExplorerView`, `InputDialog`, `MainWindow` layout changes, `MainWindow.axaml.cs` `PromptUserInput` subscriber |
 | 6 | [06-di-registration.md](./06-di-registration.md) | Dependency injection wiring in `App.axaml.cs` |
 | 7 | [07-tests.md](./07-tests.md) | Unit test plan, integration test checklist |
 
@@ -39,8 +36,11 @@
 - Drag-and-drop in the tree.
 - Multi-root workspaces.
 - File content search / find-in-files.
-- Git status overlays on file icons.
+- Git status overlays on file icons (but `GitStatus` model enum is added now for forward-compat).
 - Full solution build / project serialization.
+
+### Library Note
+- `Dock.Avalonia` (11.3.*) is already a NuGet dependency in `src/aero.csproj` but is NOT used in Phase 2. The fixed Grid layout here is temporary; Phase 8 will replace it with dockable panels via `Dock.Avalonia`.
 
 ---
 
