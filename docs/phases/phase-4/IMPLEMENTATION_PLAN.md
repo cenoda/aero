@@ -295,11 +295,28 @@ Use the existing `MessageBus` for app-level communication.
 
 Add messages for:
 
+- `DocumentTextChanged` — fires on every editor text change (separate from dirty-state transitions).
+  This is the source for debounced LSP `didChange` sync.
 - diagnostics updated for a document/workspace
 - optional request to jump to a diagnostic location
 - optional LSP/log status message for status bar visibility
+- `FolderOpened` — existing message that carries the opened folder path; `LSPManager` subscribes to this
+  for `rootUri` (service-safe, no ViewModel reference)
 
 Do **not** bypass the existing app messaging style with static state.
+
+### Thread Safety
+
+`StreamJsonRpc` delivers `publishDiagnostics` on a background thread. All diagnostic updates that touch
+UI-bound collections or editor markers must marshal to the UI thread using `Dispatcher.UIThread`:
+
+```csharp
+Dispatcher.UIThread.Post(() => {
+    // update ObservableCollection, set editor markers
+});
+```
+
+This matches the existing pattern in `ShellViewModel.StatusMessage`.
 
 ---
 
@@ -402,6 +419,24 @@ Gate:
 - `src/Core/Messages.cs`
 - `README.md`
 - `docs/roadmap/PHASES.md`
+
+### LSPManager Disposal
+
+`LSPManager` must implement `IDisposable` and be registered as a singleton so it hooks the
+existing DI disposal path in `App.OnDesktopExit`. Process kill must be bounded with a timeout
+to prevent hanging app exit.
+
+### Bottom Panel Reuse
+
+The bottom panel region should be implemented as a reusable container (not Problems-only) to avoid
+rework when Phase 5 adds the Output panel and Phase 8 adds the terminal. Reuse the existing
+`ShellViewModel.IsTerminalVisible`/`ToggleTerminalCommand` infrastructure where possible.
+
+### Completion Seam
+
+Use the established event-bridge pattern: `EditorViewModel` raises an event (e.g., `CompletionRequested`)
+that `EditorView.axaml.cs` handles against the live `AvaloniaEdit` control. Prefer AvaloniaEdit's built-in
+`CompletionWindow` over a hand-built overlay.
 
 ---
 

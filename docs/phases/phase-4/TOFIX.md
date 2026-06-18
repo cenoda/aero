@@ -124,6 +124,118 @@ session per opened folder.
 
 ---
 
+## Round 2 — Integration Review (2026-06-19)
+
+Findings from reviewing the implementation plan against the live codebase and prior phases.
+
+### R2.1 No per-keystroke change signal exists — `didChange` has no real source *(priority: critical, BLOCKER for M2)*
+
+**Description:** The current app publishes `DocumentModified` only on clean↔dirty transitions,
+not on every editor text change. `EditorViewModel.NotifyTextChanged()` calls
+`DocumentManager.MarkDirty()` which publishes `DocumentModified` on transitions only.
+There is currently no event that fires on each keystroke.
+
+**Required fix:** Add a new `DocumentTextChanged` message (or similar) that fires on every
+editor text change, separate from dirty-state transitions. Route debounced LSP sync from
+that signal. Keep `DocumentModified` for dirty UI only.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now explicitly
+requires a new `DocumentTextChanged` message for LSP sync. Implementation remains pending.
+
+### R2.2 Off-thread diagnostics vs. thread-affine UI — not addressed *(priority: critical, BLOCKER for M3)*
+
+**Description:** `StreamJsonRpc` delivers `publishDiagnostics` on a background thread.
+`TextDocument.Content` is thread-affine (throws off the UI thread). The Problems panel
+`ObservableCollection` must be updated on the UI thread.
+
+The codebase already has the pattern for this: `ShellViewModel`'s `StatusMessage` handler
+uses `Dispatcher.UIThread` to marshal updates. The plan should require the same
+dispatcher marshaling for diagnostic propagation and editor markers.
+
+**Required fix:** Require `Dispatcher.UIThread` marshaling for all diagnostic updates
+that touch UI-bound collections or editor markers.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now explicitly
+requires UI-thread marshaling for diagnostics.
+
+### R2.3 Workspace root ownership for `rootUri` is underspecified and risks an MVVM violation *(priority: high, BLOCKER for M1)*
+
+**Description:** The plan says to use the `File → Open Folder` folder as `rootUri`, but the only
+place the root is retained is `FileExplorerViewModel.RootPath` (a ViewModel). Per AGENTS rules,
+`LSPManager` is a service and must not reference a ViewModel.
+
+**Required fix:** `LSPManager` should subscribe to the existing `FolderOpened` message
+(a service-safe record on the bus) and hold its own root state. Do not reach into
+`FileExplorerViewModel`.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now
+explicitly requires `LSPManager` to subscribe to `FolderOpened` for `rootUri`.
+
+### R2.4 `CliWrap` discrepancy with `LIBRARIES.md` *(priority: medium)*
+
+**Description:** `docs/LIBRARIES.md` lists Phase 4 as `+ StreamJsonRpc, CliWrap`,
+and suggests CliWrap "for LSP spawning too." The plan adds only `StreamJsonRpc`
+and uses raw `Process`. Raw `Process` is defensible for long-lived bidirectional
+stdio servers, but the plan should reconcile the docs.
+
+**Required fix:** Either note CliWrap is deferred to Phase 5, or justify raw `Process`
+in the plan and update `LIBRARIES.md` accordingly.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan uses raw
+`Process` for LSP spawning (better suited for long-lived bidirectional stdio).
+`LIBRARIES.md` should be updated to note this divergence.
+
+### R2.5 Internal contradiction on the DTO location *(priority: low)*
+
+**Description:** Section 5.1 says diagnostic DTOs go in `src/Models/Languages/`,
+while Section 7's file plan lists `src/Languages/Models/`. These are different
+namespaces. Given `LanguageInfo` already lives in `src/Languages/`,
+`src/Languages/Models/` is the consistent choice.
+
+**Required fix:** Use `src/Languages/Models/` consistently.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now
+uses `src/Languages/Models/` consistently.
+
+### R2.6 LSP shutdown must hook the existing disposal path *(priority: medium)*
+
+**Description:** The plan's M1 gate says the session must "shut down cleanly without
+hanging," but doesn't connect to the app's teardown. `App.OnDesktopExit` disposes
+the DI container, which disposes singletons.
+
+**Required fix:** Register `LSPManager` as a singleton implementing `IDisposable` so it's
+torn down on the existing path. Process kill must be bounded so it can't hang exit.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now
+explicitly requires `LSPManager` to implement `IDisposable` and hook the existing
+DI disposal path.
+
+### R2.7 Bottom panel vs. the existing terminal placeholder *(priority: low)*
+
+**Description:** `MainWindow.axaml` already has `Toggle Terminal` menu item and
+`ShellViewModel.IsTerminalVisible`/`ToggleTerminalCommand` with no panel behind them.
+Phase 4's Problems panel will sit where Phase 5 Output panel also wants to live.
+
+**Required fix:** Implement the bottom region as a reusable container rather than
+Problems-only, to avoid rework in Phase 5/8.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now
+explicitly calls for a reusable bottom-panel container.
+
+### R2.8 Completion UI should reuse the established view-bridge pattern *(priority: low)*
+
+**Description:** The existing pattern is `EditorViewModel.FindReplaceRequested` (event) handled in
+`EditorView.axaml.cs` against the live control. Completion should follow the same event-bridge seam
+and can lean on AvaloniaEdit's built-in `CompletionWindow` rather than a hand-built overlay.
+
+**Required fix:** Name the event-bridge pattern and AvaloniaEdit `CompletionWindow` as the preferred
+completion UI seam.
+
+**Status:** DESIGN DECIDED IN PLAN (2026-06-19) — the implementation plan now
+explicitly names the event-bridge pattern and AvaloniaEdit `CompletionWindow` as the seam.
+
+---
+
 ## Persistent Checks
 
 Use these as the self-review checklist before closing Phase 4:
