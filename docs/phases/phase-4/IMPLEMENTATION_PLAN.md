@@ -82,6 +82,15 @@ Reason:
 Adding `StreamJsonRpc` is a **new dependency**, but it is already pre-approved by
 `docs/LIBRARIES.md` for this phase, so no additional dependency decision is needed.
 
+### CliWrap Not Used in Phase 4
+
+`docs/LIBRARIES.md` lists `CliWrap` alongside `StreamJsonRpc` for Phase 4 and notes it
+is usable "for LSP spawning too." Phase 4 will **not** use `CliWrap`: a language server is
+a long-lived, bidirectional stdio process, which is better served by a raw `Process` (full
+control over the persistent stdin/stdout streams and lifetime). `CliWrap` is oriented toward
+run-to-completion command execution and is deferred to Phase 5 (Output Panel / process runner).
+`docs/LIBRARIES.md` should be updated to reflect that `CliWrap` lands in Phase 5, not Phase 4.
+
 ### Language Server Choice
 
 Phase 4 will target **`csharp-ls` as the primary C# server**.
