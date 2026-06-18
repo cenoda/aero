@@ -55,44 +55,66 @@
             </MenuItem>
         </Menu>
 
-        <!-- Main editor area -->
+        <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <!-- Sidebar: fixed default width, MinWidth lets the user collapse to a sliver. -->
+                <ColumnDefinition Width="250" MinWidth="0"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Editor panel with tabs -->
-            <views:EditorView Grid.Row="0"
-                           DataContext="{Binding EditorViewModel}"/>
+            <!-- Sidebar (Phase 2 M2). Hidden when ShellViewModel.IsFileExplorerVisible is false. -->
+            <views:FileExplorerView Grid.Column="0"
+                                    DataContext="{Binding FileExplorerViewModel}"
+                                    IsVisible="{Binding IsFileExplorerVisible}"/>
 
-            <!-- Status bar -->
-            <Border Grid.Row="1" 
-                    Background="#F0F0F0" 
-                    BorderBrush="#CCCCCC" 
-                    BorderThickness="0,1,0,0"
-                    Padding="8,4">
-                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-                    <!-- Cursor position -->
-                    <TextBlock Grid.Column="0"
-                              Text="{Binding EditorViewModel.CursorPosition}"
-                              Margin="0,0,16,0"/>
-                    
-                    <!-- Language -->
-                    <TextBlock Grid.Column="1"
-                              Text="{Binding EditorViewModel.Language}"
-                              Margin="0,0,16,0"/>
-                    
-                    <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
-                    <TextBlock Grid.Column="3"
-                              Text="UTF-8"
-                              Margin="0,0,16,0"/>
-                    
-                    <!-- TODO(phase-3): Detect line ending from file content -->
-                    <TextBlock Grid.Column="4"
-                              Text="Lf"/>
-                </Grid>
-            </Border>
+            <!-- Draggable divider between sidebar and editor -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          Background="#CCCCCC"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"/>
+
+            <!-- Editor + status bar -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Editor panel with tabs -->
+                <views:EditorView Grid.Row="0"
+                               DataContext="{Binding EditorViewModel}"/>
+
+                <!-- Status bar -->
+                <Border Grid.Row="1"
+                        Background="#F0F0F0"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="0,1,0,0"
+                        Padding="8,4">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                        <!-- Cursor position -->
+                        <TextBlock Grid.Column="0"
+                                  Text="{Binding EditorViewModel.CursorPosition}"
+                                  Margin="0,0,16,0"/>
+
+                        <!-- Language -->
+                        <TextBlock Grid.Column="1"
+                                  Text="{Binding EditorViewModel.Language}"
+                                  Margin="0,0,16,0"/>
+
+                        <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
+                        <TextBlock Grid.Column="3"
+                                  Text="UTF-8"
+                                  Margin="0,0,16,0"/>
+
+                        <!-- TODO(phase-3): Detect line ending from file content -->
+                        <TextBlock Grid.Column="4"
+                                  Text="Lf"/>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </DockPanel>
 

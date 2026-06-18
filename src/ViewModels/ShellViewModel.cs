@@ -24,6 +24,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly IMessageBus _bus;
     private readonly DocumentManager _documentManager;
     private readonly EditorViewModel _editorViewModel;
+    private readonly FileExplorerViewModel _fileExplorerViewModel;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -38,6 +39,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
     // ViewModels
     public EditorViewModel EditorViewModel => _editorViewModel;
+    public FileExplorerViewModel FileExplorerViewModel => _fileExplorerViewModel;
 
     // Commands
     public ReactiveCommand<Unit, Unit> NewFileCommand { get; }
@@ -56,11 +58,16 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
 
-    public ShellViewModel(IMessageBus bus, DocumentManager documentManager, EditorViewModel editorViewModel)
+    public ShellViewModel(
+        IMessageBus bus,
+        DocumentManager documentManager,
+        EditorViewModel editorViewModel,
+        FileExplorerViewModel fileExplorerViewModel)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _editorViewModel = editorViewModel ?? throw new ArgumentNullException(nameof(editorViewModel));
+        _fileExplorerViewModel = fileExplorerViewModel ?? throw new ArgumentNullException(nameof(fileExplorerViewModel));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);

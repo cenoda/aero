@@ -64,6 +64,7 @@ public partial class App : Application
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<EditorViewModel>();
         services.AddSingleton<FindReplaceViewModel>();
+        services.AddSingleton<FileExplorerViewModel>();
 
         return services.BuildServiceProvider();
     }

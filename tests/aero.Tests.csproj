@@ -40,6 +40,8 @@
     <Compile Include="../src/Services/ProjectLoader.cs" />
     <Compile Include="../src/ViewModels/EditorViewModel.cs" />
     <Compile Include="../src/ViewModels/EditorTabViewModel.cs" />
+    <Compile Include="../src/ViewModels/FileExplorerNodeViewModel.cs" />
+    <Compile Include="../src/ViewModels/FileExplorerViewModel.cs" />
     <Compile Include="../src/ViewModels/FindReplaceViewModel.cs" />
   </ItemGroup>
 

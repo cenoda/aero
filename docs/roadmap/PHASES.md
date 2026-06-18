@@ -28,9 +28,9 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > Implementation details: [`docs/phases/phase-2/PROJECT_PLAN.md`](../phases/phase-2/PROJECT_PLAN.md).
 
 ### 2.1 Tree UI & File Operations
-- [ ] `FileExplorerView` sidebar with `TreeView`, keyboard navigation, and Material icons
-- [ ] `FileSystemEntry` model: file vs directory, name, full path
-- [ ] Eager tree load (full enumeration off UI thread). Lazy load on expand is deferred — `IIgnoreList` prevents `node_modules`/`bin`/`obj` freezes in the common case; large-monorepo optimization is a follow-up.
+- [x] `FileExplorerView` sidebar with `TreeView`, keyboard navigation, and Material icons
+- [x] `FileSystemEntry` model: file vs directory, name, full path
+- [x] Eager tree load (full enumeration off UI thread). Lazy load on expand is deferred — `IIgnoreList` prevents `node_modules`/`bin`/`obj` freezes in the common case; large-monorepo optimization is a follow-up.
 - [ ] `File → Open Folder` command via Avalonia folder picker (`Ctrl+Shift+O`)
 - [ ] Click file in tree → open in editor via `DocumentManager.OpenDocumentAsync`
 - [ ] Context menu: **New File**, **New Folder**, **Delete**, **Rename** with name validation
@@ -58,10 +58,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 
 ### 2.6 Tests
 - [x] Unit tests for `IIgnoreList` pattern matching
-- [ ] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
+- [x] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
 - [x] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition)
 - [ ] Integration tests for `FileSystemWatcherService` (debounce) — pending M5
-- [x] Phase 1 regression: all 89 existing tests continue to pass (146/146 total as of M1)
+- [x] Phase 1 regression: all 89 existing tests continue to pass (183/183 total as of M2)
 
 
 ## Phase 3: Syntax Highlighting

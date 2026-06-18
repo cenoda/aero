@@ -32,7 +32,9 @@
 
     <!-- UI -->
     <PackageReference Include="Dock.Avalonia" Version="11.3.*" />
-    <PackageReference Include="Material.Icons.Avalonia" Version="1.*" />
+    <!-- Material.Icons.Avalonia paused — see docs/phases/phase-2/TOFIX.md R3.1.
+         Re-add when the icon-library decision lands (Avalonia 12 bump, or a
+         different library). FileExplorerView uses text glyphs for now. -->
 
     <!-- MVVM -->
     <PackageReference Include="ReactiveUI" Version="20.*" />

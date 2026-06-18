@@ -1,6 +1,6 @@
 # Phase 2 — To Fix
 
-> **Status:** Active — Round 1 (plan review) ✅ closed, Round 2 (M1 code review) ✅ closed.
+> **Status:** Active — Round 1 ✅ closed, Round 2 ✅ closed, Round 3 (M2) ⏳ open.
 > Resolve all open items before declaring Phase 2 complete.
 
 ---
@@ -116,6 +116,57 @@ The following ideas from the superseded roadmap plan were accepted into PROJECT_
 
 - **`GridSplitter`** — already in PROJECT_PLAN §5.4 (sidebar + splitter + editor grid layout).
 - **Keyboard accessibility** — Arrow keys / Enter / Delete / F2 on tree nodes. Add to `FileExplorerView` requirements in §5.4.
+
+**Status:** ✅ RESOLVED
+
+---
+
+## Round 3 — M2 Review (2026-06-18)
+
+Findings from M2 implementation: tree VMs, sidebar layout in
+`MainWindow.axaml`, DI wiring, MessageBus subscription. The M2 gate
+(app launches; sidebar visible and empty; no Phase 1 regression)
+passes per `manual_test_phase1.sh` (all 9 sub-tests green, no Phase 1
+regressions, screenshots in `manual_test_screenshots/`).
+
+### R3.1 `Material.Icons.Avalonia` does not work on Avalonia 11.3 *(priority: medium, BLOCKER for visual polish)*
+`docs/LIBRARIES.md` lists this library as "1.*" for use in Phase 2/8.
+Investigation during M2 found the package is in a broken state across
+all available versions:
+
+| Version | Status on Avalonia 11.3 |
+|---------|------------------------|
+| `1.2.2` (latest 1.x, currently in `aero.csproj`) | Embedded XAML lacks `x:Class`. Including `MaterialIcon.xaml` throws `XamlLoadException` at app startup. |
+| `2.4.3` (latest 2.x in cache) | Requires `Avalonia >= 12.0.0` — restore fails with `NU1605` package downgrade. |
+| `3.0.2` (latest 3.x in cache) | Same — requires Avalonia 12. |
+
+The project is pinned to `Avalonia 11.3.*`, so neither 2.x nor 3.x is
+available without an Avalonia major-version bump.
+
+**Current M2 mitigation:** `FileExplorerView` uses simple text glyphs
+(`▸` for dirs, `•` for files, `◆`/`#`/`⬡` for project files) via a new
+`Glyph` property on `FileExplorerNodeViewModel`. The view binds to
+`Glyph`; the VM still records `IconKind` (a `Material.Icons.Avalonia`
+kind name string) for forward compatibility. When the icon decision
+lands, swap the XAML binding from `{Binding Glyph}` to
+`{Binding IconKind}` and re-add the `<StyleInclude>` in `App.axaml`.
+
+**Decision options for the user:**
+
+1. **Bump Avalonia to 12.0.0** + adopt `Material.Icons.Avalonia 3.0.2`.
+   Risks: Avalonia 12 is a major version — AvaloniaEdit, Dock.Avalonia,
+   and the existing `Fody`/`ReactiveUI.Fody` setup may need updates.
+2. **Stay on Avalonia 11.3** + adopt a different icon library (or
+   none). Candidates: hand-rolled SVG, `Projektanker.Icons.Avalonia`
+   (FontAwesome / Material subset, may have a 1.x version compatible
+   with Avalonia 11).
+3. **Stay on Avalonia 11.3** + keep the text-glyph approach through
+   Phase 2 (M3–M5 don't need richer visuals), revisit in Phase 8 UI
+   Polish when the rest of the layout work is done.
+
+**Status:** ⏸ PAUSED — awaiting user decision. Until decided, M2 ships
+with the text-glyph approach (which is fully functional, just visually
+plain). See screenshot `manual_test_screenshots/aero_test_01_initial.png`.
 
 ---
 
