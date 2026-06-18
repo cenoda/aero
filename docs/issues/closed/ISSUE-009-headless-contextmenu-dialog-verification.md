@@ -1,7 +1,7 @@
-# ISSUE-009: M4 context-menu → dialog flow remains unverified by the current headless harness
+# ISSUE-009: M4 context-menu → dialog flow not verifiable under headless Xvfb (harness limitation)
 
-**Label:** BUG
-**Status:** open
+**Label:** CHORE
+**Status:** closed
 **Priority:** medium
 **Reported by:** review session (Phase 2 M4 post-merge visual verification)
 **Assigned to:** —
@@ -81,33 +81,33 @@ on disk (`WARN: created_by_test.cs not found`).
 
 ## Resolution
 
-**Verified findings:**
-1. The current Xvfb + `xdotool` approach is **not a trustworthy verification
-  method** for Avalonia popup/dialog interaction in this scenario.
-2. `manual_test_phase2_m4.sh` has already been corrected to reflect that
-  boundary and now only asserts launch + startup-folder tree load.
-3. The product behavior of the interactive context-menu/dialog flow is **still
-  unverified** end-to-end.
+**Root cause (confirmed):** a **test-harness limitation**, not a product defect.
+Xvfb without a window manager + `xdotool` synthetic pointer automation cannot
+reliably drive Avalonia's separate popup/dialog top-level surfaces. The Phase 2
+M4 interactive flow itself is correct.
 
-**Unverified / still open:**
-- Whether the Phase 2 M4 interactive flow is correct on a real display.
-- Whether a deterministic in-process UI harness can verify the flow and prevent
-  regressions.
+**Verification performed (2026-06-18):** manual real-display run via
+`dotnet run --project src -- <seed-folder>`, exercising the full checklist in
+`manual_test_phase2_m4.sh`. All six checks passed:
 
-**Required follow-up:**
-1. Perform one trustworthy verification of the interactive flow using one of:
-   - a manual real-display check, or
-   - a deterministic in-process UI test harness.
-2. Record the outcome explicitly:
-   - if the flow fails, keep this as a confirmed `BUG` and document the product
-     defect;
-   - if the flow passes, either close this issue as a verification-gap issue or
-     split follow-up harness work into a separate `CHORE`.
-3. If pursuing automated UI coverage, stop and ask before implementation:
-   - new packages such as `Avalonia.Headless` / `Avalonia.Headless.XUnit` must
-     be catalogued in `docs/LIBRARIES.md` first;
-   - a separate UI test project is likely required because the current `tests`
-     setup avoids full Avalonia bootstrap.
+1. ✅ Right-click a node (file and directory) shows the context menu.
+2. ✅ New File → dialog → name → file appears in tree and on disk.
+3. ✅ New Folder → dialog → folder appears in tree.
+4. ✅ Rename (F2) → dialog pre-filled with current name → rename applies.
+5. ✅ Delete (Del) → confirm dialog → node removed from tree.
+6. ✅ Deleting a file open in a tab leaves the editor tab/buffer intact (R1.4).
+
+(One reported "directory right-click fails" observation during the session was a
+touchpad mis-click, not a defect — re-tested and passes.)
+
+**Outcome:**
+- The product flow is verified correct; relabelled `BUG` → `CHORE` (this was a
+  verification gap, not a bug).
+- `manual_test_phase2_m4.sh` already limits its automated assertions to
+  launch + startup-folder tree load and prints the manual checklist for the rest.
+- Durable, repeatable automated coverage is tracked separately in **ISSUE-010**
+  (adopt `Avalonia.Headless` UI harness). That work is intentionally out of
+  scope here.
 
 ## Acceptance Criteria
 
@@ -115,12 +115,12 @@ on disk (`WARN: created_by_test.cs not found`).
     (launch + startup-folder tree load).
 - [x] The issue document explicitly states that Xvfb + `xdotool` is a harness
     limitation, not proof of a product defect.
-- [ ] The interactive context-menu/dialog flow is verified by a trustworthy
-    method (manual real-display check or deterministic in-process UI test).
-- [ ] The verified outcome is recorded and the label/status are updated to match
-    the evidence.
-- [ ] Any follow-up infrastructure work is split into a separate issue if it is
-    broader than resolving this verification ambiguity.
+- [x] The interactive context-menu/dialog flow is verified by a trustworthy
+    method (manual real-display check, 2026-06-18 — all 6 checks passed).
+- [x] The verified outcome is recorded and the label/status are updated to match
+    the evidence (`BUG` → `CHORE`, closed).
+- [x] Any follow-up infrastructure work is split into a separate issue if it is
+    broader than resolving this verification ambiguity (→ ISSUE-010).
 
 ## Recommended Next Step
 
@@ -132,4 +132,4 @@ That work is **not** assumed complete by this issue and requires explicit
 approval because it adds dependencies and likely a new test project.
 
 - **Commit:** —
-- **Closed date:** —
+- **Closed date:** 2026-06-18 (resolved as harness limitation; product flow verified manually)
