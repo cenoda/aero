@@ -77,6 +77,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Status bar shows current language
 
 ## Phase 4: Basic LSP Integration
+> Goal: Connect to language servers for diagnostics, completion, and the Problems panel.
+> Entry condition: Phase 3 is complete.
+> Implementation details: [`docs/phases/phase-4/IMPLEMENTATION_PLAN.md`](../phases/phase-4/IMPLEMENTATION_PLAN.md).
+
 - [ ] **LSPSession** — JSON-RPC over stdin/stdout to a language server
 - [ ] **LSPManager** — spawn `csharp-ls` / `omnisharp` per project
 - [ ] **Diagnostics** — red squigglies on errors
