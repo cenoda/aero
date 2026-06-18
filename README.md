@@ -1,13 +1,16 @@
 # Aero IDE
 
-**A standalone code editor with multi-agent AI orchestration as its killer feature.**
+**A fourth-generation IDE built from scratch for agent-native software development.**
 
-Built from scratch in C# with Avalonia. Think VS Code, but with multiple AI agents
-(Cline, Copilot, local models) working together on your codebase — sharing context,
-passing tasks between each other, and collaborating in real time.
+**Aero** stands for **Agent Environment for Rapid Orchestration**.
 
-The IDE works as a fully functional editor on its own. Agents are a layer on top
-that supercharge it.
+Aero is built from scratch in C# with Avalonia. Think of it as an IDE designed for
+the next generation of software development: a strong standalone editor first, with
+multi-agent orchestration designed into the architecture rather than bolted on later.
+
+The IDE is being built to work as a fully functional product on its own. The agent
+layer comes after the editor foundation is solid, so orchestration features can sit
+on top of a stable core instead of compensating for one.
 
 ---
 
