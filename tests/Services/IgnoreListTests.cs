@@ -92,6 +92,82 @@ public class IgnoreListTests
         Assert.False(list.IsIgnored("/repo/binary", isDirectory: true));
     }
 
+    // -------------------------------------------------------------------
+    // Segment-aware matching (regression for M5 watcher filtering)
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void File_InsideIgnoredDirectory_IsIgnored()
+    {
+        // This is the M5 watcher case: an event for a file inside /repo/bin/
+        // must be filtered out so build-output churn doesn't refresh the tree.
+        var list = new IgnoreList();
+        Assert.True(list.IsIgnored("/repo/bin/Debug/app.dll", isDirectory: false));
+    }
+
+    [Fact]
+    public void File_DeepInsideIgnoredDirectory_IsIgnored()
+    {
+        var list = new IgnoreList();
+        Assert.True(list.IsIgnored("/repo/node_modules/lodash/index.js", isDirectory: false));
+    }
+
+    [Fact]
+    public void File_NamedLikeIgnoredDirectory_ButNotInside_IsNotIgnored()
+    {
+        // A file literally named "bin" at /repo/bin is NOT in an ignored
+        // ancestor (its ancestors are [/repo]), so it should pass through.
+        var list = new IgnoreList();
+        Assert.False(list.IsIgnored("/repo/bin", isDirectory: false));
+    }
+
+    [Fact]
+    public void File_InsideNonIgnoredDirectory_IsNotIgnored()
+    {
+        var list = new IgnoreList();
+        Assert.False(list.IsIgnored("/repo/src/app.cs", isDirectory: false));
+    }
+
+    [Fact]
+    public void File_BackslashSeparators_AreTreatedAsPathSeparators()
+    {
+        // Windows paths use "\\" — the matcher must split on both separators.
+        var list = new IgnoreList();
+        Assert.True(list.IsIgnored(@"C:\repo\bin\app.dll", isDirectory: false));
+    }
+
+    [Fact]
+    public void Directory_WithTrailingSeparator_StillMatches()
+    {
+        // Path normalization on input is the caller's job, but a trailing
+        // separator must not create a phantom empty segment.
+        var list = new IgnoreList();
+        Assert.True(list.IsIgnored("/repo/bin/", isDirectory: true));
+    }
+
+    // -------------------------------------------------------------------
+    // isDirectory flag actually matters
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void WildcardPattern_DoesNotMatchDirectory()
+    {
+        // *.tmp must only match files; a directory named "x.tmp" stays visible.
+        var list = new IgnoreList();
+        list.AddPattern("*.tmp");
+        Assert.True(list.IsIgnored("/repo/x.tmp", isDirectory: false));
+        Assert.False(list.IsIgnored("/repo/x.tmp", isDirectory: true));
+    }
+
+    [Fact]
+    public void DirectoryPattern_FileWithSameLeafName_IsNotIgnoredByLeafAlone()
+    {
+        // A file named "bin" must not be auto-hidden — the directory pattern
+        // "bin" only fires when an ancestor directory matches.
+        var list = new IgnoreList();
+        Assert.False(list.IsIgnored("/repo/bin", isDirectory: false));
+    }
+
     [Fact]
     public void WildcardSuffixMatchesAnyFileWithExtension()
     {

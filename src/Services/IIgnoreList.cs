@@ -9,8 +9,14 @@ public interface IIgnoreList
 {
     /// <summary>
     /// Returns <c>true</c> when the given path matches a configured ignore
-    /// pattern. The <paramref name="isDirectory"/> flag lets the implementation
-    /// apply folder-only or file-only patterns as needed.
+    /// pattern. <paramref name="isDirectory"/> determines which pattern kinds
+    /// can match:
+    /// <list type="bullet">
+    ///   <item><c>true</c> — bare-name directory patterns match by leaf name.</item>
+    ///   <item><c>false</c> — bare-name patterns match when ANY ancestor
+    ///         directory segment matches (the file is inside an ignored folder);
+    ///         wildcard file patterns (<c>*.ext</c>) match by leaf name.</item>
+    /// </list>
     /// </summary>
     bool IsIgnored(string path, bool isDirectory);
 

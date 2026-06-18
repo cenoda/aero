@@ -41,6 +41,10 @@ public sealed class FileSystemService : IFileSystemService
         // CancellationToken, so we materialize the enumerators and check the
         // token between yields. For very large directories this lets us bail
         // out before completing enumeration.
+        //
+        // NOTE: enumeration runs synchronously on the caller's thread. The
+        // service is intentionally NOT self-offloading — the FileExplorerViewModel
+        // is responsible for calling this via Task.Run (see PROJECT_PLAN §5.3).
         var dirEnum = Directory.EnumerateDirectories(normalized).GetEnumerator();
         var fileEnum = Directory.EnumerateFiles(normalized).GetEnumerator();
 
@@ -72,10 +76,10 @@ public sealed class FileSystemService : IFileSystemService
             fileEnum.Dispose();
         }
 
-        // Use Task.Yield once so the method is genuinely async on the hot path.
-        // For huge directories the enumerator above already yields via MoveNext,
-        // but a single Task.Yield keeps the contract honest.
-        await Task.Yield();
+        // Directory listing is sync; the method stays `async Task` only to
+        // match the interface signature and to surface cancellation as a
+        // Task rather than a thrown exception at the call site.
+        await Task.CompletedTask;
 
         return dirs
             .OrderBy(e => e.Name, StringComparer.Ordinal)
@@ -86,17 +90,27 @@ public sealed class FileSystemService : IFileSystemService
     /// <inheritdoc />
     public Task CreateFileAsync(string parentPath, string name, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         ValidateName(name);
         var target = ResolveChild(parentPath, name);
-        // File.Create returns a stream we immediately dispose — guarantees the
-        // file exists and is empty on disk before we return.
-        using var _ = File.Create(target);
+
+        // FileMode.CreateNew (vs. File.Create / FileMode.Create) refuses to
+        // overwrite an existing file. The caller is expected to validate names
+        // against collisions, but the service defends against accidental
+        // clobber regardless — this is the only path that could silently
+        // destroy user data on disk.
+        using var stream = new FileStream(
+            target,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None);
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task CreateDirectoryAsync(string parentPath, string name, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         ValidateName(name);
         var target = ResolveChild(parentPath, name);
         Directory.CreateDirectory(target);
@@ -106,6 +120,7 @@ public sealed class FileSystemService : IFileSystemService
     /// <inheritdoc />
     public Task RenameAsync(string path, string newName, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(path))
             throw new ArgumentException("Path must not be empty.", nameof(path));
         ValidateName(newName);
@@ -128,6 +143,7 @@ public sealed class FileSystemService : IFileSystemService
     /// <inheritdoc />
     public Task DeleteAsync(string path, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(path))
             throw new ArgumentException("Path must not be empty.", nameof(path));
 
@@ -146,6 +162,7 @@ public sealed class FileSystemService : IFileSystemService
     /// <inheritdoc />
     public Task<bool> ExistsAsync(string path, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(path))
             return Task.FromResult(false);
 

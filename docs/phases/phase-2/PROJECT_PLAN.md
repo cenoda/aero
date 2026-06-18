@@ -185,7 +185,7 @@ public interface IProjectLoader
 
 **`ProjectLoader` implementation notes:**
 - `DetectProjectKind` maps extension: `.sln` → `Solution`, `.csproj` → `CSharpProject`, `package.json` → `NodeProject`, else `None`.
-- `DetectProjects` enumerates the workspace root (and subdirectories, with cancellation) to return top-level project nodes. This is used to highlight solution/project roots in the tree; it is not required to parse contents.
+- `DetectProjects` enumerates the **workspace root only** (one level deep) and returns project files directly under it. This keeps the call cheap even for huge trees that already escaped the ignore list (e.g. a stray top-level `Cargo.toml` next to `node_modules`). The plan originally said "root and subdirectories"; that was rolled back to one level in M1 review to avoid deep traversal cost. Used by the tree to highlight solution/project roots with project-specific icons; not required to parse contents.
 
 ### 5.3 ViewModels
 

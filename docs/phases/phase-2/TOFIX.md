@@ -1,6 +1,6 @@
 # Phase 2 — To Fix
 
-> **Status:** Active — findings from plan review (2026-06-18).
+> **Status:** Active — Round 1 (plan review) ✅ closed, Round 2 (M1 code review) ✅ closed.
 > Resolve all open items before declaring Phase 2 complete.
 
 ---
@@ -35,6 +35,77 @@ If a file is open in an editor tab and the user renames or deletes it via the tr
 ### R1.6 PHASES.md not reconciled with PROJECT_PLAN scope *(priority: critical)*
 `PHASES.md` §2 still described lazy loading, `OpenDocumentRequest` message, full project parsing, and workspace persistence — none of which PROJECT_PLAN ships.
 **Fix:** Reconciled `PHASES.md` §2 with PROJECT_PLAN decisions (2026-06-18): lazy load → deferred (eager + IgnoreList), `OpenDocumentRequest` → direct `DocumentManager` call, project parsing → extension recognition, persistence → deferred to Phase 8. Model names aligned to `FileSystemEntry`/`ProjectInfo`.
+**Status:** ✅ RESOLVED
+
+---
+
+## Round 2 — M1 Code Review (2026-06-18)
+
+Findings from review of the M1 source (`IgnoreList`, `FileSystemService`,
+`ProjectLoader`) and their tests. All medium-priority items were fixed
+before commit; minor cleanups included.
+
+### R2.1 IgnoreList didn't filter watcher events for files inside ignored dirs *(priority: medium, BLOCKER for M5)*
+Original `IsIgnored` only checked the leaf name. For the tree (M1) this was
+harmless because `bin/` is filtered out and we never recurse into it. But the
+M5 watcher fires individual events for every changed file — a build that
+writes `/repo/bin/Debug/app.dll` would emit an event with leaf `app.dll`,
+which the original code would NOT ignore. Build-output churn would flood the
+tree refresh path.
+**Fix:** Rewrote `IgnoreList` to split paths into segments once at check
+time. For files, ANY ancestor directory segment matching a directory
+pattern is enough to ignore. For directories, only the leaf is checked.
+Wildcard patterns (`*.ext`) are now correctly classified as file-only —
+directories named `x.tmp` are no longer hidden.
+**Tests added:** `File_InsideIgnoredDirectory_IsIgnored`, `File_DeepInsideIgnoredDirectory_IsIgnored`, `File_NamedLikeIgnoredDirectory_ButNotInside_IsNotIgnored`, `File_BackslashSeparators_AreTreatedAsPathSeparators`, `Directory_WithTrailingSeparator_StillMatches`, `WildcardPattern_DoesNotMatchDirectory`, `DirectoryPattern_FileWithSameLeafName_IsNotIgnoredByLeafAlone`.
+**Status:** ✅ RESOLVED
+
+### R2.2 `CreateFileAsync` silently truncated existing files *(priority: medium, data-loss risk)*
+`File.Create(target)` overwrites. When M4 wires this to the "New File" context
+action, a name collision would silently destroy a file on disk — the worst
+possible UX. The plan calls for collision validation in the VM, but the
+service should defend against the silent-data-loss case regardless.
+**Fix:** Switched to `FileMode.CreateNew` via `FileStream`. Throws
+`IOException` if the file exists; caller (M4 VM) is responsible for
+pre-validation and a friendly error message.
+**Test added:** `CreateFileAsync_ExistingFile_DoesNotOverwrite` — writes
+content, calls `CreateFileAsync` with same name, asserts `IOException` AND
+that the original content is intact.
+**Status:** ✅ RESOLVED
+
+### R2.3 Misleading `Task.Yield()` comment in `GetDirectoryEntriesAsync` *(priority: low)*
+The original comment claimed enumeration "yields via MoveNext", but
+`MoveNext()` is synchronous and never returns to the message pump. The
+method's actual responsiveness depends on the VM calling it via `Task.Run`
+(PROJECT_PLAN §5.3). The `Task.Yield()` fired *after* all the work and did
+nothing for responsiveness.
+**Fix:** Replaced `await Task.Yield()` with `await Task.CompletedTask` and
+updated the comment to be honest: enumeration is sync; the VM owns the
+off-thread dispatch. M2 must remember this.
+**Status:** ✅ RESOLVED
+
+### R2.4 `IIgnoreList.IsIgnored`'s `isDirectory` flag was dead surface *(priority: low)*
+After R2.1, the flag now actually means something (see fix above). The
+interface doc was updated to match the new contract.
+**Status:** ✅ RESOLVED (folded into R2.1)
+
+### R2.5 Cancellation tokens not honored in Create/Rename/Delete/Exists *(priority: low)*
+Interface says "honour `CancellationToken` on every I/O-bound method" but
+only `GetDirectoryEntriesAsync` checked it. `DeleteAsync(recursive)` on a
+large tree could be slow.
+**Fix:** Added an up-front `ct.ThrowIfCancellationRequested()` to each
+method. Tests added.
+**Status:** ✅ RESOLVED
+
+### R2.6 `ProjectLoader.DetectProjects` was one-level but plan said "and subdirectories" *(priority: low)*
+One-level is the right call (avoids deep traversal). Plan wording was wrong.
+**Fix:** Updated PROJECT_PLAN §5.2 to say "workspace root only (one level
+deep)" and noted the rollback from the original plan.
+**Status:** ✅ RESOLVED
+
+### R2.7 Unused `using System.Linq;` *(priority: trivial)*
+Found in `IgnoreList.cs` (since rewritten without it) and `ProjectLoaderTests.cs`.
+**Fix:** Removed.
 **Status:** ✅ RESOLVED
 
 ---

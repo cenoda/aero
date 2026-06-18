@@ -154,6 +154,69 @@ public class FileSystemServiceTests : System.IDisposable
     }
 
     [Fact]
+    public async Task CreateFileAsync_ExistingFile_DoesNotOverwrite()
+    {
+        // Regression: previously File.Create(target) silently truncated an
+        // existing file. The New File context action must surface a collision
+        // so the user is not silently destroyed.
+        var target = Path.Combine(_root, "exists.txt");
+        await File.WriteAllTextAsync(target, "important content");
+
+        await Assert.ThrowsAsync<IOException>(
+            () => _service.CreateFileAsync(_root, "exists.txt"));
+
+        // Content must be intact.
+        Assert.Equal("important content", await File.ReadAllTextAsync(target));
+    }
+
+    [Fact]
+    public async Task CreateFileAsync_Cancellation_Throws()
+    {
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.CreateFileAsync(_root, "nope.txt", cts.Token));
+    }
+
+    [Fact]
+    public async Task CreateDirectoryAsync_Cancellation_Throws()
+    {
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.CreateDirectoryAsync(_root, "nope", cts.Token));
+    }
+
+    [Fact]
+    public async Task RenameAsync_Cancellation_Throws()
+    {
+        var f = Path.Combine(_root, "f.txt");
+        File.WriteAllText(f, "");
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.RenameAsync(f, "g.txt", cts.Token));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Cancellation_Throws()
+    {
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.DeleteAsync(_root, cts.Token));
+    }
+
+    [Fact]
+    public async Task ExistsAsync_Cancellation_Throws()
+    {
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.ExistsAsync(_root, cts.Token));
+    }
+
+    [Fact]
     public async Task CreateFileAsync_EmptyName_Throws()
     {
         await Assert.ThrowsAsync<System.ArgumentException>(
