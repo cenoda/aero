@@ -168,7 +168,7 @@ Responsibilities:
 
 Suggested locations:
 
-- `src/Models/Languages/` for DTOs
+- `src/Languages/Models/` for DTOs (consistent with `LanguageInfo` living under `src/Languages/`)
 - `src/ViewModels/ProblemsViewModel.cs`
 - `src/Views/ProblemsView.axaml`
 
