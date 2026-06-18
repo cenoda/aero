@@ -298,11 +298,11 @@ Findings from the plan review against the live codebase and prior phases.
 
 ### R3.8 docs/LIBRARIES.md update *(priority: medium)*
 
-**Description:** The plan correctly notes `CliWrap` should move from Phase 4 to Phase 5. This is a required doc change.
+**Description:** The plan notes `CliWrap` should move from Phase 4 to Phase 5. This is a required doc change.
 
-**Required fix:** Update `docs/LIBRARIES.md` to move `CliWrap` from Phase 4 to Phase 5.
+**Required fix:** Update `docs/LIBRARIES.md` timeline to reflect CliWrap as pre-positioned.
 
-**Status:** ✅ RESOLVED (2026-06-19) — updated `docs/LIBRARIES.md` timeline.
+**Status:** ✅ RESOLVED (2026-06-19) — updated `docs/LIBRARIES.md` timeline to show CliWrap under Phase 5.
 
 ---
 

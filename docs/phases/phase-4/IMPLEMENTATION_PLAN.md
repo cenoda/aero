@@ -383,7 +383,7 @@ Gate:
 - a session can start for a configured C# server command
 - the session can shut down cleanly without hanging the app
 - LSP capability negotiation: read `textDocumentSync` from `initialize` response and assert full sync is supported, or fail gracefully with a status message
-- `docs/LIBRARIES.md` updated to move `CliWrap` from Phase 4 to Phase 5
+- `docs/LIBRARIES.md` timeline reflects CliWrap as pre-positioned (already in csproj, unused in Phase 4)
 
 ## M2 — Document Synchronization
 
