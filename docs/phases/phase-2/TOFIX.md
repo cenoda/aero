@@ -1,6 +1,6 @@
 # Phase 2 — To Fix
 
-> **Status:** Active — Rounds 1-6 all ✅ closed.
+> **Status:** Active — Rounds 1-7 all ✅ closed.
 > Resolve all open items before declaring Phase 2 complete.
 
 ---
@@ -329,6 +329,63 @@ is unchanged after the operation. The proper fix (closing/stale-indicator) is
 deferred — see R1.4.
 
 **Status:** ✅ RESOLVED (regression tests added)
+
+---
+
+## Round 7 — Tree Refresh After Create/Rename/Delete (2026-06-19)
+
+Findings from code review of M4 implementation. Two real functional bugs
+and one test-coverage gap. All items resolved; no open blockers.
+
+### R7.1 `RefreshParentNodeAsync` is a silent no-op on loaded parents *(priority: critical)*
+
+**Description:** `RefreshParentNodeAsync(node)` calls
+`EnsureChildrenLoadedAsync(parent)`, which early-returns at
+`if (node.AreChildrenLoaded) return;` because any visible node's parent
+already has `AreChildrenLoaded == true`. The tree never reflects the
+change.
+
+**Root cause:** `EnsureChildrenLoadedAsync` is designed for initial lazy
+load (on first expand). It intentionally no-ops on loaded nodes. Using it
+for "reload after mutation" was the wrong abstraction.
+
+Additionally, create operations targeted the wrong level:
+`OnNewFileAsync`/`OnNewFolderAsync` called
+`RefreshParentNodeAsync(node?.IsDirectory == true ? node : node?.Parent)`,
+but the parent of the *parent* (grandparent) was refreshed instead of the
+directory itself — when creating inside D, D.Parent gets refreshed, not D.
+
+**Fix:**
+1. Added `ForceReloadChildrenAsync(FileExplorerNodeViewModel dir)` which
+   resets `dir.AreChildrenLoaded = false`, then calls
+   `EnsureChildrenLoadedAsync(dir)`.
+2. Create: target = `node?.IsDirectory == true ? node : node?.Parent`.
+   Null → `LoadFolderAsync(RootPath)`. `IsExpanded` set to `true` so the
+   new item is visible.
+3. Rename/Delete: target = `node?.Parent`. Null → `LoadFolderAsync(RootPath)`.
+4. Removed the buggy `RefreshParentNodeAsync` helper.
+
+**Status:** ✅ RESOLVED
+
+### R7.2 Nested tree-state test coverage gap *(priority: high)*
+
+**Description:** All command tests assert disk state
+(`_fs.ExistsAsync(...)`) and `DocumentManager` state, but never assert
+the tree's `Children` collection — and all operate at root level where
+`Parent == null` falls through to `LoadFolderAsync(RootPath)` full-reload
+fallback.
+
+**Fix:** Added 3 tests that build a 2-level tree, expand both levels,
+execute the command, then assert `Children` contains/does-not-contain the
+expected node:
+- `CreateFile_Nested_UpdatesParentChildren` — create file inside expanded
+  subdirectory, assert `Children` has the new node.
+- `DeleteFile_Nested_RemovesFromParentChildren` — delete file inside
+  expanded subdirectory, assert `Children` no longer has deleted node.
+- `RenameFile_Nested_UpdatesParentChildren` — rename file inside
+  expanded subdirectory, assert old name gone and new name present.
+
+**Status:** ✅ RESOLVED
 
 ---
 

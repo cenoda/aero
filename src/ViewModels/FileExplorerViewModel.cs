@@ -270,26 +270,19 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     // --- context-menu command handlers -----------------------------------
 
     /// <summary>
-    /// Re-enumerate the parent of <paramref name="node"/> without collapsing
-    /// expansion state. If the node is root-level (<see cref="Parent"/> is
-    /// null), falls back to a full root reload.
+    /// Force-reload the children of <paramref name="dir"/> by resetting its
+    /// loaded flag and re-running lazy-load. Use after create/rename/delete
+    /// so the tree reflects the filesystem change.
     /// </summary>
-    private async Task RefreshParentNodeAsync(FileExplorerNodeViewModel? node)
+    private async Task ForceReloadChildrenAsync(FileExplorerNodeViewModel dir)
     {
-        var parent = node?.Parent;
-        if (parent != null)
-        {
-            await EnsureChildrenLoadedAsync(parent);
-        }
-        else if (!string.IsNullOrEmpty(RootPath))
-        {
-            await LoadFolderAsync(RootPath);
-        }
+        dir.AreChildrenLoaded = false;
+        await EnsureChildrenLoadedAsync(dir);
     }
 
     private async Task OnNewFileAsync(FileExplorerNodeViewModel? node)
     {
-        // Resolve target directory (Concern #3):
+        // Resolve target directory:
         //   dir selected → inside it; file selected → parent dir; null → root.
         var parentDir = node?.IsDirectory == true
             ? node.FullPath
@@ -304,7 +297,18 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             return; // Cancelled
 
         await _fileSystem.CreateFileAsync(parentDir, name);
-        await RefreshParentNodeAsync(node?.IsDirectory == true ? node : node?.Parent);
+
+        // Refresh the directory that should now contain the new file.
+        var targetDir = node?.IsDirectory == true ? node : node?.Parent;
+        if (targetDir != null)
+        {
+            targetDir.IsExpanded = true;
+            await ForceReloadChildrenAsync(targetDir);
+        }
+        else if (!string.IsNullOrEmpty(RootPath))
+        {
+            await LoadFolderAsync(RootPath);
+        }
     }
 
     private async Task OnNewFolderAsync(FileExplorerNodeViewModel? node)
@@ -322,7 +326,17 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             return;
 
         await _fileSystem.CreateDirectoryAsync(parentDir, name);
-        await RefreshParentNodeAsync(node?.IsDirectory == true ? node : node?.Parent);
+
+        var targetDir = node?.IsDirectory == true ? node : node?.Parent;
+        if (targetDir != null)
+        {
+            targetDir.IsExpanded = true;
+            await ForceReloadChildrenAsync(targetDir);
+        }
+        else if (!string.IsNullOrEmpty(RootPath))
+        {
+            await LoadFolderAsync(RootPath);
+        }
     }
 
     private async Task OnRenameAsync(FileExplorerNodeViewModel? node)
@@ -336,7 +350,17 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             return; // No change or cancelled
 
         await _fileSystem.RenameAsync(node.FullPath, newName);
-        await RefreshParentNodeAsync(node);
+
+        // Refresh the parent so the old name disappears and the new appears.
+        var parent = node.Parent;
+        if (parent != null)
+        {
+            await ForceReloadChildrenAsync(parent);
+        }
+        else if (!string.IsNullOrEmpty(RootPath))
+        {
+            await LoadFolderAsync(RootPath);
+        }
     }
 
     private async Task OnDeleteAsync(FileExplorerNodeViewModel? node)
@@ -349,7 +373,17 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         if (!confirmed) return;
 
         await _fileSystem.DeleteAsync(node.FullPath);
-        await RefreshParentNodeAsync(node);
+
+        // Refresh the parent so the deleted item disappears from the tree.
+        var parent = node.Parent;
+        if (parent != null)
+        {
+            await ForceReloadChildrenAsync(parent);
+        }
+        else if (!string.IsNullOrEmpty(RootPath))
+        {
+            await LoadFolderAsync(RootPath);
+        }
     }
 
     /// <inheritdoc />

@@ -61,7 +61,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
 - [x] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition)
 - [ ] Integration tests for `FileSystemWatcherService` (debounce) — pending M5
-- [x] Phase 1 regression: all 89 existing tests continue to pass (216/216 total as of M4)
+- [x] Phase 1 regression: all 89 existing tests continue to pass (219/219 total as of M4)
 
 
 ## Phase 3: Syntax Highlighting

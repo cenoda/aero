@@ -897,6 +897,76 @@ public class FileExplorerViewModelTests : IDisposable
         Assert.Equal(docsBefore, _documentManager.Documents.Count);
     }
 
+    // --- nested tree-state tests (R7.2) ------------------------------
+
+    [Fact]
+    public async Task CreateFile_Nested_UpdatesParentChildren()
+    {
+        // Build a 2-level tree and expand both levels, then create a file
+        // inside the subdirectory and assert the Children collection updates.
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "lib/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        // Expand src so it's loaded when the create completes.
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+        Assert.Single(srcNode.Children); // just lib/
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult("newfile.cs"));
+
+        await _vm.NewFileCommand.Execute(srcNode).FirstAsync();
+
+        // src.Children should now contain newfile.cs alongside lib/.
+        Assert.Equal(2, srcNode.Children.Count);
+        Assert.Contains(srcNode.Children, n => n.Name == "newfile.cs");
+        Assert.Contains(srcNode.Children, n => n.Name == "lib");
+    }
+
+    [Fact]
+    public async Task DeleteFile_Nested_RemovesFromParentChildren()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"),
+            Path.Combine(root, "src", "lib/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+        var fileNode = Assert.Single(srcNode.Children, n => n.Name == "a.txt");
+
+        _bus.Subscribe<ConfirmDelete>(msg => msg.OnResult(true));
+
+        await _vm.DeleteCommand.Execute(fileNode).FirstAsync();
+
+        // src.Children should have lost a.txt, kept lib/.
+        Assert.DoesNotContain(srcNode.Children, n => n.Name == "a.txt");
+        Assert.Contains(srcNode.Children, n => n.Name == "lib");
+    }
+
+    [Fact]
+    public async Task RenameFile_Nested_UpdatesParentChildren()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+        var fileNode = Assert.Single(srcNode.Children);
+
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult("b.txt"));
+
+        await _vm.RenameCommand.Execute(fileNode).FirstAsync();
+
+        // src.Children should have b.txt instead of a.txt.
+        Assert.DoesNotContain(srcNode.Children, n => n.Name == "a.txt");
+        Assert.Contains(srcNode.Children, n => n.Name == "b.txt");
+    }
+
     // --- small async helper ------------------------------------------
 
     private static async Task WaitFor(Func<bool> predicate, TimeSpan timeout)
