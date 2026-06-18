@@ -351,6 +351,88 @@ The real codebase pattern uses `GetUiDispatcher()` with a null-check.
 
 ---
 
+## Round 5 — Act-On Review (2026-06-19)
+
+Findings from act-on review.
+
+### R5.1 Thread-affine Content capture for didChange *(priority: critical, BLOCKER for M2)*
+
+**Description:** The Thread Safety section only covers incoming diagnostics marshaling.
+It says nothing about the outgoing `didChange` path reading `doc.Content` on a background thread,
+which will throw per `TextDocument`'s thread-affinity contract.
+
+**Required fix:** Capture `doc.Content` synchronously on the UI thread in the `DocumentTextChanged`
+handler, then schedule the background send.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added outgoing path to Thread Safety section.
+
+### R5.2 DocumentOpened doesn't carry the document *(priority: critical, BLOCKER for M2)*
+
+**Description:** `record DocumentOpened(string FilePath)` while `DocumentClosed`/`DocumentSaved` both carry
+`TextDocument Document`. `LSPManager` can't build `didOpen` from a path alone without a lookup.
+
+**Required fix:** Inject `DocumentManager` into `LSPManager` to look up documents by path.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added injection note to §5.1.
+
+### R5.3 Extract DiagnosticStore for Phase 6 coupling *(priority: medium)*
+
+**Description:** Phase 6 will need a shared sink for MSBuild error parsing. Bolting it on later is more work.
+
+**Required fix:** Define a small `IDiagnosticStore` interface in M3 with `LSPManager` as the only writer for now.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added Phase 6 coupling note to §5.2.
+
+### R5.4 Bottom-panel selector scope *(priority: medium)*
+
+**Description:** Reusing `IsTerminalVisible` is a Phase 5/8 trap. Full `enum BottomPanelKind` + tabbed host edges into Phase 8 docking territory.
+
+**Required fix:** Add `IsBottomPanelVisible` (separate from `IsTerminalVisible`) and leave kind/tab selector as Phase 5 concern.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added minimal approach note to Bottom Panel Reuse section.
+
+### R5.5 Completion data flow *(priority: low)*
+
+**Description:** The plan names the seam but not the payload return path.
+
+**Required fix:** `EditorViewModel` holds `LSPManager`, exposes items via property + command, view binds to `CompletionWindow`.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added data flow note to Completion Seam section.
+
+### R5.6 Version increment in send path *(priority: low)*
+
+**Description:** Version numbers should increment on each sent change to avoid server skew.
+
+**Required fix:** Add to M2 deliverables and gate.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added to M2 deliverables and gate.
+
+### R5.7 URI normalization *(priority: low)*
+
+**Description:** Add explicit `file://` absolute-URI rule + untitled behavior.
+
+**Required fix:** Add to `TextDocument` model notes.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added to §5.2.
+
+### R5.8 Completion fallback acceptance in M5 gate *(priority: low)*
+
+**Description:** Tighten fuzzy gate with explicit fallback behavior.
+
+**Required fix:** Show empty or "no suggestions" state, not silent failure.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added to M5 gate.
+
+### R5.9 manual_test_phase4.sh *(priority: low)*
+
+**Description:** Consistent with prior phases.
+
+**Required fix:** Add to file plan and testing section.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added to §7 and §8.
+
+---
+
 ## Persistent Checks
 
 Use these as the self-review checklist before closing Phase 4:

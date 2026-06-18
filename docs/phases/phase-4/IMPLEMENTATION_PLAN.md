@@ -213,7 +213,7 @@ Suggested locations:
 
 Add the minimum metadata required for LSP synchronization:
 
-- stable document URI derived from `FilePath`
+- stable document URI derived from `FilePath` — use `file://` absolute URI form
 - integer version number
 - helpers for incrementing version on text change
 
@@ -226,6 +226,10 @@ Notes:
 - version numbers still increment on each sent change even with full-document sync
 - `didSave` will be driven from the existing `DocumentManager.SaveDocumentAsync` /
   `SaveDocumentAsAsync` success path, which already publishes `DocumentSaved`
+
+**Phase 6 coupling:** Define a small `IDiagnosticStore` interface in M3 with `LSPManager` as the only
+writer for now. This keeps `ProblemsViewModel` decoupled and provides a shared sink for Phase 6's
+MSBuild error parsing.
 
 Reason for full sync choice:
 
@@ -344,7 +348,7 @@ Do **not** bypass the existing app messaging style with static state.
 
 ### Thread Safety
 
-`StreamJsonRpc` delivers `publishDiagnostics` on a background thread. All diagnostic updates that touch
+**Incoming (diagnostics):** `StreamJsonRpc` delivers `publishDiagnostics` on a background thread. All diagnostic updates that touch
 UI-bound collections or editor markers must marshal to the UI thread. Use the test-safe pattern from `ShellViewModel.StatusMessage`:
 
 ```csharp
@@ -361,7 +365,19 @@ else
 }
 ```
 
-This guarded pattern avoids throwing in headless unit tests.
+**Outgoing (`didChange`):** `TextDocument.Content` is thread-affine and throws if accessed off the UI thread.
+The `DocumentTextChanged` handler must capture `doc.Content` synchronously on the UI thread,
+then schedule the JSON-RPC send on the background thread:
+
+```csharp
+// On UI thread:
+var content = doc.Content;
+var version = doc.Version;
+// Schedule send on background:
+_ = Task.Run(() => session.SendDidChange(doc.Uri, content, version));
+```
+
+This prevents `TextDocument`'s thread-affinity contract from throwing.
 
 ---
 
@@ -393,13 +409,14 @@ Deliverables:
 - debounced full-document `didChange`
 - `didClose`
 - `didSave`
-- version tracking in `TextDocument`
+- version tracking in `TextDocument` — increment on each sent change to avoid server skew
 
 Gate:
 
 - buffer updates flow to the server in the correct order
 - `didChange` uses full-document sync consistently
-- **Checkpoint:** If `LSPManager` exceeds ~400–500 lines, open a TOFIX item to extract `DiagnosticStore`
+- version numbers increment on each sent change
+- **Checkpoint:** If `LSPManager` exceeds ~400–500 lines, open a TOFIX item to extract `IDiagnosticStore`
 
 ## M3 — Diagnostics
 
@@ -438,6 +455,7 @@ Deliverables:
 Gate:
 
 - `Ctrl+Space` shows a visible completion result without breaking editor input
+- if no completions are returned, show an empty or "no suggestions" state (not silent failure)
 
 ---
 
@@ -464,7 +482,7 @@ Gate:
 - `src/ViewModels/EditorViewModel.cs`
 - `src/ViewModels/ShellViewModel.cs`
 - `src/MainWindow.axaml`
-- `src/Core/Messages.cs`
+- `src/Core/Messages.cs` — add `DocumentTextChanged` record
 - `README.md`
 - `docs/roadmap/PHASES.md`
 
@@ -483,14 +501,21 @@ subscribed before any folder is opened.
 ### Bottom Panel Reuse
 
 The bottom panel region should be implemented as a reusable container (not Problems-only) to avoid
-rework when Phase 5 adds the Output panel and Phase 8 adds the terminal. Reuse the existing
-`ShellViewModel.IsTerminalVisible`/`ToggleTerminalCommand` infrastructure where possible.
+rework when Phase 5 adds the Output panel and Phase 8 adds the terminal.
+
+**Minimal approach for Phase 4:** Add `IsBottomPanelVisible` (separate from `IsTerminalVisible`)
+and leave the kind/tab selector as a Phase 5 concern. Avoid building a full `enum BottomPanelKind`
++ tabbed host now — that edges into Phase 8 docking territory.
 
 ### Completion Seam
 
 Use the established event-bridge pattern: `EditorViewModel` raises an event (e.g., `CompletionRequested`)
 that `EditorView.axaml.cs` handles against the live `AvaloniaEdit` control. Prefer AvaloniaEdit's built-in
 `CompletionWindow` over a hand-built overlay.
+
+**Data flow:** `EditorViewModel` holds a reference to `LSPManager`, exposes completion items via a property
+(e.g., `IReadOnlyList<CompletionItem> CompletionItems`) and a command (e.g., `RequestCompletionCommand`).
+The view binds to `CompletionWindow` and populates it from the items property.
 
 ---
 
@@ -528,6 +553,8 @@ Target scenario for Phase 4 completion:
 6. observe diagnostic removal
 7. press `Ctrl+Space`
 8. confirm completion request path is alive
+
+Create `manual_test_phase4.sh` following the pattern of prior phases.
 
 ---
 
