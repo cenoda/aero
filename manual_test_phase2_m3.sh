@@ -54,22 +54,20 @@ xdotool windowfocus "$WINDOW_ID" || true
 echo "[4/6] Screenshot: tree loaded from startup folder"
 import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_m3_01_tree_loaded.png"
 
-# Expand the 'src' directory. Sidebar is 250px wide; the first root row
-# (src) sits just below the File Explorer header (approx y=62).
-echo "[5/6] Expanding 'src' directory"
+# Expand the 'src' directory by selecting it and pressing Enter.
+# This exercises the VM IsExpanded binding and lazy-load trigger.
+echo "[5/6] Expanding 'src' directory via Enter"
 xdotool mousemove --window "$WINDOW_ID" 80 62
 xdotool click 1
 sleep 0.3
-xdotool click 1
+xdotool key --window "$WINDOW_ID" Return
 sleep 0.7
 
 import -window "$WINDOW_ID" "$PWD/manual_test_screenshots/aero_m3_02_expanded.png"
 
-# Double-click the root-level README.md file to open it in a tab.
-# (Synthetic double-clicks on root items are reliable in Xvfb; nested items
-# are already verified by the lazy-load expansion above and by unit tests.)
+# Double-click the nested app.js file to open it in a tab.
 echo "[6/6] Double-clicking file to open tab"
-xdotool mousemove --window "$WINDOW_ID" 100 95
+xdotool mousemove --window "$WINDOW_ID" 100 82
 xdotool click --repeat 2 --delay 250 1
 sleep 0.7
 

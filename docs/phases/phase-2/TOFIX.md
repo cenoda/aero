@@ -276,6 +276,17 @@ expansion did not reliably open on double-click. Moved the handler to the
 containing `TreeViewItem`. This covers root and nested items uniformly.
 **Status:** ✅ RESOLVED (2026-06-18)
 
+### R5.4 Enter-on-directory was a silent no-op *(priority: medium)*
+`OnTreeKeyDown` toggled `SelectedNode.IsExpanded` for directories, but no
+XAML bound the container `TreeViewItem.IsExpanded` to the node VM's
+`IsExpanded` property. The VM property changed, but the visual container
+never expanded/collapsed, so no `Expanded` event fired and lazy-load did
+not trigger.
+**Fix:** Added a `TreeView.Styles` setter binding `TreeViewItem.IsExpanded`
+two-way to the node VM's `IsExpanded`. Updated `manual_test_phase2_m3.sh`
+to expand `src` via Enter, so the path is exercised in the smoke test.
+**Status:** ✅ RESOLVED (2026-06-18)
+
 ---
 
 ## Persistent Checks
