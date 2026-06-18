@@ -1,6 +1,6 @@
-# ISSUE-009: Cannot verify M4 context-menu → dialog flow under headless Xvfb
+# ISSUE-009: M4 context-menu → dialog flow remains unverified by the current headless harness
 
-**Label:** CHORE
+**Label:** BUG
 **Status:** open
 **Priority:** medium
 **Reported by:** review session (Phase 2 M4 post-merge visual verification)
@@ -10,34 +10,45 @@
 ## Description
 
 The Phase 2 M4 context-menu operations (New File / New Folder / Rename / Delete)
-and their dialogs (`TextInputDialog`, `ConfirmDialog`) are covered by 219 unit
-tests at the ViewModel level, but the **interactive rendering path** — right-click
-a tree node → context menu popup → click "New File" → dialog appears → type →
-submit → tree updates — has not been visually verified.
+and their dialogs (`TextInputDialog`, `ConfirmDialog`) are covered by unit tests
+at the ViewModel level, but the **interactive rendering path** — right-click a
+tree node → context menu popup → click "New File" → dialog appears → type →
+submit → tree updates — has not been confirmed end-to-end in a trustworthy UI
+environment.
 
 An earlier session claimed this flow passed, but its screenshots actually showed
 an empty app with no folder open (no tree nodes, so nothing to right-click). That
 verification was invalid; its artifacts were deleted.
 
-A corrected `manual_test_phase2_m4.sh` was written that opens a seeded folder via
-the M3 CLI startup-folder argument (`aero <dir>`) so the tree is populated. The
-tree now loads correctly, but driving the **context menu popup** via `xdotool`
-under a window-manager-less Xvfb does not work reliably.
+A corrected `manual_test_phase2_m4.sh` now limits its automated assertions to
+what is reliably verifiable under Xvfb: app launch, startup-folder opening, and
+tree rendering. The script explicitly leaves the context-menu/dialog flow to a
+manual real-display checklist.
+
+What remains unresolved is whether the missing popup/dialog verification is only
+a **test-harness limitation** or whether there is also a **product defect** in
+the interactive flow. The current issue stays open until that ambiguity is
+resolved.
 
 ## Steps to Reproduce
 
-1. `bash manual_test_phase2_m4.sh`
-2. Inspect `manual_test_screenshots/phase2_m4_02_context_menu.png`.
+Historical failed harness reproduction:
 
-**Expected:** the per-node context menu popup is visible over the tree.
-**Actual:** the node is selected (highlighted) but no context menu popup renders;
-the new file is never created on disk (`WARN: created_by_test.cs not found`).
+1. Run the earlier Xvfb + `xdotool` popup-driving attempt against the seeded
+  Phase 2 M4 workspace.
+2. Observe that the tree node becomes selected but no reliable context-menu
+  popup/dialog interaction occurs.
+
+**Expected:** the per-node context menu popup is visible over the tree and can
+be used to open the corresponding dialog.
+**Actual:** under the old Xvfb + `xdotool` attempt, the node is selected
+(highlighted) but no context menu popup renders; the new file is never created
+on disk (`WARN: created_by_test.cs not found`).
 
 ## Notes / Screenshots
 
-- `phase2_m4_01_tree_loaded.png` — ✅ tree populated (`src`, `README.md`, "2 entries"). Startup-folder path works.
-- `phase2_m4_02_context_menu.png` — ❌ node selected, no context menu popup.
-- `phase2_m4_03_new_file_dialog.png` (attempt 1) — showed the menu-BAR File menu, not the dialog (stray keystrokes).
+- `phase2_m4_tree_loaded.png` — ✅ tree populated (`src`, `README.md`, "2 entries"). Startup-folder path works.
+- Prior popup/dialog screenshots from the failed `xdotool` attempts document the harness limitation, not a confirmed product defect.
 
 ## Debug Log
 
@@ -70,17 +81,55 @@ the new file is never created on disk (`WARN: created_by_test.cs not found`).
 
 ## Resolution
 
-- **Root cause:** (preliminary) headless Xvfb + xdotool is the wrong tool for
-  verifying Avalonia popup/dialog interaction; not confirmed to be a product bug.
-- **Recommended fix / path forward:**
-  1. Reduce `manual_test_phase2_m4.sh` to what it can reliably assert
-     (launch + startup-folder tree load) and mark the context-menu/dialog steps
-     as **manual, real-display only**.
-  2. Do a one-time manual verification on a real display (right-click a node,
-     run all four operations) to confirm the interactive flow — the ViewModel
-     logic is already unit-tested, so this is a visual/rendering confirmation.
-  3. Longer term, adopt **Avalonia.Headless** (in-process UI test harness with
-     bitmap rendering) for interactive UI verification instead of Xvfb+xdotool.
-     Track as a separate CHORE if pursued.
+**Verified findings:**
+1. The current Xvfb + `xdotool` approach is **not a trustworthy verification
+  method** for Avalonia popup/dialog interaction in this scenario.
+2. `manual_test_phase2_m4.sh` has already been corrected to reflect that
+  boundary and now only asserts launch + startup-folder tree load.
+3. The product behavior of the interactive context-menu/dialog flow is **still
+  unverified** end-to-end.
+
+**Unverified / still open:**
+- Whether the Phase 2 M4 interactive flow is correct on a real display.
+- Whether a deterministic in-process UI harness can verify the flow and prevent
+  regressions.
+
+**Required follow-up:**
+1. Perform one trustworthy verification of the interactive flow using one of:
+   - a manual real-display check, or
+   - a deterministic in-process UI test harness.
+2. Record the outcome explicitly:
+   - if the flow fails, keep this as a confirmed `BUG` and document the product
+     defect;
+   - if the flow passes, either close this issue as a verification-gap issue or
+     split follow-up harness work into a separate `CHORE`.
+3. If pursuing automated UI coverage, stop and ask before implementation:
+   - new packages such as `Avalonia.Headless` / `Avalonia.Headless.XUnit` must
+     be catalogued in `docs/LIBRARIES.md` first;
+   - a separate UI test project is likely required because the current `tests`
+     setup avoids full Avalonia bootstrap.
+
+## Acceptance Criteria
+
+- [x] `manual_test_phase2_m4.sh` only asserts headless-verifiable behavior
+    (launch + startup-folder tree load).
+- [x] The issue document explicitly states that Xvfb + `xdotool` is a harness
+    limitation, not proof of a product defect.
+- [ ] The interactive context-menu/dialog flow is verified by a trustworthy
+    method (manual real-display check or deterministic in-process UI test).
+- [ ] The verified outcome is recorded and the label/status are updated to match
+    the evidence.
+- [ ] Any follow-up infrastructure work is split into a separate issue if it is
+    broader than resolving this verification ambiguity.
+
+## Recommended Next Step
+
+Preferred long-term direction: adopt an in-process Avalonia UI harness
+(`Avalonia.Headless`, likely with a separate `aero.UiTests` project) so the flow
+can be verified deterministically and protected against regression.
+
+That work is **not** assumed complete by this issue and requires explicit
+approval because it adds dependencies and likely a new test project.
+
 - **Commit:** —
 - **Closed date:** —

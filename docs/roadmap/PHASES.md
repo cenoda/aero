@@ -133,7 +133,6 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] **Extension points** — register commands, languages, themes
 - [ ] **Plugin marketplace** — optional: discover & install
 
-
 ---
 
 ## AGENT TRACK: Multi-Agent AI Orchestration
