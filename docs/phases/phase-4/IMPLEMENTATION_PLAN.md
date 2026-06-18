@@ -2,7 +2,7 @@
 
 > **Phase:** 4 — Basic LSP Integration  
 > **Date:** 2026-06-19  
-> **Status:** Ready to implement
+> **Status:** Ready after revision
 
 ---
 
@@ -82,6 +82,25 @@ Reason:
 Adding `StreamJsonRpc` is a **new dependency**, but it is already pre-approved by
 `docs/LIBRARIES.md` for this phase, so no additional dependency decision is needed.
 
+### Language Server Choice
+
+Phase 4 will target **`csharp-ls` as the primary C# server**.
+
+Reason:
+
+- lighter startup path for the first implementation
+- good fit for a basic LSP client phase focused on diagnostics and completion
+- keeps the first server integration narrower than OmniSharp's broader feature set
+
+Fallback policy for Phase 4:
+
+- do **not** implement dual-server fallback in the first cut
+- if `csharp-ls` is unavailable, fail gracefully with a visible status/error message
+- document `csharp-ls` installation and verification in `README.md`
+
+`omnisharp` remains a later option if Phase 4 reveals compatibility gaps significant
+enough to justify a follow-up issue and plan change.
+
 ---
 
 ## 5. Architecture Additions
@@ -116,6 +135,14 @@ Responsibilities:
 - route document lifecycle events to the correct session
 - expose completion requests for the active document
 - publish diagnostic updates into the app layer
+
+Phase 4 session scope rule:
+
+- create **one C# LSP session per opened folder**
+- use the folder opened through `File → Open Folder` as the `rootUri`
+- if no folder is open, LSP features remain unavailable for that document in Phase 4
+
+This avoids premature project/solution inference before Phase 6.
 
 Suggested location:
 
@@ -152,6 +179,14 @@ Notes:
 - untitled documents do not need full LSP support in the first cut; they may remain
   local-only until saved if that simplifies the first implementation
 - avoid making the model aware of transport details; keep it to metadata only
+- Phase 4 will use **full-document sync** for `didChange`, not incremental sync
+- version numbers still increment on each sent change even with full-document sync
+
+Reason for full sync choice:
+
+- lower risk for the first LSP phase
+- simpler to test and reason about
+- sufficient for current editor scale and scope
 
 ### Diagnostic Models
 
@@ -196,6 +231,38 @@ Requirements:
 - show line/column
 - show message
 
+### AvaloniaEdit Integration Seam
+
+Phase 4 must explicitly add editor integration for diagnostics and completion.
+
+#### Diagnostics rendering
+
+Use an AvaloniaEdit marker service approach (for example a `TextMarkerService`-style
+component attached to the editor control) to render diagnostic squiggles and/or line
+markers for the active document.
+
+Phase 4 minimum requirement:
+
+- visible error indication in the editor for diagnostics in the active file
+
+If full red squiggle rendering proves unstable during implementation, the fallback is:
+
+- line-level marker/highlight + Problems panel visibility
+
+Do **not** silently downgrade to "Problems panel only" without updating the Phase 4
+TOFIX and documenting the limitation.
+
+#### Completion rendering
+
+Phase 4 requires an observable completion result, not only a background request.
+
+Minimum acceptable Phase 4 completion UI:
+
+- a simple popup/list anchored to the editor caret, or
+- a narrow temporary completion surface in the editor view that clearly presents returned items
+
+Request/response logging alone is **not sufficient** to claim the completion checklist item.
+
 Optional but useful in the first cut:
 
 - selecting an item activates the file and moves the caret if the existing editor API
@@ -239,7 +306,7 @@ Gate:
 Deliverables:
 
 - `didOpen`
-- debounced `didChange`
+- debounced full-document `didChange`
 - `didClose`
 - `didSave`
 - version tracking in `TextDocument`
@@ -247,6 +314,7 @@ Deliverables:
 Gate:
 
 - buffer updates flow to the server in the correct order
+- `didChange` uses full-document sync consistently
 
 ## M3 — Diagnostics
 
@@ -256,6 +324,7 @@ Deliverables:
 - convert diagnostics to internal models
 - maintain latest diagnostics by file
 - expose workspace diagnostics to the UI
+- render active-file diagnostics in the editor through the AvaloniaEdit marker seam
 
 Gate:
 
@@ -279,11 +348,11 @@ Deliverables:
 
 - add `Ctrl+Space` keybinding/command
 - request `textDocument/completion` for active document/caret
-- return and surface completion results through the existing editor integration seam
+- surface completion results through a visible editor completion popup/list
 
 Gate:
 
-- `Ctrl+Space` reaches the server successfully without breaking editor input
+- `Ctrl+Space` shows a visible completion result without breaking editor input
 
 ---
 
@@ -293,7 +362,7 @@ Gate:
 
 - `src/Languages/LSPSession.cs`
 - `src/Languages/LSPManager.cs`
-- `src/Languages/LspProtocolModels.cs` *(or a small set of focused model files)*
+- `src/Languages/Models/` *(small focused per-class files; no multi-class catch-all file)*
 - `src/ViewModels/ProblemsViewModel.cs`
 - `src/Views/ProblemsView.axaml`
 - `src/Views/ProblemsView.axaml.cs` *(only if needed)*
@@ -324,11 +393,13 @@ Gate:
 - session command resolution / startup validation
 - diagnostic aggregation logic
 - problems list flattening / ordering
+- full-document `didChange` payload generation
 
 ### Integration-Style Tests
 
 - `LSPManager` routes open/change/close to the session abstraction
 - diagnostics message updates ViewModel state correctly
+- active-document diagnostics render through the editor marker seam where testable
 
 ### Manual Smoke
 
@@ -349,7 +420,7 @@ Target scenario for Phase 4 completion:
 
 ### Highest Risk — Server availability
 
-`csharp-ls` or `omnisharp` are external binaries.
+`csharp-ls` is an external binary.
 
 Mitigation:
 
@@ -384,10 +455,13 @@ Mitigation:
 Phase 4 is done when all of the following are true:
 
 - a language server session starts successfully for C#
+- the C# server choice is documented as `csharp-ls`
 - open editor buffers are synchronized to the server
+- synchronization uses full-document `didChange`
 - diagnostics are received and stored correctly
+- active-file diagnostics are visibly rendered in the editor
 - a Problems panel shows current workspace diagnostics
-- `Ctrl+Space` triggers a completion request path
+- `Ctrl+Space` shows a visible completion result
 - build passes: `dotnet build src/aero.csproj`
 - tests pass: `dotnet test tests`
 - Phase 4 checklist in `docs/roadmap/PHASES.md` is updated
