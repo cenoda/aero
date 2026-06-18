@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Aero.Core;
+using Aero.Languages;
 using Aero.Models.Editor;
 using Aero.Services;
 using Aero.Tests.Stubs;
@@ -19,7 +20,8 @@ public class DocumentManagerTests
     private static (DocumentManager dm, StubMessageBus bus) Create()
     {
         var bus = new StubMessageBus();
-        var dm = new DocumentManager(bus);
+        var languageDetection = new LanguageDetectionService();
+        var dm = new DocumentManager(bus, languageDetection);
         return (dm, bus);
     }
 
@@ -386,6 +388,44 @@ public class DocumentManagerTests
         finally { File.Delete(tmp); }
     }
 
+    [Fact]
+    public async Task SaveDocumentAsAsync_SetsLanguageFromPath()
+    {
+        var (dm, _) = Create();
+        var tmp = Path.ChangeExtension(Path.GetTempFileName(), ".cs");
+        try
+        {
+            var doc = dm.NewDocument();
+            await dm.SaveDocumentAsAsync(doc, tmp);
+            Assert.Equal("C#", doc.Language);
+        }
+        finally { File.Delete(tmp); }
+    }
+
+    // -----------------------------------------------------------------------
+    // Language detection (via ILanguageDetectionService)
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(".cs", "C#")]
+    [InlineData(".xaml", "XAML")]
+    [InlineData(".fs", "F#")]
+    [InlineData(".yaml", "YAML")]
+    [InlineData(".sql", "SQL")]
+    [InlineData(".unknown", "Plain Text")]
+    public async Task OpenDocumentAsync_DetectsLanguage(string extension, string expectedLanguage)
+    {
+        var (dm, _) = Create();
+        var tmp = Path.ChangeExtension(Path.GetTempFileName(), extension);
+        try
+        {
+            File.WriteAllText(tmp, "");
+            var doc = await dm.OpenDocumentAsync(tmp);
+            Assert.Equal(expectedLanguage, doc.Language);
+        }
+        finally { File.Delete(tmp); }
+    }
+
     // -----------------------------------------------------------------------
     // ActivateDocument
     // -----------------------------------------------------------------------
@@ -421,40 +461,5 @@ public class DocumentManagerTests
         Assert.Throws<InvalidOperationException>(() => dm.ActivateDocument(foreign));
     }
 
-    // -----------------------------------------------------------------------
-    // DetectLanguage (static helper)
-    // -----------------------------------------------------------------------
 
-    [Theory]
-    [InlineData(".cs", "C#")]
-    [InlineData(".fs", "F#")]
-    [InlineData(".js", "JavaScript")]
-    [InlineData(".ts", "TypeScript")]
-    [InlineData(".json", "JSON")]
-    [InlineData(".xml", "XML")]
-    [InlineData(".xaml", "XAML")]
-    [InlineData(".html", "HTML")]
-    [InlineData(".htm", "HTML")]
-    [InlineData(".css", "CSS")]
-    [InlineData(".scss", "SCSS")]
-    [InlineData(".md", "Markdown")]
-    [InlineData(".yaml", "YAML")]
-    [InlineData(".yml", "YAML")]
-    [InlineData(".sql", "SQL")]
-    [InlineData(".py", "Python")]
-    [InlineData(".rs", "Rust")]
-    [InlineData(".go", "Go")]
-    [InlineData(".java", "Java")]
-    [InlineData(".cpp", "C++")]
-    [InlineData(".cc", "C++")]
-    [InlineData(".c", "C")]
-    [InlineData(".sh", "Bash")]
-    [InlineData(".ps1", "PowerShell")]
-    [InlineData(".unknown", "Plain Text")]
-    [InlineData("", "Plain Text")]
-    public void DetectLanguage_ReturnsExpectedLanguage(string extension, string expected)
-    {
-        var path = string.IsNullOrEmpty(extension) ? "" : $"file{extension}";
-        Assert.Equal(expected, DocumentManager.DetectLanguage(path));
-    }
 }

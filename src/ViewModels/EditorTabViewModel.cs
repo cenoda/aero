@@ -14,13 +14,15 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
 {
     private readonly TextDocument _document;
     private readonly IMessageBus _bus;
+    private string _languageId;
     private Action<DocMsg.DocumentModified>? _modificationHandler;
     private Action<DocMsg.DocumentSaved>? _savedHandler;
 
-    public EditorTabViewModel(TextDocument document, IMessageBus bus)
+    public EditorTabViewModel(TextDocument document, IMessageBus bus, string languageId)
     {
         _document = document ?? throw new ArgumentNullException(nameof(document));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _languageId = languageId ?? throw new ArgumentNullException(nameof(languageId));
 
         // Store handlers for later unsubscribe
         _modificationHandler = msg =>
@@ -68,6 +70,20 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
 
     /// <summary>The file path (may be null for new documents).</summary>
     public string? FilePath => _document.FilePath;
+
+    /// <summary>TextMate language id for syntax highlighting (e.g. "csharp", "plaintext").</summary>
+    public string LanguageId
+    {
+        get => _languageId;
+        set
+        {
+            if (_languageId != value)
+            {
+                _languageId = value;
+                this.RaisePropertyChanged(nameof(LanguageId));
+            }
+        }
+    }
 
     /// <summary>Whether the document has unsaved changes.</summary>
     public bool IsDirty => _document.IsDirty;

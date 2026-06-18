@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Aero.Core;
+using Aero.Languages;
 using Aero.Models.Editor;
 using Aero.Services;
 using IMessageBus = Aero.Core.IMessageBus;
@@ -36,12 +37,14 @@ public class EditorViewModel : ReactiveObject, IDisposable
 {
     private readonly DocumentManager _documentManager;
     private readonly IMessageBus _bus;
+    private readonly ILanguageDetectionService _languageDetection;
     private readonly ObservableCollection<EditorTabViewModel> _tabs = new();
 
     // Stored handlers for unsubscribe
     private Action<DocMsg.DocumentOpened>? _documentOpenedHandler;
     private Action<DocMsg.DocumentClosed>? _documentClosedHandler;
     private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
+    private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
     private bool _disposed;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
@@ -61,11 +64,12 @@ public class EditorViewModel : ReactiveObject, IDisposable
 
     public ReactiveCommand<EditorTabViewModel, Unit> CloseTabCommand { get; }
 
-    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace)
+    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace, ILanguageDetectionService languageDetection)
     {
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         FindReplace = findReplace ?? throw new ArgumentNullException(nameof(findReplace));
+        _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
 
         // Create commands
         CloseTabCommand = ReactiveCommand.Create<EditorTabViewModel>(CloseTab);
@@ -81,9 +85,11 @@ public class EditorViewModel : ReactiveObject, IDisposable
         _documentOpenedHandler = msg => OnDocumentOpened(msg);
         _documentClosedHandler = msg => OnDocumentClosed(msg);
         _activeDocumentChangedHandler = msg => OnActiveDocumentChanged(msg);
+        _documentSavedHandler = msg => OnDocumentSaved(msg);
         _bus.Subscribe(_documentOpenedHandler);
         _bus.Subscribe(_documentClosedHandler);
         _bus.Subscribe(_activeDocumentChangedHandler);
+        _bus.Subscribe(_documentSavedHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -314,7 +320,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
         }
         else
         {
-            var tab = new EditorTabViewModel(doc, _bus);
+            var info = _languageDetection.Detect(doc.FilePath);
+            var tab = new EditorTabViewModel(doc, _bus, info.Id);
             _tabs.Add(tab);
             ActiveTab = tab;
         }
@@ -376,6 +383,16 @@ public class EditorViewModel : ReactiveObject, IDisposable
         UpdateStatus(tab?.Document);
     }
 
+    private void OnDocumentSaved(DocMsg.DocumentSaved msg)
+    {
+        // Refresh the tab's grammar id when Save As gives the document a new path.
+        var tab = _tabs.FirstOrDefault(t => t.Document == msg.Document);
+        if (tab != null)
+        {
+            tab.LanguageId = _languageDetection.Detect(msg.Document.FilePath).Id;
+        }
+    }
+
     /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
@@ -389,5 +406,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<DocMsg.DocumentClosed>(_documentClosedHandler);
         if (_activeDocumentChangedHandler != null)
             _bus.Unsubscribe<DocMsg.ActiveDocumentChanged>(_activeDocumentChangedHandler);
+        if (_documentSavedHandler != null)
+            _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
     }
 }

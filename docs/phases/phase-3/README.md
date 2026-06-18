@@ -22,13 +22,13 @@ Add syntax highlighting for common languages via TextMate grammars.
 
 ## Checklist
 
-- [ ] **LanguageDefinition** registry (C#, JSON, XML, Markdown, etc.)
-- [ ] **TextMate grammar loader** — load .tmLanguage JSON
-- [ ] Wire grammar to AvaloniaEdit highlighting
-- [ ] Auto-detect language from file extension
-- [ ] Status bar shows current language
+- [x] **Language detection service** — extension → TextMate id + display name
+- [x] **TextMate grammar loader** — bundled grammars via `TextMateSharp.Grammars`
+- [x] Wire grammar to AvaloniaEdit highlighting
+- [x] Auto-detect language from file extension
+- [x] Status bar shows current language
 
-> **Status:** Active — Planning
+> **Status:** Complete — awaiting exit review
 
 ## Related Documents
 

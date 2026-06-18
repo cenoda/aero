@@ -122,24 +122,27 @@ public record LanguageInfo(string Id, string DisplayName)
 ```
 
 **`LanguageDetectionService` implementation notes:**
-- Extension → `LanguageInfo` map (case-insensitive). Minimum set:
-  `.cs`→C#, `.json`→JSON, `.xml`/`.axaml`/`.csproj`→XML, `.md`/`.markdown`→Markdown,
-  plus a handful of common ones (`.js`, `.ts`, `.py`, `.html`, `.css`, `.txt`).
+- Extension → `LanguageInfo` map (case-insensitive). Covers:
+  `.cs`→C#, `.json`→JSON, `.xml`/`.axaml`/`.csproj`/`.xaml`→XML, `.md`/`.markdown`→Markdown,
+  `.js`/`.ts`/`.jsx`/`.tsx`, `.py`, `.html`/`.htm`, `.css`/`.scss`, `.txt`, `.yaml`/`.yml`,
+  `.sql`, `.rs`, `.go`, `.java`, `.cpp`/`.cc`/`.cxx`/`.h`, `.c`, `.sh`/`.bash`, `.ps1`,
+  `.fs`/`.fsi`/`.fsx`, plus common XML-ish project extensions.
 - Unknown / null / extension-less → `LanguageInfo.PlainText`.
 - The TextMate id strings must match `TextMateSharp.Grammars` language ids so the
   View can resolve a scope. Verified at M3.
 
 ### 5.2 ViewModel touch points
 
-- `EditorViewModel` (or `DocumentManager` open path): when a document is opened,
-  call `ILanguageDetectionService.Detect(doc.FilePath)` and set
-  `doc.Language = info.DisplayName`. `UpdateStatus` already pushes
-  `doc.Language` into the `Language` reactive property bound to the status bar.
-- Expose the detected language **id** to the View so it can pick the grammar.
-  Options (decide at M3): add an `EditorTabViewModel.LanguageId` string property,
-  or have the View re-detect from `Document.FilePath` via the injected service.
-  Preference: a `LanguageId` property on the tab VM (single source of truth, no
-  duplicate detection).
+- `DocumentManager` is the single owner of `TextDocument.Language`. It injects
+  `ILanguageDetectionService` and sets `doc.Language = info.DisplayName` on open
+  and on Save As. This removes the pre-existing divergent `DocumentManager.DetectLanguage`
+  static map.
+- `EditorViewModel` creates each `EditorTabViewModel` with the detected language
+  **id** (`LanguageId`) so the View can pick the TextMate grammar without re-detecting.
+  It also refreshes `LanguageId` when a `DocumentSaved` message indicates the path
+  changed (Save As).
+- `UpdateStatus` already pushes `doc.Language` into the `Language` reactive property
+  bound to the status bar.
 
 ### 5.3 View layer (TextMate wiring)
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Aero.Core;
+using Aero.Languages;
 using Aero.Models.Project;
 using Aero.Services;
 using Aero.Tests.Stubs;
@@ -31,7 +32,7 @@ public class FileExplorerViewModelTests : IDisposable
         _fs = new MockFileSystemService(new IgnoreList(new string[0]));
         _watcher = new MockFileSystemWatcherService(_bus);
         _projects = new StubProjectLoader();
-        _documentManager = new DocumentManager(_bus);
+        _documentManager = new DocumentManager(_bus, new LanguageDetectionService());
         _vm = new FileExplorerViewModel(_fs, _projects, _documentManager, _watcher, _bus);
     }
 

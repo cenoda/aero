@@ -70,11 +70,11 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > Entry condition: Phase 2 is complete.
 > Implementation details: [`docs/phases/phase-3/PROJECT_PLAN.md`](../phases/phase-3/PROJECT_PLAN.md).
 
-- [ ] **LanguageDefinition** registry (C#, JSON, XML, Markdown, etc.)
-- [ ] **TextMate grammar loader** — load .tmLanguage JSON
-- [ ] Wire grammar to AvaloniaEdit highlighting
-- [ ] Auto-detect language from file extension
-- [ ] Status bar shows current language
+- [x] **Language detection service** — extension → TextMate id + display name; single source of truth via `ILanguageDetectionService`
+- [x] **TextMate grammar loader** — bundled grammars via `TextMateSharp.Grammars` `RegistryOptions`
+- [x] Wire grammar to AvaloniaEdit highlighting
+- [x] Auto-detect language from file extension
+- [x] Status bar shows current language
 
 ## Phase 4: Basic LSP Integration
 - [ ] **LSPSession** — JSON-RPC over stdin/stdout to a language server

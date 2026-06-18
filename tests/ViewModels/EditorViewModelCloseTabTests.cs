@@ -1,5 +1,6 @@
 using System.Linq;
 using Aero.Core;
+using Aero.Languages;
 using Aero.Services;
 using Aero.ViewModels;
 using Aero.Tests.Stubs;
@@ -18,9 +19,10 @@ public class EditorViewModelCloseTabTests
     private static (EditorViewModel vm, StubMessageBus bus, DocumentManager dm) Create()
     {
         var bus = new StubMessageBus();
-        var dm = new DocumentManager(bus);
+        var languageDetection = new LanguageDetectionService();
+        var dm = new DocumentManager(bus, languageDetection);
         var findReplace = new FindReplaceViewModel();
-        var vm = new EditorViewModel(dm, bus, findReplace);
+        var vm = new EditorViewModel(dm, bus, findReplace, languageDetection);
         return (vm, bus, dm);
     }
 

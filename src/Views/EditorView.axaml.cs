@@ -6,7 +6,9 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
+using AvaloniaEdit.TextMate;
 using ReactiveUI;
+using TextMateSharp.Grammars;
 using Aero.Core;
 using Aero.ViewModels;
 
@@ -19,6 +21,16 @@ public partial class EditorView : UserControl
     private Action<FindReplaceArgs>? _findReplaceHandler;
     private CompositeDisposable? _reactiveSubscriptions;
 
+    // One shared TextMate registry/theme for the editor panel.
+    private readonly RegistryOptions _registryOptions = new(ThemeName.DarkPlus);
+
+    // Track TextMate installations per TextEditor so they are disposed when the
+    // editor control goes away (tab close) instead of leaking across open/close.
+    private readonly Dictionary<TextEditor, TextMate.Installation> _textMateInstallations = new();
+
+    // Subscription to the active tab's LanguageId changes (e.g. Save As).
+    private IDisposable? _languageIdSubscription;
+
     public EditorView()
     {
         InitializeComponent();
@@ -30,6 +42,10 @@ public partial class EditorView : UserControl
         // Dispose previous ViewModel's reactive subscriptions and event handlers
         _reactiveSubscriptions?.Dispose();
         _reactiveSubscriptions = null;
+
+        // Stop listening to the previous active tab's LanguageId changes
+        _languageIdSubscription?.Dispose();
+        _languageIdSubscription = null;
 
         // Unsubscribe from previous ViewModel's FindReplaceRequested to prevent leak
         if (DataContext is EditorViewModel previousVm && _findReplaceHandler != null)
@@ -70,6 +86,10 @@ public partial class EditorView : UserControl
             _activeEditor = null;
         }
 
+        // Stop listening to the previous tab's LanguageId changes.
+        _languageIdSubscription?.Dispose();
+        _languageIdSubscription = null;
+
         if (newTab == null)
             return;
 
@@ -95,8 +115,46 @@ public partial class EditorView : UserControl
             {
                 _activeEditor.TextChanged += OnTextChanged;
                 _activeEditor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
+
+                // Ensure TextMate is installed once per editor, then apply the grammar.
+                if (!_textMateInstallations.TryGetValue(_activeEditor, out var installation))
+                {
+                    installation = _activeEditor.InstallTextMate(_registryOptions);
+                    _textMateInstallations[_activeEditor] = installation;
+                    _activeEditor.Unloaded += OnEditorUnloaded;
+                }
+
+                ApplyGrammar(installation, newTab.LanguageId);
+
+                // Re-apply the grammar if the tab's LanguageId changes (e.g. Save As).
+                _languageIdSubscription = newTab.WhenAnyValue(x => x.LanguageId)
+                    .Subscribe(id => ApplyGrammar(installation, id));
             }
         }, DispatcherPriority.Loaded);
+    }
+
+    private void ApplyGrammar(TextMate.Installation installation, string languageId)
+    {
+        var scope = _registryOptions.GetScopeByLanguageId(languageId);
+        if (!string.IsNullOrEmpty(scope))
+        {
+            installation.SetGrammar(scope);
+        }
+        // Empty scope means plain text / unknown language — leave the editor uncolored.
+    }
+
+    private void OnEditorUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not TextEditor editor)
+            return;
+
+        editor.Unloaded -= OnEditorUnloaded;
+
+        if (_textMateInstallations.TryGetValue(editor, out var installation))
+        {
+            installation.Dispose();
+            _textMateInstallations.Remove(editor);
+        }
     }
 
     private void OnTextChanged(object? sender, EventArgs e)

@@ -62,8 +62,8 @@ public partial class App : Application
         services.AddSingleton<IMessageBus, MessageBus>();
 
         // Services
-        services.AddSingleton<DocumentManager>();
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
+        services.AddSingleton<DocumentManager>();
 
         // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
         // IgnoreList has a public IEnumerable<string> constructor used by tests.

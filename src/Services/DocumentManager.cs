@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Aero.Core;
+using Aero.Languages;
 using Aero.Models.Editor;
 
 namespace Aero.Services;
@@ -15,13 +16,15 @@ namespace Aero.Services;
 public class DocumentManager
 {
     private readonly IMessageBus _bus;
+    private readonly ILanguageDetectionService _languageDetection;
     private readonly List<TextDocument> _documents = new();
     private readonly Dictionary<TextDocument, bool> _lastDirtyState = new();
     private TextDocument? _activeDocument;
 
-    public DocumentManager(IMessageBus bus)
+    public DocumentManager(IMessageBus bus, ILanguageDetectionService languageDetection)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
     }
 
     /// <summary>All open documents.</summary>
@@ -60,7 +63,7 @@ public class DocumentManager
 
         // Create document
         var doc = new TextDocument(content, filePath);
-        doc.Language = DetectLanguage(filePath);
+        doc.Language = _languageDetection.Detect(filePath).DisplayName;
 
         _documents.Add(doc);
         ActiveDocument = doc;
@@ -90,7 +93,7 @@ public class DocumentManager
             .Max();
         var newIndex = maxIndex + 1;
         doc.DisplayName = newIndex == 1 ? "Untitled" : $"Untitled-{newIndex}";
-        doc.Language = "Plain Text";
+        doc.Language = _languageDetection.Detect(null).DisplayName;
 
         _documents.Add(doc);
         ActiveDocument = doc;
@@ -136,7 +139,7 @@ public class DocumentManager
 
         await File.WriteAllTextAsync(filePath, document.Content);
         document.FilePath = filePath;
-        document.Language = DetectLanguage(filePath);
+        document.Language = _languageDetection.Detect(filePath).DisplayName;
         document.MarkAsClean();
 
         _bus.Publish(new DocumentSaved(filePath, document));
@@ -200,37 +203,4 @@ public class DocumentManager
         _lastDirtyState.Clear();
     }
 
-    /// <summary>Detect language from file extension.</summary>
-    public static string DetectLanguage(string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath))
-            return "Plain Text";
-
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        return ext switch
-        {
-            ".cs" => "C#",
-            ".fs" => "F#",
-            ".js" => "JavaScript",
-            ".ts" => "TypeScript",
-            ".json" => "JSON",
-            ".xml" => "XML",
-            ".xaml" => "XAML",
-            ".html" or ".htm" => "HTML",
-            ".css" => "CSS",
-            ".scss" => "SCSS",
-            ".md" => "Markdown",
-            ".yaml" or ".yml" => "YAML",
-            ".sql" => "SQL",
-            ".py" => "Python",
-            ".rs" => "Rust",
-            ".go" => "Go",
-            ".java" => "Java",
-            ".cpp" or ".cc" or ".cxx" => "C++",
-            ".c" or ".h" => "C",
-            ".sh" or ".bash" => "Bash",
-            ".ps1" => "PowerShell",
-            _ => "Plain Text"
-        };
-    }
 }

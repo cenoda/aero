@@ -1,7 +1,7 @@
 using Aero.Languages;
 using Xunit;
 
-namespace aero.Tests.Languages;
+namespace Aero.Tests.Languages;
 
 public class LanguageDetectionServiceTests
 {
@@ -13,6 +13,7 @@ public class LanguageDetectionServiceTests
     [InlineData("bar.json", "json", "JSON")]
     [InlineData("test.xml", "xml", "XML")]
     [InlineData("App.axaml", "xml", "XML")]
+    [InlineData("App.xaml", "xml", "XAML")]
     [InlineData("aero.csproj", "xml", "XML")]
     [InlineData("readme.md", "markdown", "Markdown")]
     [InlineData("readme.markdown", "markdown", "Markdown")]
@@ -20,8 +21,24 @@ public class LanguageDetectionServiceTests
     [InlineData("main.ts", "typescript", "TypeScript")]
     [InlineData("app.py", "python", "Python")]
     [InlineData("index.html", "html", "HTML")]
+    [InlineData("index.htm", "html", "HTML")]
     [InlineData("style.css", "css", "CSS")]
+    [InlineData("style.scss", "scss", "SCSS")]
     [InlineData("notes.txt", "plaintext", "Plain Text")]
+    [InlineData("app.fs", "fsharp", "F#")]
+    [InlineData("app.yaml", "yaml", "YAML")]
+    [InlineData("app.yml", "yaml", "YAML")]
+    [InlineData("query.sql", "sql", "SQL")]
+    [InlineData("lib.rs", "rust", "Rust")]
+    [InlineData("main.go", "go", "Go")]
+    [InlineData("Main.java", "java", "Java")]
+    [InlineData("app.cpp", "cpp", "C++")]
+    [InlineData("app.cc", "cpp", "C++")]
+    [InlineData("app.c", "c", "C")]
+    [InlineData("app.h", "cpp", "C++")]
+    [InlineData("deploy.sh", "shellscript", "Bash")]
+    [InlineData("deploy.bash", "shellscript", "Bash")]
+    [InlineData("script.ps1", "powershell", "PowerShell")]
     public void Detect_KnownExtension_ReturnsExpectedLanguage(string filePath, string expectedId, string expectedDisplayName)
     {
         var result = _service.Detect(filePath);
