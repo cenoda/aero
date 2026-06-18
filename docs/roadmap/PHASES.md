@@ -65,6 +65,11 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 
 
 ## Phase 3: Syntax Highlighting
+
+> Goal: Auto-detect language from extension and apply TextMate syntax highlighting.
+> Entry condition: Phase 2 is complete.
+> Implementation details: [`docs/phases/phase-3/PROJECT_PLAN.md`](../phases/phase-3/PROJECT_PLAN.md).
+
 - [ ] **LanguageDefinition** registry (C#, JSON, XML, Markdown, etc.)
 - [ ] **TextMate grammar loader** — load .tmLanguage JSON
 - [ ] Wire grammar to AvaloniaEdit highlighting

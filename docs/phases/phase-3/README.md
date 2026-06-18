@@ -6,6 +6,9 @@
 
 Add syntax highlighting for common languages via TextMate grammars.
 
+> Implementation details: [`PROJECT_PLAN.md`](./PROJECT_PLAN.md).
+> Code-quality checklist: [`TOFIX.md`](./TOFIX.md).
+
 ## Entry Condition
 
 - Phase 2 complete (file explorer, project system)
