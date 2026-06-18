@@ -47,6 +47,7 @@ services.AddSingleton<IIgnoreList>(_ => new IgnoreList());
 services.AddSingleton<IFileSystemService, FileSystemService>();
 services.AddSingleton<IProjectLoader, ProjectLoader>();
 services.AddSingleton<IFileSystemWatcherService, FileSystemWatcherService>();
+services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
 services.AddSingleton<FileExplorerViewModel>();
 
 var provider = services.BuildServiceProvider();
@@ -173,6 +174,7 @@ The following services were added during Phase 2. All are registered as
 | `FileSystemService` | `IFileSystemService` | singleton | Async wrapper over `System.IO` for enumeration, create/rename/delete. Every method takes a `CancellationToken`. Paths normalized via `Path.GetFullPath()`. Filters results through `IIgnoreList`. |
 | `ProjectLoader` | `IProjectLoader` | singleton | Extension-based recognition: `.sln`, `.csproj`, `package.json`. Read-only — does not modify project files. Full MSBuild / Node parsing deferred to Phase 6. |
 | `FileSystemWatcherService` | `IFileSystemWatcherService` | singleton | Wraps `System.IO.FileSystemWatcher` with debouncing and `IIgnoreList` filtering. Watches one workspace root, publishes `FolderChanged` after a quiet period, and surfaces non-fatal watcher failures through `StatusMessage`. |
+| `LanguageDetectionService` | `ILanguageDetectionService` | singleton | Extension-based language detection (case-insensitive). Maps file extensions to `LanguageInfo` records (e.g. `.cs` → C#, `.json` → JSON, `.csproj`/`.axaml` → XML). Unknown or extension-less paths resolve to `LanguageInfo.PlainText`. UI-free, no Avalonia/TextMate types. |
 
 **Models added:**
 - `src/Models/Project/FileSystemEntry.cs` — plain record `{ Name, FullPath, Kind }`.

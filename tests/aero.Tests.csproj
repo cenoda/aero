@@ -45,6 +45,9 @@
     <Compile Include="../src/ViewModels/FileExplorerNodeViewModel.cs" />
     <Compile Include="../src/ViewModels/FileExplorerViewModel.cs" />
     <Compile Include="../src/ViewModels/FindReplaceViewModel.cs" />
+    <Compile Include="../src/Languages/LanguageInfo.cs" />
+    <Compile Include="../src/Languages/ILanguageDetectionService.cs" />
+    <Compile Include="../src/Languages/LanguageDetectionService.cs" />
   </ItemGroup>
 
 </Project>

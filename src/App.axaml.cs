@@ -1,4 +1,5 @@
 using Aero.Core;
+using Aero.Languages;
 using Aero.Services;
 using Aero.ViewModels;
 using Avalonia;
@@ -62,6 +63,7 @@ public partial class App : Application
 
         // Services
         services.AddSingleton<DocumentManager>();
+        services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
 
         // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
         // IgnoreList has a public IEnumerable<string> constructor used by tests.
