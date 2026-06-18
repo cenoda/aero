@@ -7,7 +7,7 @@ For the agent orchestration layer, see `AGENT_ORCHESTRATION.md`.
 
 | Layer       | Technology              |
 |-------------|-------------------------|
-| UI          | Avalonia 11.2 (XAML)    |
+| UI          | Avalonia 11.3 (XAML)    |
 | Language    | C# (.NET 9.0)           |
 | Pattern     | MVVM (Model-View-ViewModel) |
 | Text Editor | AvaloniaEdit            |

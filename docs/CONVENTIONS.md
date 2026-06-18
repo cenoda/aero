@@ -51,7 +51,7 @@ src/Agent/Adapters/CliAdapter.cs →  namespace Aero.Agent.Adapters
 ## Formatting
 
 - 4 spaces (see `.editorconfig`)
-- Opening brace on same line (K&R style)
+- Opening brace on a new line (matches `.editorconfig` / Allman style)
 - `var` when type is obvious from right side: `var doc = new TextDocument();`
 - Explicit type when it's not obvious: `string path = GetPath();`
 

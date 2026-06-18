@@ -78,7 +78,8 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | `<MaterialIcon Kind="Folder" />` — instant icons. No hunting files. |
+| **Text glyphs (current)** | Lightweight built-in symbols rendered as text in the file tree. | Stable on Avalonia 11.3 with no extra dependency; used through Phase 2. |
+| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | Deferred to Phase 8: current compatible versions were not stable with Avalonia 11.3, and newer versions require Avalonia 12. |
 
 ## TESTING
 
@@ -105,7 +106,6 @@ Avalonia.AvaloniaEdit      11.3.*
 AvaloniaEdit.TextMate      11.3.*
 TextMateSharp.Grammars     1.*
 Dock.Avalonia              11.3.*
-Material.Icons.Avalonia    1.*
 Microsoft.Extensions.DependencyInjection  9.*
 Microsoft.Extensions.Configuration.Json   9.*
 Microsoft.Extensions.Logging             9.*
@@ -127,7 +127,7 @@ Phase 4: + StreamJsonRpc, CliWrap
 Phase 5: + Pty.Net, VtNetCore
 Phase 7: + LibGit2Sharp, DiffPlex
 Phase 8: + Dock.Avalonia, DialogHost.Avalonia, FuzzySharp,
-          Material.Icons.Avalonia, Microsoft.Extensions.*
+          icon-library decision, Microsoft.Extensions.*
 Phase 10: + McMaster.NETCore.Plugins
 Anytime: + Humanizer, Polly, xUnit, NSubstitute
 ```

@@ -10,7 +10,7 @@
 **What this is:** A standalone code editor (IDE) built from scratch in C#/Avalonia, with a multi-agent AI orchestration layer as its differentiator.
 
 **Tech Stack:**
-- UI: Avalonia 11.2 (XAML)
+- UI: Avalonia 11.3 (XAML)
 - Language: C# (.NET 9.0)
 - Pattern: MVVM with ReactiveUI
 - Text Editor: AvaloniaEdit
@@ -73,7 +73,9 @@ Do not start Agent Track (Phase A1+) until Phase 8 (UI Polish) is complete.
 
 ### After Work
 
-- **Build must pass:** `dotnet run --project src` succeeds
+- **Build must pass:** `dotnet build src/aero.csproj` succeeds
+- **Tests should pass for code changes:** `dotnet test tests` succeeds
+- **Run/manual smoke when UI behavior changes:** use the relevant `manual_test_*.sh` script or `dotnet run --project src`
 - **Commit message format:** `area: imperative summary`
   - Examples: `editor: add DocumentManager`, `lsp: implement LSPSession`
 - **Update `docs/roadmap/PHASES.md`** — mark completed items with `[x]`
@@ -132,7 +134,7 @@ src/Agent/Adapters/CliAdapter.cs →  namespace Aero.Agent.Adapters
 ### Formatting
 
 - 4 spaces (see `.editorconfig`)
-- Opening brace same line (K&R style)
+- Opening brace on a new line (matches `.editorconfig` / Allman style)
 - `var` when type is obvious: `var doc = new TextDocument();`
 - Explicit type when not obvious: `string path = GetPath();`
 
@@ -156,13 +158,13 @@ src/Agent/Adapters/CliAdapter.cs →  namespace Aero.Agent.Adapters
 | Fuzzy search | FuzzySharp | Manual string matching |
 | Plugin loading | McMaster.NETCore.Plugins | AssemblyLoadContext |
 | Reactive collections | DynamicData | ObservableCollection manual sync |
-| Icons | Material.Icons.Avalonia | Custom icon assets |
+| Icons | Text glyphs for now; revisit icon library in Phase 8 | Custom icon assets |
 | Modal dialogs | DialogHost.Avalonia | Custom overlay logic |
 
 **Rule:** If a library in `docs/LIBRARIES.md` covers 80%+ of the need, use it.
 Only build custom when:
 - No library exists for the specific need
-- The library is abandoned, buggy, or incompatible with .NET 9 / Avalonia 11.2
+- The library is abandoned, buggy, or incompatible with .NET 9 / Avalonia 11.3
 - The functionality is trivial (< 50 lines) and adding a dependency is overkill
 
 **Process:**
@@ -180,7 +182,7 @@ Only build custom when:
 
 ### DI Registration
 
-All services must be registered in `Program.cs` (or a dedicated `ServiceCollection` extension):
+All services must be registered in `src/App.axaml.cs` (or a dedicated `ServiceCollection` extension):
 ```csharp
 services.AddSingleton<IMessageBus, MessageBus>();
 services.AddSingleton<DocumentManager>();
@@ -273,16 +275,18 @@ Stop work and ask the user when:
 
 ```bash
 # Build and run
+dotnet build src/aero.csproj
+dotnet test tests
 dotnet run --project src
 
 # Check current phase status
 cat docs/roadmap/PHASES.md | grep -E "^\s*- \[x\]|^\s*- \[ \]"
 
 # Find where a service should be registered
-grep -r "AddSingleton\|AddTransient\|AddScoped" src/
+grep -r "AddSingleton\|AddTransient\|AddScoped" src/App.axaml.cs src/
 ```
 
 ---
 
-*Last updated: 2026-06-15*
+*Last updated: 2026-06-19*
 *Governs: entire project (`/home/cenoda/aero`)*

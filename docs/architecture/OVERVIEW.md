@@ -36,7 +36,7 @@ The IDE works without agents. Agents are plugins that supercharge it.
 
 | Layer       | Technology              |
 |-------------|-------------------------|
-| UI          | Avalonia 11.2 (XAML)    |
+| UI          | Avalonia 11.3 (XAML)    |
 | Language    | C# (.NET 9.0)           |
 | Pattern     | MVVM                     |
 | Text Editor | AvaloniaEdit             |
