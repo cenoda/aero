@@ -236,6 +236,76 @@ explicitly names the event-bridge pattern and AvaloniaEdit `CompletionWindow` as
 
 ---
 
+## Round 3 — Plan Review (2026-06-19)
+
+Findings from the plan review against the live codebase and prior phases.
+
+### R3.1 Entry Gate (M0) is under-specified *(priority: medium)*
+
+**Description:** The plan states Phase 3 is the entry condition but does not list verifiable gates.
+
+**Required fix:** Add a short M0 Entry Gate checklist with build/test/manual-smoke gates.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added M0 Entry Gate section with verification table.
+
+### R3.2 Untitled documents and LSP *(priority: low)*
+
+**Description:** `DocumentManager.NewDocument()` does not publish `DocumentOpened`. The plan says untitled docs "may remain local-only," but this should be explicit in the Definition of Done.
+
+**Required fix:** Add explicit note that untitled documents remain local-only in Phase 4.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added untitled documents note to §5.1.
+
+### R3.3 Files opened before a folder is opened *(priority: medium)*
+
+**Description:** A user can open a `.cs` file without opening a folder. The plan says LSP is unavailable in that case, but the failure should be visible.
+
+**Required fix:** Add a status-bar message "LSP disabled: open a folder first".
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added status-bar message note to §5.1.
+
+### R3.4 LSP capability negotiation *(priority: medium)*
+
+**Description:** The plan locks to full-document sync, but LSP servers advertise their supported sync kind. If `csharp-ls` advertises incremental-only, the client will misbehave.
+
+**Required fix:** Add M1 gate item to read `textDocumentSync` from `initialize` response and assert full sync is supported.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added capability assertion to M1 gate.
+
+### R3.5 StreamJsonRpc LSP payload types *(priority: low)*
+
+**Description:** The plan says "keep DTOs small" but does not specify whether to use StreamJsonRpc LSP types or hand-rolled ones.
+
+**Required fix:** State explicitly that Phase 4 uses hand-rolled minimal DTOs in `src/Languages/Models/`.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added DTO strategy note to §5.2.
+
+### R3.6 LSPManager size checkpoint *(priority: low)*
+
+**Description:** `LSPManager` owns sessions, document routing, diagnostics, and completion. It risks becoming a god-class.
+
+**Required fix:** Add a checkpoint at the end of M2: if `LSPManager` exceeds ~400–500 lines, open a TOFIX to extract `DiagnosticStore`.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added size checkpoint to M2 gate.
+
+### R3.7 Testing the JSON-RPC transport *(priority: medium)*
+
+**Description:** The plan mentions "fake JSON-RPC peer" but gives no detail. This is high-value for M1 to avoid CI dependency on `csharp-ls`.
+
+**Required fix:** Add a test that launches `LSPSession` against a small in-process `Process` that echoes JSON-RPC.
+
+**Status:** ✅ RESOLVED IN PLAN (2026-06-19) — added mock JSON-RPC server test detail to §8.
+
+### R3.8 docs/LIBRARIES.md update *(priority: medium)*
+
+**Description:** The plan correctly notes `CliWrap` should move from Phase 4 to Phase 5. This is a required doc change.
+
+**Required fix:** Update `docs/LIBRARIES.md` to move `CliWrap` from Phase 4 to Phase 5.
+
+**Status:** ✅ RESOLVED (2026-06-19) — updated `docs/LIBRARIES.md` timeline.
+
+---
+
 ## Persistent Checks
 
 Use these as the self-review checklist before closing Phase 4:

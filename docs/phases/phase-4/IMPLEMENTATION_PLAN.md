@@ -40,6 +40,20 @@ Open gap before implementation:
 
 ---
 
+## M0 — Entry Gate
+
+Before writing LSP code, verify these gates:
+
+| Gate | Verification |
+|------|--------------|
+| Phase 3 checklist complete | `docs/roadmap/PHASES.md` Phase 3 items all `[x]` |
+| Build passes | `dotnet build src/aero.csproj` succeeds |
+| Tests pass | `dotnet test tests` passes (227/227 from Phase 2) |
+| Manual smoke passes | `manual_test_phase3.sh` passes |
+| No Phase 3 blockers | `docs/phases/phase-3/TOFIX.md` has no open items |
+
+---
+
 ## 3. Scope
 
 ### In Scope
@@ -151,8 +165,15 @@ Phase 4 session scope rule:
 - create **one C# LSP session per opened folder**
 - use the folder opened through `File → Open Folder` as the `rootUri`
 - if no folder is open, LSP features remain unavailable for that document in Phase 4
+- display a status-bar message "LSP disabled: open a folder first" so the failure is visible rather than silent
 
 This avoids premature project/solution inference before Phase 6.
+
+Untitled documents:
+
+- `DocumentManager.NewDocument()` does **not** publish `DocumentOpened`
+- untitled documents remain local-only in Phase 4
+- completion/diagnostics in untitled files are not expected to work
 
 Phase 4 diagnostic ownership rule:
 
@@ -220,6 +241,10 @@ Add small internal models that match the needed LSP payloads:
 - source/code if available
 
 Keep them focused and UI-friendly rather than mirroring the full LSP spec everywhere.
+
+**DTO Strategy:** Phase 4 uses hand-rolled minimal DTOs (not a separate LSP protocol package).
+`StreamJsonRpc` provides JSON-RPC framing but not LSP-specific message types. Keep DTOs in `src/Languages/Models/`
+and add them only as needed for the Phase 4 feature set.
 
 ---
 
@@ -346,6 +371,8 @@ Gate:
 - application builds
 - a session can start for a configured C# server command
 - the session can shut down cleanly without hanging the app
+- LSP capability negotiation: read `textDocumentSync` from `initialize` response and assert full sync is supported, or fail gracefully with a status message
+- `docs/LIBRARIES.md` updated to move `CliWrap` from Phase 4 to Phase 5
 
 ## M2 — Document Synchronization
 
@@ -361,6 +388,7 @@ Gate:
 
 - buffer updates flow to the server in the correct order
 - `didChange` uses full-document sync consistently
+- **Checkpoint:** If `LSPManager` exceeds ~400–500 lines, open a TOFIX item to extract `DiagnosticStore`
 
 ## M3 — Diagnostics
 
@@ -466,6 +494,10 @@ that `EditorView.axaml.cs` handles against the live `AvaloniaEdit` control. Pref
 - active-document diagnostics render through the editor marker seam where testable
 - `LSPSession` request/response correlation is exercised against a fake JSON-RPC peer or
   lightweight mock server so CI does not depend on `csharp-ls`
+
+**Mock JSON-RPC Server Test:** Add a test that launches `LSPSession` against a small in-process
+`Process` that echoes JSON-RPC or returns canned `initialize`/`publishDiagnostics` responses.
+This avoids CI dependency on `csharp-ls` and validates the transport layer in isolation.
 
 ### Manual Smoke
 

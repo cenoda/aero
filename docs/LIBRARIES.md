@@ -26,7 +26,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 |---------|-------------|-----------------|
 | **Pty.Net** | Wraps OS pseudo-terminals (Linux `/dev/ptmx`, Windows ConPTY). | Without a pty, programs like `git diff`, `htop`, or colored output break because they detect "not a real terminal". |
 | **VtNetCore** | Parses VT100/xterm escape codes (`\e[31mHELLO\e[0m`) into structured data. | Decodes "HELLO in red" so you can render it. Mandatory for a working terminal. |
-| **CliWrap** | Clean C# wrapper around `Process.Start`. | Instead of 15 lines of `ProcessStartInfo`, you write: `await Cli.Wrap("dotnet").WithArguments("build").ExecuteAsync()`. Great for build, git, and LSP spawning too. |
+| **CliWrap** | Clean C# wrapper around `Process.Start`. | Instead of 15 lines of `ProcessStartInfo`, you write: `await Cli.Wrap("dotnet").WithArguments("build").ExecuteAsync()`. Great for run-to-completion commands (build, git). Note: the LSP server (Phase 4) uses a raw long-lived `Process` instead — see `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §4. |
 
 ## DOCKING & LAYOUT (Phase 8)
 
@@ -123,8 +123,8 @@ Then add **StreamJsonRpc** at Phase 4, **LibGit2Sharp + DiffPlex** at Phase 7.
 ```
 Phase 1: + AvaloniaEdit
 Phase 3: + AvaloniaEdit.TextMate, TextMateSharp.Grammars
-Phase 4: + StreamJsonRpc, CliWrap
-Phase 5: + Pty.Net, VtNetCore
+Phase 4: + StreamJsonRpc
+Phase 5: + CliWrap, Pty.Net, VtNetCore
 Phase 7: + LibGit2Sharp, DiffPlex
 Phase 8: + Dock.Avalonia, DialogHost.Avalonia, FuzzySharp,
           icon-library decision, Microsoft.Extensions.*
