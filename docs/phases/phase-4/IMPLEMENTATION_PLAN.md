@@ -48,7 +48,7 @@ Before writing LSP code, verify these gates:
 |------|--------------|
 | Phase 3 checklist complete | `docs/roadmap/PHASES.md` Phase 3 items all `[x]` |
 | Build passes | `dotnet build src/aero.csproj` succeeds |
-| Tests pass | `dotnet test tests` passes (227/227 from Phase 2) |
+| Tests pass | `dotnet test tests` passes (count verified at Phase 3 M0) |
 | Manual smoke passes | `manual_test_phase3.sh` passes |
 | No Phase 3 blockers | `docs/phases/phase-3/TOFIX.md` has no open items |
 
@@ -160,8 +160,13 @@ Responsibilities:
 - resolve the language server command
 - route document lifecycle events to the correct session
 - expose completion requests for the active document
-- own the latest diagnostic state for Phase 4
-- publish diagnostic updates into the app layer
+- push received LSP diagnostics into `IDiagnosticStore`
+- publish LSP status messages into the app layer
+
+Dependencies:
+
+- `DocumentManager` — to look up the `TextDocument` referenced by `DocumentOpened` and to resolve open documents for completion
+- `IDiagnosticStore` — the shared sink for diagnostics; `LSPManager` is a writer, not the owner
 
 Phase 4 session scope rule:
 
@@ -178,29 +183,34 @@ Untitled documents:
 - untitled documents remain local-only in Phase 4
 - completion/diagnostics in untitled files are not expected to work
 
-Phase 4 diagnostic ownership rule:
+Phase 4 diagnostic source rule:
 
-- **`LSPManager` is the single source of truth for diagnostics**
-- it stores/replaces the latest diagnostics per file URI
-- UI ViewModels consume flattened/projected state only
+- **`IDiagnosticStore` is the single source of truth for diagnostics in Phase 4**
+- `LSPManager` pushes LSP diagnostics into it
+- `ProblemsViewModel` consumes flattened/projected state only
+- Phase 6 will push build diagnostics into the same store
 
-No separate `DiagnosticStore` service will be introduced in Phase 4 unless implementation
-pressure proves `LSPManager` too broad and a follow-up issue is opened.
+A small `DiagnosticStore` service is introduced in Phase 4 (M3) so Phase 6 can push build
+diagnostics into the same sink without a mid-phase refactor. In Phase 4 it has one writer
+(`LSPManager`).
 
 Suggested location:
 
 - `src/Languages/LSPManager.cs`
 
-### Diagnostic Store / Problems ViewModel
+### `IDiagnosticStore` / `DiagnosticStore`
 
 Responsibilities:
 
-- maintain the latest diagnostics per file URI
+- maintain the latest diagnostics per file URI, tagged by source
+- accept diagnostics from LSP, build, or other sources
 - flatten diagnostics into a workspace-wide list for the Problems panel
 - expose severity, file, line, column, and message
 
 Suggested locations:
 
+- `src/Languages/IDiagnosticStore.cs`
+- `src/Languages/DiagnosticStore.cs`
 - `src/Languages/Models/` for DTOs (consistent with `LanguageInfo` living under `src/Languages/`)
 - `src/ViewModels/ProblemsViewModel.cs`
 - `src/Views/ProblemsView.axaml`
@@ -213,9 +223,16 @@ Suggested locations:
 
 Add the minimum metadata required for LSP synchronization:
 
-- stable document URI derived from `FilePath` — use `file://` absolute URI form
+- stable document URI derived from `FilePath`
+  - rule: `new Uri(Path.GetFullPath(filePath), UriKind.Absolute).ToString()` producing a `file://` URI
+  - untitled/new documents remain local-only and do not expose a URI
 - integer version number
-- helpers for incrementing version on text change
+- helper to get/increment version when a `didChange` notification is actually sent
+
+Version rule:
+
+- increment the version only inside the debounced `didChange` send path
+- do not increment on every keystroke; a failed or skipped send must not advance the server's view of the document
 
 Notes:
 
@@ -223,13 +240,8 @@ Notes:
   local-only until saved if that simplifies the first implementation
 - avoid making the model aware of transport details; keep it to metadata only
 - Phase 4 will use **full-document sync** for `didChange`, not incremental sync
-- version numbers still increment on each sent change even with full-document sync
 - `didSave` will be driven from the existing `DocumentManager.SaveDocumentAsync` /
   `SaveDocumentAsAsync` success path, which already publishes `DocumentSaved`
-
-**Phase 6 coupling:** Define a small `IDiagnosticStore` interface in M3 with `LSPManager` as the only
-writer for now. This keeps `ProblemsViewModel` decoupled and provides a shared sink for Phase 6's
-MSBuild error parsing.
 
 Reason for full sync choice:
 
@@ -271,8 +283,10 @@ Minimum layout change:
 
 - split the main editor column into:
   - editor area
-  - problems panel area
-- allow the problems panel to be collapsed when empty or hidden
+  - bottom panel area
+- use `ShellViewModel.IsBottomPanelVisible` for visibility
+  - do not overload the existing `IsTerminalVisible` placeholder; that remains for the future Terminal panel
+  - a tabbed/selector host that switches between Problems / Output / Terminal is deferred to Phase 5/8; Phase 4 only needs show/hide for Problems
 
 ### Problems Panel
 
@@ -309,6 +323,14 @@ TOFIX and documenting the limitation.
 
 Phase 4 requires an observable completion result, not only a background request.
 
+Data flow:
+
+- `EditorViewModel` holds `LSPManager` (constructor injection)
+- `Ctrl+Space` invokes `EditorViewModel.CompletionCommand`
+- the command calls `_lspManager.RequestCompletionAsync(activeDocument, caretOffset)`
+- the returned items are exposed through `EditorViewModel.CompletionItems` and `IsCompletionVisible`
+- `EditorView.axaml.cs` binds these to AvaloniaEdit's built-in `CompletionWindow` or a caret-anchored popup
+
 Minimum acceptable Phase 4 completion UI:
 
 - a simple popup/list anchored to the editor caret, or
@@ -316,12 +338,16 @@ Minimum acceptable Phase 4 completion UI:
 
 Request/response logging alone is **not sufficient** to claim the completion checklist item.
 
-Fallback rule:
+Fallback rule (M5 gate):
 
 - if a caret-anchored native popup cannot be wired safely in M5, the minimum acceptable
   fallback is a temporary visible completion overlay/list inside the editor area that shows
   returned items and is documented as a Phase 4 limitation
 - a status-bar message by itself is **not sufficient**
+- the M5 gate explicitly accepts this fallback only if it is recorded in `TOFIX.md`
+
+Note: `Ctrl+Space` conflicts with some OS shortcuts (Linux IBus, macOS Spotlight). Document this
+as a known limitation for Phase 4; configurable keybindings are a Phase 8 concern.
 
 Optional but useful in the first cut:
 
@@ -337,8 +363,10 @@ Use the existing `MessageBus` for app-level communication.
 Add messages for:
 
 - `DocumentTextChanged` — fires on every editor text change (separate from dirty-state transitions).
-  This is the source for debounced LSP `didChange` sync.
-- diagnostics updated for a document/workspace
+  This is the source for debounced LSP `didChange` sync. The handler must capture `doc.Content`
+  synchronously on the UI thread, because `TextDocument.Content` is thread-affine; the captured
+  text is then passed to the background send path.
+- `DiagnosticsUpdated` — published by `IDiagnosticStore` when the workspace diagnostic set changes
 - optional request to jump to a diagnostic location
 - optional LSP/log status message for status bar visibility
 - `FolderOpened` — existing message that carries the opened folder path; `LSPManager` subscribes to this
@@ -416,7 +444,7 @@ Gate:
 - buffer updates flow to the server in the correct order
 - `didChange` uses full-document sync consistently
 - version numbers increment on each sent change
-- **Checkpoint:** If `LSPManager` exceeds ~400–500 lines, open a TOFIX item to extract `IDiagnosticStore`
+- **Checkpoint:** `IDiagnosticStore` / `DiagnosticStore` are extracted by M3 so `LSPManager` does not own diagnostic storage. If `LSPManager` still exceeds ~400–500 lines after that, open a TOFIX item to split further.
 
 ## M3 — Diagnostics
 
@@ -465,13 +493,17 @@ Gate:
 
 - `src/Languages/LSPSession.cs`
 - `src/Languages/LSPManager.cs`
+- `src/Languages/IDiagnosticStore.cs`
+- `src/Languages/DiagnosticStore.cs`
 - `src/Languages/Models/` *(small focused per-class files; no multi-class catch-all file)*
 - `src/ViewModels/ProblemsViewModel.cs`
 - `src/Views/ProblemsView.axaml`
 - `src/Views/ProblemsView.axaml.cs` *(only if needed)*
 - `tests/Languages/LSPSessionTests.cs`
 - `tests/Languages/LSPManagerTests.cs`
+- `tests/Languages/DiagnosticStoreTests.cs`
 - `docs/phases/phase-4/TOFIX.md`
+- `manual_test_phase4.sh`
 
 ### Existing files likely to change
 
@@ -509,13 +541,10 @@ and leave the kind/tab selector as a Phase 5 concern. Avoid building a full `enu
 
 ### Completion Seam
 
-Use the established event-bridge pattern: `EditorViewModel` raises an event (e.g., `CompletionRequested`)
-that `EditorView.axaml.cs` handles against the live `AvaloniaEdit` control. Prefer AvaloniaEdit's built-in
-`CompletionWindow` over a hand-built overlay.
-
-**Data flow:** `EditorViewModel` holds a reference to `LSPManager`, exposes completion items via a property
-(e.g., `IReadOnlyList<CompletionItem> CompletionItems`) and a command (e.g., `RequestCompletionCommand`).
-The view binds to `CompletionWindow` and populates it from the items property.
+`EditorViewModel` exposes `CompletionItems` and `IsCompletionVisible` and invokes
+`_lspManager.RequestCompletionAsync` from `CompletionCommand`. `EditorView.axaml.cs` binds the result to
+AvaloniaEdit's built-in `CompletionWindow` (or a fallback popup) against the live `TextEditor` control.
+Prefer `CompletionWindow` over a hand-built overlay.
 
 ---
 
@@ -592,6 +621,16 @@ Mitigation:
 - keep Phase 4 Problems panel read-only and minimal
 - do not build a generalized output/log docking system yet
 
+### High Risk — Thread-affine document access
+
+`TextDocument.Content` throws if read off the UI thread. If the outgoing `didChange` path reads
+`doc.Content` on a background thread, synchronization will crash.
+
+Mitigation:
+
+- capture `doc.Content` synchronously in the UI-thread `DocumentTextChanged` handler
+- pass the captured string to the background send path; never access the document from a worker thread
+
 ### Medium Risk — FolderOpened idempotency
 
 `FolderOpened` fires on re-open or manual refresh of the same path. LSP session (re)creation
@@ -621,6 +660,7 @@ Phase 4 is done when all of the following are true:
 - tests pass: `dotnet test tests`
 - Phase 4 checklist in `docs/roadmap/PHASES.md` is updated
 - README documents required server installation/setup
+- `manual_test_phase4.sh` passes
 
 ---
 
@@ -629,5 +669,7 @@ Phase 4 is done when all of the following are true:
 - Prefer one focused change per milestone.
 - Keep DTOs small; do not import the entire LSP surface unless needed.
 - Use constructor injection and register all new services in `src/App.axaml.cs`.
+- `DocumentTextChanged` is a new message record added to `src/Core/Messages.cs`.
+- External file changes detected by `FileSystemWatcherService` (`FolderChanged`) are intentionally not synced back to the language server in Phase 4.
 - If the first server integration becomes unclear after two implementation attempts,
   create an issue in `docs/issues/open/` immediately per `AGENTS.md`.
