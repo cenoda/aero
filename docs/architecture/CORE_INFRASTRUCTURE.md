@@ -43,7 +43,10 @@ var services = new ServiceCollection();
 
 services.AddSingleton<IMessageBus, MessageBus>();
 services.AddSingleton<DocumentManager>();
-services.AddSingleton<SettingsService>();
+services.AddSingleton<IIgnoreList>(_ => new IgnoreList());
+services.AddSingleton<IFileSystemService, FileSystemService>();
+services.AddSingleton<IProjectLoader, ProjectLoader>();
+services.AddSingleton<IFileSystemWatcherService, FileSystemWatcherService>();
 services.AddSingleton<FileExplorerViewModel>();
 
 var provider = services.BuildServiceProvider();
@@ -78,6 +81,8 @@ public record BuildStarted(string Project);
 public record BuildFinished(int ExitCode, string Output);
 public record ThemeChanged(string ThemeName);
 public record FolderOpened(string Path);
+public record FolderChanged(string Path);
+public record StatusMessage(string Text);
 public record PromptNewItem(string ParentPath, bool IsFile, Action<string?> OnResult);
 public record PromptRename(string Path, Action<string?> OnResult);
 public record ConfirmDelete(string Path, Action<bool> OnResult);
@@ -86,6 +91,14 @@ public record ConfirmDelete(string Path, Action<bool> OnResult);
 `FolderOpened` is published by `ShellViewModel.OpenFolderCommand` (File → Open Folder / Ctrl+Shift+O)
 and by an optional CLI startup-folder argument in `App.axaml.cs`. `FileExplorerViewModel` subscribes
 and loads the workspace tree.
+
+`FolderChanged` is published by `FileSystemWatcherService` after a debounced quiet period. It signals
+that the watched workspace root may have changed on disk. `FileExplorerViewModel` subscribes and
+refreshes the tree, marshalling the reload onto the UI thread.
+
+`StatusMessage` is a transient status-bar / log message. `FileSystemWatcherService` publishes it when
+the OS watcher fails (e.g. inotify limits, permissions) so the user sees a warning while manual refresh
+remains available. `ShellViewModel` subscribes and updates `StatusText`.
 
 ## Startup Sequence
 
@@ -159,7 +172,7 @@ The following services were added during Phase 2. All are registered as
 | `IgnoreList` | `IIgnoreList` | singleton | Pattern-based filtering of large/unwanted directories (`node_modules`, `bin`, `obj`, `.git`, `.vs`, `packages`, `*.tmp`). Custom code, no NuGet. Case-insensitive on Windows/macOS, case-sensitive on Linux. |
 | `FileSystemService` | `IFileSystemService` | singleton | Async wrapper over `System.IO` for enumeration, create/rename/delete. Every method takes a `CancellationToken`. Paths normalized via `Path.GetFullPath()`. Filters results through `IIgnoreList`. |
 | `ProjectLoader` | `IProjectLoader` | singleton | Extension-based recognition: `.sln`, `.csproj`, `package.json`. Read-only — does not modify project files. Full MSBuild / Node parsing deferred to Phase 6. |
-| `FileSystemWatcherService` | `IFileSystemWatcherService` | singleton | Debounced wrapper over `System.IO.FileSystemWatcher`. Watches one workspace root, filters events through `IIgnoreList`, publishes `FolderChanged`, and surfaces non-fatal watcher failures through `StatusMessage`. |
+| `FileSystemWatcherService` | `IFileSystemWatcherService` | singleton | Wraps `System.IO.FileSystemWatcher` with debouncing and `IIgnoreList` filtering. Watches one workspace root, publishes `FolderChanged` after a quiet period, and surfaces non-fatal watcher failures through `StatusMessage`. |
 
 **Models added:**
 - `src/Models/Project/FileSystemEntry.cs` — plain record `{ Name, FullPath, Kind }`.

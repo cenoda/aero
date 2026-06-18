@@ -103,6 +103,28 @@ public class FileSystemServiceTests : System.IDisposable
     }
 
     [Fact]
+    public async Task GetDirectoryEntriesAsync_FiltersBinObj_AfterBuildChurn()
+    {
+        // Regression / reproduction for the M5 manual test scenario: after
+        // build output churn, a root enumeration must still hide bin/ and obj/.
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        File.WriteAllText(Path.Combine(_root, "README.md"), "");
+        File.WriteAllText(Path.Combine(_root, "b.txt"), "");
+        Directory.CreateDirectory(Path.Combine(_root, "bin", "Debug"));
+        File.WriteAllText(Path.Combine(_root, "bin", "Debug", "app.dll"), "");
+        Directory.CreateDirectory(Path.Combine(_root, "obj"));
+        File.WriteAllText(Path.Combine(_root, "obj", "project.assets.json"), "");
+
+        var entries = await _service.GetDirectoryEntriesAsync(_root);
+
+        Assert.DoesNotContain(entries, e => e.Name == "bin");
+        Assert.DoesNotContain(entries, e => e.Name == "obj");
+        Assert.Contains(entries, e => e.Name == "src");
+        Assert.Contains(entries, e => e.Name == "README.md");
+        Assert.Contains(entries, e => e.Name == "b.txt");
+    }
+
+    [Fact]
     public async Task GetDirectoryEntriesAsync_NormalizesPath()
     {
         // Relative path with ".." — service should normalize via Path.GetFullPath.

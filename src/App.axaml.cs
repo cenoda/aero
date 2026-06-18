@@ -64,9 +64,13 @@ public partial class App : Application
         services.AddSingleton<DocumentManager>();
 
         // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
-        services.AddSingleton<IIgnoreList, IgnoreList>();
+        // IgnoreList has a public IEnumerable<string> constructor used by tests.
+        // DI would prefer that constructor and pass an empty enumerable, so we
+        // explicitly use the parameterless constructor that loads DefaultPatterns.
+        services.AddSingleton<IIgnoreList>(_ => new IgnoreList());
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddSingleton<IProjectLoader, ProjectLoader>();
+        services.AddSingleton<IFileSystemWatcherService, FileSystemWatcherService>();
 
         // ViewModels
         services.AddSingleton<ShellViewModel>();

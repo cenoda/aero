@@ -21,6 +21,7 @@ public class FileExplorerViewModelTests : IDisposable
 {
     private readonly StubMessageBus _bus = new();
     private readonly MockFileSystemService _fs;
+    private readonly MockFileSystemWatcherService _watcher;
     private readonly StubProjectLoader _projects;
     private readonly DocumentManager _documentManager;
     private readonly FileExplorerViewModel _vm;
@@ -28,9 +29,10 @@ public class FileExplorerViewModelTests : IDisposable
     public FileExplorerViewModelTests()
     {
         _fs = new MockFileSystemService(new IgnoreList(new string[0]));
+        _watcher = new MockFileSystemWatcherService(_bus);
         _projects = new StubProjectLoader();
         _documentManager = new DocumentManager(_bus);
-        _vm = new FileExplorerViewModel(_fs, _projects, _documentManager, _bus);
+        _vm = new FileExplorerViewModel(_fs, _projects, _documentManager, _watcher, _bus);
     }
 
     public void Dispose() => _vm.Dispose();
@@ -306,7 +308,8 @@ public class FileExplorerViewModelTests : IDisposable
         // wanted and unwanted paths; verify only wanted reach the VM.
         var root = TempPath();
         var mock = new MockFileSystemService(new IgnoreList(new[] { "bin", "node_modules" }));
-        var vmWithIgnore = new FileExplorerViewModel(mock, _projects, _documentManager, _bus);
+        var watcherForIgnore = new MockFileSystemWatcherService();
+        var vmWithIgnore = new FileExplorerViewModel(mock, _projects, _documentManager, watcherForIgnore, _bus);
         try
         {
             mock.AddDirectory(Path.Combine(root, "src"));
@@ -559,6 +562,53 @@ public class FileExplorerViewModelTests : IDisposable
         // importantly, no exception should escape and RootPath stays null.
         _bus.Publish(new FolderOpened(root));
         Assert.Null(_vm.RootPath);
+    }
+
+    // --- FileSystemWatcher integration -------------------------------
+
+    [Fact]
+    public async Task FolderOpenedMessage_StartsWatchingPath()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "x.txt"));
+
+        _bus.Publish(new FolderOpened(root));
+
+        await WaitFor(() => _vm.RootPath != null, TimeSpan.FromSeconds(2));
+
+        Assert.Single(_watcher.WatchedPaths);
+        Assert.Equal(Path.GetFullPath(root), _watcher.CurrentPath);
+    }
+
+    [Fact]
+    public async Task FolderChangedMessage_RefreshesRootPath()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        Assert.Single(_vm.RootNodes);
+
+        // Add a new file to the mock file system and simulate the watcher
+        // noticing it. The VM should reload and pick up the new file.
+        _fs.AddFile(Path.Combine(root, "b.txt"));
+        _watcher.RaiseFolderChanged(root);
+
+        await WaitFor(() => _vm.RootNodes.Count == 2, TimeSpan.FromSeconds(2));
+
+        Assert.Contains(_vm.RootNodes, n => n.Name == "b.txt");
+    }
+
+    [Fact]
+    public void Dispose_StopsWatching()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "x.txt"));
+        _bus.Publish(new FolderOpened(root));
+
+        _vm.Dispose();
+
+        Assert.False(_watcher.IsWatching);
+        Assert.NotNull(_watcher.StoppedPaths);
     }
 
     // --- file activation ---------------------------------------------

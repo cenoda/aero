@@ -27,10 +27,12 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     private readonly IFileSystemService _fileSystem;
     private readonly IProjectLoader _projectLoader;
     private readonly DocumentManager _documentManager;
+    private readonly IFileSystemWatcherService _watcher;
     private readonly IMessageBus _bus;
 
     // Stored handlers for unsubscribe in Dispose()
     private Action<FolderOpened>? _folderOpenedHandler;
+    private Action<FolderChanged>? _folderChangedHandler;
 
     // Cancellation source for the in-flight root load (null when idle).
     private CancellationTokenSource? _loadCts;
@@ -70,11 +72,13 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         IFileSystemService fileSystem,
         IProjectLoader projectLoader,
         DocumentManager documentManager,
+        IFileSystemWatcherService watcher,
         IMessageBus bus)
     {
         _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         _projectLoader = projectLoader ?? throw new ArgumentNullException(nameof(projectLoader));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
+        _watcher = watcher ?? throw new ArgumentNullException(nameof(watcher));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
 
         RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync);
@@ -85,8 +89,27 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         DeleteCommand = ReactiveCommand.CreateFromTask<FileExplorerNodeViewModel?>(OnDeleteAsync);
 
         // Subscribe to folder-opened messages from the shell (File → Open Folder).
-        _folderOpenedHandler = msg => _ = LoadFolderAsync(msg.Path);
+        _folderOpenedHandler = msg =>
+        {
+            _ = LoadFolderAsync(msg.Path);
+            try
+            {
+                _watcher.Watch(msg.Path);
+            }
+            catch (Exception ex)
+            {
+                // Watch can fail (deleted folder, permissions, inotify limits).
+                // Surface it so the user knows auto-refresh is off; manual refresh
+                // remains available.
+                _bus.Publish(new StatusMessage(
+                    $"Could not watch folder: {ex.Message}. Manual refresh is still available."));
+            }
+        };
         _bus.Subscribe(_folderOpenedHandler);
+
+        // Subscribe to debounced filesystem changes and refresh the tree.
+        _folderChangedHandler = msg => _ = OnFolderChangedAsync(msg);
+        _bus.Subscribe(_folderChangedHandler);
     }
 
     /// <summary>
@@ -397,6 +420,65 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
         if (_folderOpenedHandler != null)
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
+        if (_folderChangedHandler != null)
+            _bus.Unsubscribe<FolderChanged>(_folderChangedHandler);
+
+        // Stop watching. The watcher is a DI singleton; the container disposes
+        // it on app exit, so the VM only needs to release its own subscription.
+        _watcher.StopWatching();
+    }
+
+    /// <summary>
+    /// Handle a <see cref="FolderChanged"/> message. The message may fire from a
+    /// non-UI thread (the watcher debounce timer), so the refresh is marshalled
+    /// onto <see cref="Avalonia.Threading.Dispatcher.UIThread"/> when available.
+    /// </summary>
+    private async Task OnFolderChangedAsync(FolderChanged msg)
+    {
+        if (string.IsNullOrEmpty(RootPath))
+            return;
+
+        // Defensive: ignore messages for a different root (e.g. around rapid
+        // folder switches). Both paths are normalized before being stored.
+        if (!string.Equals(msg.Path, RootPath, StringComparison.Ordinal))
+            return;
+
+        try
+        {
+            var dispatcher = GetUiDispatcher();
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                await dispatcher.InvokeAsync(RefreshAsync);
+            }
+            else
+            {
+                await RefreshAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[FileExplorerViewModel] FolderChanged refresh failed: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Return the Avalonia UI-thread dispatcher when running inside the app.
+    /// Returns <c>null</c> in unit tests (no Avalonia application), allowing
+    /// the refresh to run directly on the test thread.
+    /// </summary>
+    private static Avalonia.Threading.Dispatcher? GetUiDispatcher()
+    {
+        if (Avalonia.Application.Current == null)
+            return null;
+        try
+        {
+            return Avalonia.Threading.Dispatcher.UIThread;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     // --- tree construction ---------------------------------------------

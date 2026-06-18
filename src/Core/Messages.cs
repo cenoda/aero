@@ -62,6 +62,20 @@ public record ThemeChanged(string ThemeName);
 /// <summary>A folder was opened as the workspace root.</summary>
 public record FolderOpened(string Path);
 
+/// <summary>
+/// The file system under the watched workspace root has changed. Consumers
+/// should refresh the affected folder. The message is intentionally flat
+/// (no change kind) — per PROJECT_PLAN §5.5 / TOFIX R1.3, that detail is
+/// deferred until Phase 7 when Git status badges need it.
+/// </summary>
+public record FolderChanged(string Path);
+
+/// <summary>
+/// A transient status message for the status bar or log. Published by services
+/// that need to surface non-fatal warnings without referencing the shell.
+/// </summary>
+public record StatusMessage(string Text);
+
 // ---------------------------------------------------------------------------
 // File explorer user-prompt messages
 // ---------------------------------------------------------------------------

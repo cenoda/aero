@@ -29,6 +29,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
+    private Action<StatusMessage>? _statusMessageHandler;
     private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocumentSaved>? _documentSavedHandler;
     private bool _disposed;
@@ -92,6 +93,22 @@ public class ShellViewModel : ReactiveObject, IDisposable
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg => StatusText = msg.Path;
         _bus.Subscribe(_folderOpenedHandler);
+        _statusMessageHandler = msg =>
+        {
+            // StatusMessage may be published from a background thread (e.g.
+            // FileSystemWatcherService.OnError). Marshal the UI update onto the
+            // UI thread so Avalonia's binding system does not throw.
+            var dispatcher = GetUiDispatcher();
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.Post(() => StatusText = msg.Text);
+            }
+            else
+            {
+                StatusText = msg.Text;
+            }
+        };
+        _bus.Subscribe(_statusMessageHandler);
         _activeDocumentChangedHandler = OnActiveDocumentChanged;
         _bus.Subscribe(_activeDocumentChangedHandler);
         _documentSavedHandler = OnDocumentSaved;
@@ -406,6 +423,25 @@ public class ShellViewModel : ReactiveObject, IDisposable
         // Show about dialog
     }
 
+    /// <summary>
+    /// Return the Avalonia UI-thread dispatcher when running inside the app.
+    /// Returns <c>null</c> in unit tests (no Avalonia application), allowing
+    /// the update to run directly on the test thread.
+    /// </summary>
+    private static Avalonia.Threading.Dispatcher? GetUiDispatcher()
+    {
+        if (Avalonia.Application.Current == null)
+            return null;
+        try
+        {
+            return Avalonia.Threading.Dispatcher.UIThread;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     private void OnActiveDocumentChanged(ActiveDocumentChanged msg)
     {
         var doc = msg.Document;
@@ -441,6 +477,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
         if (_folderOpenedHandler != null)
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
+        if (_statusMessageHandler != null)
+            _bus.Unsubscribe<StatusMessage>(_statusMessageHandler);
         if (_activeDocumentChangedHandler != null)
             _bus.Unsubscribe<ActiveDocumentChanged>(_activeDocumentChangedHandler);
         if (_documentSavedHandler != null)

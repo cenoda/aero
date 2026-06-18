@@ -389,6 +389,98 @@ expected node:
 
 ---
 
+## Round 8 — M5 Review (FileSystemWatcher & Auto-Refresh)
+
+Findings from implementing M5 (debounced filesystem watcher, manual refresh,
+DI wiring, and integration tests). Two real issues: one pre-existing DI bug
+that M5 exposed, and one known UX limitation to revisit in Phase 8.
+
+### R8.1 `IgnoreList` singleton created with empty patterns in the real app *(priority: critical, BLOCKER found during M5 manual test)*
+
+**Description:** The manual smoke test for M5 showed `bin/` and `obj/`
+directories appearing in the file-explorer tree after build-output churn —
+contradicting the `IIgnoreList` contract and the passing unit tests.
+
+**Root cause:** `IgnoreList` has two public constructors:
+1. parameterless `IgnoreList()` → loads `DefaultPatterns`
+2. `IgnoreList(IEnumerable<string> initialPatterns)` → used by tests
+
+`App.axaml.cs` registered it as `services.AddSingleton<IIgnoreList, IgnoreList>();`.
+Microsoft.Extensions.DependencyInjection selected the constructor with the
+most resolvable parameters — the `IEnumerable<string>` constructor — and
+passed an empty enumerable because no `IEnumerable<string>` services were
+registered. The real app therefore ran with an empty ignore list, while all
+unit tests that called `new IgnoreList()` directly saw the defaults.
+
+**Fix:** Changed DI registration to an explicit factory that uses the
+parameterless constructor:
+```csharp
+services.AddSingleton<IIgnoreList>(_ => new IgnoreList());
+```
+Also added a regression test `GetDirectoryEntriesAsync_FiltersBinObj_AfterBuildChurn`
+to cover the exact manual-test scenario at the service level.
+
+**Status:** ✅ RESOLVED (2026-06-19)
+
+### R8.2 Auto-refresh reloads the whole root and collapses expansion state *(priority: medium, deferred)*
+
+**Description:** `FolderChanged` is intentionally flat (per TOFIX R1.3) and
+`FileExplorerViewModel` responds by reloading the entire root folder. This
+replaces `RootNodes` from scratch, so any directories the user had expanded
+are collapsed again. This is annoying during active external edits.
+
+**Fix:** Deferred to Phase 8 / a future Phase 2.x polish slice. The proper
+fix is per-node refresh: keep a `FileChanged`/`FileCreated`/`FileDeleted`
+message kind (deferred per R1.3) and surgically update the affected node's
+parent children instead of rebuilding the whole tree. For Phase 2 the
+current behavior is correct per spec and keeps the implementation simple;
+the limitation is documented here and in the manual test checklist.
+
+**Status:** ✅ DEFERRED
+
+### R8.3 `StatusMessage` handler updated UI from a background thread *(priority: medium, found during review)*
+
+**Description:** `FileSystemWatcherService.OnError` runs on a `FileSystemWatcher`
+thread-pool thread. It publishes `StatusMessage`, and `MessageBus.Publish` invokes
+handlers synchronously on the publisher's thread. `ShellViewModel`'s handler was
+setting the `[Reactive]` `StatusText` property directly, which would have thrown
+on Avalonia's binding system and been swallowed by the bus's try/catch — so the
+"watcher failed, manual refresh still works" warning would never reach the user.
+
+**Fix:** Marshalled the `StatusText` update in `ShellViewModel` onto
+`Dispatcher.UIThread` using `Dispatcher.Post`, mirroring the thread discipline in
+`FileExplorerViewModel.OnFolderChangedAsync`.
+
+**Status:** ✅ RESOLVED (2026-06-19)
+
+### R8.4 `FileExplorerViewModel` silently swallowed `IFileSystemWatcherService.Watch` failures *(priority: low, found during review)*
+
+**Description:** The `FolderOpened` handler called `_watcher.Watch(msg.Path)`
+outside any try/catch. If watching failed (permissions, deleted folder, inotify
+limits on Linux), `MessageBus` swallowed the exception and auto-refresh died
+silently.
+
+**Fix:** Wrapped `_watcher.Watch(...)` in a try/catch that publishes a
+`StatusMessage` explaining the failure and reminding the user that manual refresh
+still works.
+
+**Status:** ✅ RESOLVED (2026-06-19)
+
+### R8.5 `FileExplorerViewModel.Dispose` disposed a DI singleton it doesn't own *(priority: low, found during review)*
+
+**Description:** `FileExplorerViewModel` called `_watcher.Dispose()` in its own
+`Dispose()`. The watcher is registered as a DI singleton and is disposed by the
+container on app exit. Calling `Dispose` here happened to be safe today because
+`Dispose` is idempotent and there is only one consumer, but it violates the
+ownership boundary.
+
+**Fix:** Changed the VM's `Dispose()` to call `_watcher.StopWatching()` only,
+leaving final disposal to the DI container.
+
+**Status:** ✅ RESOLVED (2026-06-19)
+
+---
+
 ## Persistent Checks
 
 Use these as a self-review checklist before closing Phase 2:

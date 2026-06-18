@@ -42,10 +42,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Async enumeration with `CancellationToken` so the UI never blocks
 
 ### 2.3 Live Sync
-- [ ] `IFileSystemWatcherService` wrapper over `FileSystemWatcher`
-- [ ] Debounce/batch rapid events (300 ms default window)
-- [ ] Publish `FolderChanged` for full subtree refresh; per-node refresh is deferred (reloading the root is fast enough for Phase 2)
-- [ ] Graceful error handling: permission denied, deleted folder, inotify limits → status bar / log message; manual refresh still works
+- [x] `IFileSystemWatcherService` wrapper over `FileSystemWatcher`
+- [x] Debounce/batch rapid events (300 ms default window)
+- [x] Publish `FolderChanged` for full subtree refresh; per-node refresh is deferred (reloading the root is fast enough for Phase 2)
+- [x] Graceful error handling: permission denied, deleted folder, inotify limits → status bar / log message; manual refresh still works
 
 ### 2.4 Project Awareness
 - [x] `IProjectLoader` service: extension-based recognition of `.sln`, `.csproj`, `package.json`. Full MSBuild/SLN parsing is deferred to Phase 6.
@@ -60,7 +60,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Unit tests for `IIgnoreList` pattern matching
 - [x] Unit tests for `FileExplorerViewModel` tree-building and command behavior (via in-memory stubs)
 - [x] Integration tests for `FileSystemService` (temp-dir I/O), `ProjectLoader` (recognition)
-- [ ] Integration tests for `FileSystemWatcherService` (debounce) — pending M5
+- [x] Integration tests for `FileSystemWatcherService` (debounce)
 - [x] Phase 1 regression: all 89 existing tests continue to pass (219/219 total as of M4)
 
 

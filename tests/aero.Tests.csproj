@@ -38,6 +38,8 @@
     <Compile Include="../src/Services/FileSystemService.cs" />
     <Compile Include="../src/Services/IProjectLoader.cs" />
     <Compile Include="../src/Services/ProjectLoader.cs" />
+    <Compile Include="../src/Services/IFileSystemWatcherService.cs" />
+    <Compile Include="../src/Services/FileSystemWatcherService.cs" />
     <Compile Include="../src/ViewModels/EditorViewModel.cs" />
     <Compile Include="../src/ViewModels/EditorTabViewModel.cs" />
     <Compile Include="../src/ViewModels/FileExplorerNodeViewModel.cs" />
