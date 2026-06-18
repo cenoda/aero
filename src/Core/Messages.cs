@@ -61,3 +61,32 @@ public record ThemeChanged(string ThemeName);
 
 /// <summary>A folder was opened as the workspace root.</summary>
 public record FolderOpened(string Path);
+
+// ---------------------------------------------------------------------------
+// File explorer user-prompt messages
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// Prompt the user for a name when creating a new file or folder.
+/// <c>OnResult(null)</c> means the dialog was cancelled.
+/// </summary>
+public record PromptNewItem(
+    string ParentPath,
+    bool IsFile,
+    Action<string?> OnResult);
+
+/// <summary>
+/// Prompt the user for a new name when renaming a file or folder.
+/// <c>OnResult(null)</c> means the dialog was cancelled.
+/// </summary>
+public record PromptRename(
+    string Path,
+    Action<string?> OnResult);
+
+/// <summary>
+/// Confirm a destructive action (delete file/folder).
+/// <c>OnResult(true)</c> = confirmed, <c>OnResult(false)</c> = rejected/cancelled.
+/// </summary>
+public record ConfirmDelete(
+    string Path,
+    Action<bool> OnResult);

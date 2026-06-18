@@ -82,6 +82,23 @@
                     <TreeDataTemplate x:DataType="vm:FileExplorerNodeViewModel"
                                       ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="New File"
+                                              Command="{Binding Owner.NewFileCommand}"
+                                              CommandParameter="{Binding}"/>
+                                    <MenuItem Header="New Folder"
+                                              Command="{Binding Owner.NewFolderCommand}"
+                                              CommandParameter="{Binding}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Rename"
+                                              Command="{Binding Owner.RenameCommand}"
+                                              CommandParameter="{Binding}"/>
+                                    <MenuItem Header="Delete"
+                                              Command="{Binding Owner.DeleteCommand}"
+                                              CommandParameter="{Binding}"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
                             <TextBlock Text="{Binding Glyph}"
                                        Width="14"
                                        Opacity="0.6"

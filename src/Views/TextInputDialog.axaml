@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aero.Views.TextInputDialog"
+        Title="Input"
+        Width="420"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False">
+
+    <StackPanel Margin="20" Spacing="12">
+        <TextBlock x:Name="PromptText"
+                   TextWrapping="Wrap"/>
+        <TextBox x:Name="InputBox"
+                 MinWidth="380"/>
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+            <Button x:Name="AcceptButton"
+                    Content="OK"
+                    Click="OnAcceptClicked"
+                    IsDefault="True"
+                    MinWidth="80"/>
+            <Button x:Name="CancelButton"
+                    Content="Cancel"
+                    Click="OnCancelClicked"
+                    IsCancel="True"
+                    MinWidth="80"/>
+        </StackPanel>
+    </StackPanel>
+
+</Window>

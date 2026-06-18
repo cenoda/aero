@@ -10,6 +10,9 @@ public partial class MainWindow : Window
 {
     private IMessageBus? _bus;
     private Action<ConfirmDirtyClose>? _confirmDirtyCloseHandler;
+    private Action<PromptNewItem>? _promptNewItemHandler;
+    private Action<PromptRename>? _promptRenameHandler;
+    private Action<ConfirmDelete>? _confirmDeleteHandler;
     private bool _exitHandled;
 
     public MainWindow()
@@ -29,6 +32,15 @@ public partial class MainWindow : Window
         _bus = bus;
         _confirmDirtyCloseHandler = OnConfirmDirtyClose;
         _bus.Subscribe(_confirmDirtyCloseHandler);
+
+        _promptNewItemHandler = OnPromptNewItem;
+        _bus.Subscribe(_promptNewItemHandler);
+
+        _promptRenameHandler = OnPromptRename;
+        _bus.Subscribe(_promptRenameHandler);
+
+        _confirmDeleteHandler = OnConfirmDelete;
+        _bus.Subscribe(_confirmDeleteHandler);
     }
 
     /// <summary>
@@ -62,10 +74,30 @@ public partial class MainWindow : Window
 
     private void UnsubscribeBus()
     {
-        if (_bus != null && _confirmDirtyCloseHandler != null)
+        if (_bus == null) return;
+
+        if (_confirmDirtyCloseHandler != null)
         {
             _bus.Unsubscribe<ConfirmDirtyClose>(_confirmDirtyCloseHandler);
             _confirmDirtyCloseHandler = null;
+        }
+
+        if (_promptNewItemHandler != null)
+        {
+            _bus.Unsubscribe<PromptNewItem>(_promptNewItemHandler);
+            _promptNewItemHandler = null;
+        }
+
+        if (_promptRenameHandler != null)
+        {
+            _bus.Unsubscribe<PromptRename>(_promptRenameHandler);
+            _promptRenameHandler = null;
+        }
+
+        if (_confirmDeleteHandler != null)
+        {
+            _bus.Unsubscribe<ConfirmDelete>(_confirmDeleteHandler);
+            _confirmDeleteHandler = null;
         }
     }
 
@@ -74,4 +106,36 @@ public partial class MainWindow : Window
         var result = await DirtyCloseDialog.ShowAsync(this, msg.FileName);
         msg.OnResponse(result ?? DirtyCloseResponse.Cancel);
     }
+
+    #pragma warning disable VSTHRD100 // async void is required for MessageBus handlers
+
+    private async void OnPromptNewItem(PromptNewItem msg)
+    {
+        var title = msg.IsFile ? "New File" : "New Folder";
+        var prompt = msg.IsFile
+            ? "Enter a name for the new file:"
+            : "Enter a name for the new folder:";
+        var response = await TextInputDialog.ShowAsync(this, title, prompt);
+        msg.OnResult(response);
+    }
+
+    private async void OnPromptRename(PromptRename msg)
+    {
+        var defaultName = System.IO.Path.GetFileName(msg.Path);
+        var response = await TextInputDialog.ShowAsync(
+            this, "Rename", "Enter a new name:", defaultName);
+        msg.OnResult(response);
+    }
+
+    private async void OnConfirmDelete(ConfirmDelete msg)
+    {
+        // Concern #4: map null (dialog cancelled / window closed) → false
+        var name = System.IO.Path.GetFileName(msg.Path);
+        var response = await ConfirmDialog.ShowAsync(
+            this, "Confirm Delete", $"Are you sure you want to delete \"{name}\"?");
+        msg.OnResult(response ?? false);
+    }
+
+    #pragma warning restore VSTHRD100
+
 }

@@ -45,6 +45,22 @@ public class FileExplorerNodeViewModel : ReactiveObject
     /// <summary>True if this node represents a directory.</summary>
     public bool IsDirectory { get; }
 
+    /// <summary>
+    /// The parent directory node in the tree. <c>null</c> for root-level nodes.
+    /// Used by <see cref="Aero.ViewModels.FileExplorerViewModel"/> after
+    /// rename/delete to re-enumerate only the affected subtree without
+    /// collapsing expansion state.
+    /// </summary>
+    public FileExplorerNodeViewModel? Parent { get; set; }
+
+    /// <summary>
+    /// Reference to the owning <see cref="Aero.ViewModels.FileExplorerViewModel"/>.
+    /// Enables the per-node ContextMenu to bind commands like
+    /// <c>{Binding Owner.NewFileCommand}</c> without relying on ancestor
+    /// traversal from a popup visual tree.
+    /// </summary>
+    public FileExplorerViewModel? Owner { get; set; }
+
     /// <summary>Material icon kind (e.g. <c>Folder</c>, <c>FileDocument</c>, <c>CSharp</c>).
     /// Held as a string for forward-compat with Material.Icons.Avalonia, but the
     /// view currently renders <see cref="Glyph"/> instead (icons paused — see

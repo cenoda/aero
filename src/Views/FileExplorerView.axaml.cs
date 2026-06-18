@@ -1,3 +1,4 @@
+using System.Reactive.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -72,25 +73,35 @@ public partial class FileExplorerView : UserControl
     private async void OnTreeKeyDown(object? sender, KeyEventArgs e)
     {
         // async void allowed here: this is an Avalonia event handler.
-        if (e.Key != Key.Enter)
-            return;
-
         if (DataContext is not FileExplorerViewModel vm) return;
         var selected = vm.SelectedNode;
-        if (selected == null)
-            return;
+        if (selected == null) return;
 
-        if (selected.IsDirectory)
+        switch (e.Key)
         {
-            // Enter on a directory toggles expansion, just like double-click.
-            selected.IsExpanded = !selected.IsExpanded;
-        }
-        else
-        {
-            await vm.OpenSelectedFileAsync();
-        }
+            case Key.Enter:
+                if (selected.IsDirectory)
+                {
+                    // Enter on a directory toggles expansion.
+                    selected.IsExpanded = !selected.IsExpanded;
+                }
+                else
+                {
+                    await vm.OpenSelectedFileAsync();
+                }
+                e.Handled = true;
+                break;
 
-        e.Handled = true;
+            case Key.F2:
+                await vm.RenameCommand.Execute(selected).FirstAsync();
+                e.Handled = true;
+                break;
+
+            case Key.Delete:
+                await vm.DeleteCommand.Execute(selected).FirstAsync();
+                e.Handled = true;
+                break;
+        }
     }
 
     private async void OnItemExpanded(object? sender, RoutedEventArgs e)

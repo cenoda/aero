@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Aero.Core;
 using Aero.Models.Project;
@@ -613,6 +614,287 @@ public class FileExplorerViewModelTests : IDisposable
 
         var doc = Assert.Single(_documentManager.Documents);
         Assert.Equal(Path.GetFullPath(realFile), doc.FilePath);
+    }
+
+    // --- NewFileCommand ------------------------------------------------
+
+    [Fact]
+    public async Task NewFileCommand_SelectedDirectory_CreatesFileInside()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        // Expand so children collection exists (though empty aside from placeholder).
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult("newfile.cs"));
+
+        await _vm.NewFileCommand.Execute(srcNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "src", "newfile.cs")));
+    }
+
+    [Fact]
+    public async Task NewFileCommand_SelectedFile_CreatesInParentDirectory()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+        await _vm.EnsureChildrenLoadedAsync(srcNode);
+        var fileNode = Assert.Single(srcNode.Children);
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult("newfile.cs"));
+
+        await _vm.NewFileCommand.Execute(fileNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "src", "newfile.cs")));
+    }
+
+    [Fact]
+    public async Task NewFileCommand_Cancelled_DoesNotCreate()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult(null));
+
+        await _vm.NewFileCommand.Execute(srcNode).FirstAsync();
+
+        // Only the seeded directory exists.
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src", "newfile.cs")));
+    }
+
+    [Fact]
+    public async Task NewFileCommand_NoSelection_NoOp()
+    {
+        // When node is null, the handler should return early.
+        await _vm.NewFileCommand.Execute(null).FirstAsync();
+
+        Assert.Empty(_vm.RootNodes);
+    }
+
+    [Fact]
+    public async Task NewFileCommand_DoesNotAffectDocumentManager()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        var docsBefore = _documentManager.Documents.Count;
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult("newfile.cs"));
+
+        await _vm.NewFileCommand.Execute(srcNode).FirstAsync();
+
+        Assert.Equal(docsBefore, _documentManager.Documents.Count);
+    }
+
+    // --- NewFolderCommand ---------------------------------------------
+
+    [Fact]
+    public async Task NewFolderCommand_SelectedDirectory_CreatesSubdirectory()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult("lib"));
+
+        await _vm.NewFolderCommand.Execute(srcNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "src", "lib")));
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_Cancelled_DoesNotCreate()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptNewItem>(msg => msg.OnResult(null));
+
+        await _vm.NewFolderCommand.Execute(srcNode).FirstAsync();
+
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src", "lib")));
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_NoSelection_NoOp()
+    {
+        await _vm.NewFolderCommand.Execute(null).FirstAsync();
+        Assert.Empty(_vm.RootNodes);
+    }
+
+    // --- RenameCommand ------------------------------------------------
+
+    [Fact]
+    public async Task RenameCommand_RenamesFile()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult("b.txt"));
+
+        await _vm.RenameCommand.Execute(fileNode).FirstAsync();
+
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "a.txt")));
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "b.txt")));
+    }
+
+    [Fact]
+    public async Task RenameCommand_RenamesDirectory()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "src/"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult("lib"));
+
+        await _vm.RenameCommand.Execute(srcNode).FirstAsync();
+
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src")));
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "lib")));
+    }
+
+    [Fact]
+    public async Task RenameCommand_SameName_IsNoOp()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult("a.txt"));
+
+        await _vm.RenameCommand.Execute(fileNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "a.txt")));
+    }
+
+    [Fact]
+    public async Task RenameCommand_Cancelled_IsNoOp()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult(null));
+
+        await _vm.RenameCommand.Execute(fileNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "a.txt")));
+    }
+
+    [Fact]
+    public async Task RenameCommand_NullNode_NoOp()
+    {
+        await _vm.RenameCommand.Execute(null).FirstAsync();
+        Assert.Empty(_vm.RootNodes);
+    }
+
+    [Fact]
+    public async Task RenameCommand_DoesNotAffectDocumentManager()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        var docsBefore = _documentManager.Documents.Count;
+        _bus.Subscribe<PromptRename>(msg => msg.OnResult("b.txt"));
+
+        await _vm.RenameCommand.Execute(fileNode).FirstAsync();
+
+        Assert.Equal(docsBefore, _documentManager.Documents.Count);
+    }
+
+    // --- DeleteCommand ------------------------------------------------
+
+    [Fact]
+    public async Task DeleteCommand_Confirmed_DeletesFile()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<ConfirmDelete>(msg => msg.OnResult(true));
+
+        await _vm.DeleteCommand.Execute(fileNode).FirstAsync();
+
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "a.txt")));
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Confirmed_DeletesDirectoryRecursively()
+    {
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "src/"),
+            Path.Combine(root, "src", "a.txt"),
+            Path.Combine(root, "src", "lib/"),
+            Path.Combine(root, "src", "lib", "b.txt"));
+        await _vm.LoadFolderAsync(root);
+        var srcNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<ConfirmDelete>(msg => msg.OnResult(true));
+
+        await _vm.DeleteCommand.Execute(srcNode).FirstAsync();
+
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src")));
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src", "a.txt")));
+        Assert.False(await _fs.ExistsAsync(Path.Combine(root, "src", "lib", "b.txt")));
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Cancelled_DoesNotDelete()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        _bus.Subscribe<ConfirmDelete>(msg => msg.OnResult(false));
+
+        await _vm.DeleteCommand.Execute(fileNode).FirstAsync();
+
+        Assert.True(await _fs.ExistsAsync(Path.Combine(root, "a.txt")));
+    }
+
+    [Fact]
+    public async Task DeleteCommand_NullNode_NoOp()
+    {
+        await _vm.DeleteCommand.Execute(null).FirstAsync();
+        Assert.Empty(_vm.RootNodes);
+    }
+
+    [Fact]
+    public async Task DeleteCommand_DoesNotAffectDocumentManager()
+    {
+        var root = TempPath();
+        Seed(Path.Combine(root, "a.txt"));
+        await _vm.LoadFolderAsync(root);
+        var fileNode = Assert.Single(_vm.RootNodes);
+
+        var docsBefore = _documentManager.Documents.Count;
+        _bus.Subscribe<ConfirmDelete>(msg => msg.OnResult(true));
+
+        await _vm.DeleteCommand.Execute(fileNode).FirstAsync();
+
+        Assert.Equal(docsBefore, _documentManager.Documents.Count);
     }
 
     // --- small async helper ------------------------------------------

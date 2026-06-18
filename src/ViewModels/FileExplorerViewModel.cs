@@ -59,6 +59,13 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenSelectedFileCommand { get; }
 
+    // Context-menu commands. Each takes the right-clicked node as parameter,
+    // or null when triggered without a context node.
+    public ReactiveCommand<FileExplorerNodeViewModel?, Unit> NewFileCommand { get; }
+    public ReactiveCommand<FileExplorerNodeViewModel?, Unit> NewFolderCommand { get; }
+    public ReactiveCommand<FileExplorerNodeViewModel?, Unit> RenameCommand { get; }
+    public ReactiveCommand<FileExplorerNodeViewModel?, Unit> DeleteCommand { get; }
+
     public FileExplorerViewModel(
         IFileSystemService fileSystem,
         IProjectLoader projectLoader,
@@ -72,6 +79,10 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
         RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync);
         OpenSelectedFileCommand = ReactiveCommand.CreateFromTask(OpenSelectedFileAsync);
+        NewFileCommand = ReactiveCommand.CreateFromTask<FileExplorerNodeViewModel?>(OnNewFileAsync);
+        NewFolderCommand = ReactiveCommand.CreateFromTask<FileExplorerNodeViewModel?>(OnNewFolderAsync);
+        RenameCommand = ReactiveCommand.CreateFromTask<FileExplorerNodeViewModel?>(OnRenameAsync);
+        DeleteCommand = ReactiveCommand.CreateFromTask<FileExplorerNodeViewModel?>(OnDeleteAsync);
 
         // Subscribe to folder-opened messages from the shell (File → Open Folder).
         _folderOpenedHandler = msg => _ = LoadFolderAsync(msg.Path);
@@ -197,7 +208,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             foreach (var entry in entries)
             {
                 token.ThrowIfCancellationRequested();
-                node.Children.Add(CreateNodeForEntry(entry));
+                node.Children.Add(CreateNodeForEntry(entry, parent: node));
             }
 
             // Only mark loaded AFTER children are visible — a cancelled load
@@ -256,6 +267,91 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         return LoadFolderAsync(RootPath);
     }
 
+    // --- context-menu command handlers -----------------------------------
+
+    /// <summary>
+    /// Re-enumerate the parent of <paramref name="node"/> without collapsing
+    /// expansion state. If the node is root-level (<see cref="Parent"/> is
+    /// null), falls back to a full root reload.
+    /// </summary>
+    private async Task RefreshParentNodeAsync(FileExplorerNodeViewModel? node)
+    {
+        var parent = node?.Parent;
+        if (parent != null)
+        {
+            await EnsureChildrenLoadedAsync(parent);
+        }
+        else if (!string.IsNullOrEmpty(RootPath))
+        {
+            await LoadFolderAsync(RootPath);
+        }
+    }
+
+    private async Task OnNewFileAsync(FileExplorerNodeViewModel? node)
+    {
+        // Resolve target directory (Concern #3):
+        //   dir selected → inside it; file selected → parent dir; null → root.
+        var parentDir = node?.IsDirectory == true
+            ? node.FullPath
+            : node?.Parent?.FullPath ?? RootPath;
+        if (string.IsNullOrEmpty(parentDir))
+            return;
+
+        var tcs = new TaskCompletionSource<string?>();
+        _bus.Publish(new PromptNewItem(parentDir, IsFile: true, result => tcs.SetResult(result)));
+        var name = await tcs.Task;
+        if (name == null)
+            return; // Cancelled
+
+        await _fileSystem.CreateFileAsync(parentDir, name);
+        await RefreshParentNodeAsync(node?.IsDirectory == true ? node : node?.Parent);
+    }
+
+    private async Task OnNewFolderAsync(FileExplorerNodeViewModel? node)
+    {
+        var parentDir = node?.IsDirectory == true
+            ? node.FullPath
+            : node?.Parent?.FullPath ?? RootPath;
+        if (string.IsNullOrEmpty(parentDir))
+            return;
+
+        var tcs = new TaskCompletionSource<string?>();
+        _bus.Publish(new PromptNewItem(parentDir, IsFile: false, result => tcs.SetResult(result)));
+        var name = await tcs.Task;
+        if (name == null)
+            return;
+
+        await _fileSystem.CreateDirectoryAsync(parentDir, name);
+        await RefreshParentNodeAsync(node?.IsDirectory == true ? node : node?.Parent);
+    }
+
+    private async Task OnRenameAsync(FileExplorerNodeViewModel? node)
+    {
+        if (node == null) return;
+
+        var tcs = new TaskCompletionSource<string?>();
+        _bus.Publish(new PromptRename(node.FullPath, result => tcs.SetResult(result)));
+        var newName = await tcs.Task;
+        if (string.IsNullOrEmpty(newName) || newName == node.Name)
+            return; // No change or cancelled
+
+        await _fileSystem.RenameAsync(node.FullPath, newName);
+        await RefreshParentNodeAsync(node);
+    }
+
+    private async Task OnDeleteAsync(FileExplorerNodeViewModel? node)
+    {
+        if (node == null) return;
+
+        var tcs = new TaskCompletionSource<bool>();
+        _bus.Publish(new ConfirmDelete(node.FullPath, result => tcs.SetResult(result)));
+        var confirmed = await tcs.Task;
+        if (!confirmed) return;
+
+        await _fileSystem.DeleteAsync(node.FullPath);
+        await RefreshParentNodeAsync(node);
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -297,16 +393,24 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     /// <summary>
     /// Build a node for a single <see cref="FileSystemEntry"/>. Directories
     /// get the placeholder child so the TreeView shows the expander arrow.
+    /// Sets <see cref="FileExplorerNodeViewModel.Owner"/> and, when a
+    /// <paramref name="parent"/> is provided,
+    /// <see cref="FileExplorerNodeViewModel.Parent"/>.
     /// </summary>
     private FileExplorerNodeViewModel CreateNodeForEntry(
         FileSystemEntry entry,
-        IReadOnlyList<ProjectInfo>? projects = null)
+        IReadOnlyList<ProjectInfo>? projects = null,
+        FileExplorerNodeViewModel? parent = null)
     {
         var node = new FileExplorerNodeViewModel(
             entry.Name,
             entry.FullPath,
             entry.Kind == FileSystemEntryKind.Directory,
-            IconFor(entry, projects ?? _rootProjects));
+            IconFor(entry, projects ?? _rootProjects))
+        {
+            Owner = this,
+            Parent = parent,
+        };
 
         if (entry.Kind == FileSystemEntryKind.Directory)
         {

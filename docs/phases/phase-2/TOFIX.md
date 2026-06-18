@@ -1,6 +1,6 @@
 # Phase 2 — To Fix
 
-> **Status:** Active — Round 1 ✅ closed, Round 2 ✅ closed, Round 3 (M2 + M2.5) ✅ closed.
+> **Status:** Active — Rounds 1-6 all ✅ closed.
 > Resolve all open items before declaring Phase 2 complete.
 
 ---
@@ -286,6 +286,49 @@ not trigger.
 two-way to the node VM's `IsExpanded`. Updated `manual_test_phase2_m3.sh`
 to expand `src` via Enter, so the path is exercised in the smoke test.
 **Status:** ✅ RESOLVED (2026-06-18)
+
+---
+
+## Round 6 — M4 Context Menu Operations (2026-06-19)
+
+Findings from M4 implementation: New File, New Folder, Rename, Delete
+commands on the File Explorer tree context menu, plus keyboard shortcuts
+(F2=rename, Del=delete). All items resolved; no open blockers.
+
+### R6.1 Dialog bridge pattern for VM→View communication *(priority: critical)*
+Four new MessageBus record types (`PromptNewItem`, `PromptRename`,
+`ConfirmDelete`) carry `Action<T?>` callbacks that the subscriber
+(MainWindow code-behind) invokes with the user's dialog response.
+`ConfirmDelete` maps `null→false` (via `??`) so the `OnResult` contract
+is always `bool` on the ViewModel side.
+
+**Status:** ✅ RESOLVED
+
+### R6.2 Context-menu command binding — alternative (b) *(priority: medium)*
+Used the `Owner` back-reference pattern: each `FileExplorerNodeViewModel`
+has an `Owner` property pointing at the owning `FileExplorerViewModel`.
+XAML binds `{Binding Owner.NewFileCommand}` with `CommandParameter="{Binding}"`.
+This avoids polluting the node VM with commands while keeping the
+ContextMenu declarative.
+
+**Status:** ✅ RESOLVED
+
+### R6.3 New File/Folder target logic — file vs directory selection *(priority: medium)*
+When a directory node is selected, the new item is created inside it.
+When a file node is selected, the new item is created in its parent
+directory. When there is no selection (null command parameter), the
+handler returns early (no-op).
+
+**Status:** ✅ RESOLVED
+
+### R6.4 Rename/Delete safety with open documents *(priority: medium)*
+Renaming or deleting a file that's open in the editor does NOT close or
+corrupt the tab. Regression tests (`RenameCommand_DoesNotAffectDocumentManager`,
+`DeleteCommand_DoesNotAffectDocumentManager`) assert `DocumentManager.Documents`
+is unchanged after the operation. The proper fix (closing/stale-indicator) is
+deferred — see R1.4.
+
+**Status:** ✅ RESOLVED (regression tests added)
 
 ---
 

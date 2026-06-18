@@ -78,6 +78,9 @@ public record BuildStarted(string Project);
 public record BuildFinished(int ExitCode, string Output);
 public record ThemeChanged(string ThemeName);
 public record FolderOpened(string Path);
+public record PromptNewItem(string ParentPath, bool IsFile, Action<string?> OnResult);
+public record PromptRename(string Path, Action<string?> OnResult);
+public record ConfirmDelete(string Path, Action<bool> OnResult);
 ```
 
 `FolderOpened` is published by `ShellViewModel.OpenFolderCommand` (File → Open Folder / Ctrl+Shift+O)
