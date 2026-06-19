@@ -557,3 +557,50 @@ buggy on the untitled→first-save path (no old URI to close). Removing it dodge
 **Change:** Documented as a Phase 4 limitation (server keeps old URI until close/reopen) instead of implemented.
 
 **Status:** ✅ APPLIED — removed Save As rule from §5.1; added to "Phase 4 Limitations".
+
+---
+
+## Round 8 — Post-M2 Review / Deferred to M3 Real-Server Wiring (2026-06-19)
+
+M1 and M2 are implemented and green (269/269). These three items surfaced during the M2
+review. None block M2 — all are **real-server-dependent** and are intentionally deferred to
+the M3 step where `csharp-ls` is installed and wired for real. Address them at the start of M3.
+
+### R8.1 `LSPManager` blocks the publisher (UI) thread during session init *(priority: high, fix at M3 start)*
+
+**Description:** `LSPManager.OnFolderOpened` calls
+`newSession.InitializeAsync(...).GetAwaiter().GetResult()`. `FolderOpened` is published on the
+UI thread, so once `csharp-ls` is actually installed, opening a folder will freeze the UI for the
+full server cold-start handshake (potentially seconds). It is currently invisible only because
+`csharp-ls` is absent and `StartProcess` throws fast. The M1 `ConfigureAwait(false)` prevents a
+deadlock but not the freeze.
+
+**Required fix:** Run session creation + `InitializeAsync` on a background task; assign `_session`
+under lock once initialized. Documents opened during the init window remain unsynced (consistent
+with the existing no-back-fill limitation). The existing tests already await the peer's init TCS,
+so they are unaffected.
+
+**Status:** OPEN — fix as the first step of M3.
+
+### R8.2 Validate `csharp-ls` advertised sync kind vs the full-sync requirement *(priority: high, fix at M3 start)*
+
+**Description:** Capability negotiation requires `textDocumentSync == Full` (1) or disables LSP.
+Real `csharp-ls` commonly advertises **incremental** (2). If so, the current check disables LSP
+entirely even though Phase 4 always sends full-document text.
+
+**Required fix:** When `csharp-ls` is first run, observe its advertised `textDocumentSync`. Most
+likely relax the check to accept incremental-or-full (Phase 4 still sends full text either way),
+or document the actual behavior. Do not leave LSP silently disabled against the primary server.
+
+**Status:** OPEN — validate against the real server at M3.
+
+### R8.3 `TimeSpan` registered directly in DI *(priority: low)*
+
+**Description:** `App.axaml.cs` registers a bare `TimeSpan` singleton for the `LSPManager` debounce
+(`services.AddSingleton(typeof(TimeSpan), _ => 300ms)`). Injecting a primitive/struct type is
+fragile — any other future consumer needing a `TimeSpan` would collide.
+
+**Required fix:** Replace with a small options type (e.g., an `LspOptions` record carrying the
+debounce interval) or construct `LSPManager` via a factory lambda that passes the literal.
+
+**Status:** OPEN — low priority; clean up during M3 or later.
