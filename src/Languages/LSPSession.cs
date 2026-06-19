@@ -72,7 +72,7 @@ public sealed class LSPSession : IDisposable
                     },
                 },
             },
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         SupportsFullDocumentSync = IsFullDocumentSyncSupported(result?.Capabilities?.TextDocumentSync);
 
@@ -83,12 +83,12 @@ public sealed class LSPSession : IDisposable
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await _jsonRpc.NotifyAsync("initialized", new { });
+        await _jsonRpc.NotifyAsync("initialized", new { }).ConfigureAwait(false);
         SetStatus($"LSP initialized: {serverName}");
         return true;
     }
 
-    public Task<T> SendRequestAsync<T>(string method, object? @params, CancellationToken cancellationToken)
+    public async Task<T> SendRequestAsync<T>(string method, object? @params, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -98,7 +98,7 @@ public sealed class LSPSession : IDisposable
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        return _jsonRpc.InvokeAsync<T>(method, @params);
+        return await _jsonRpc.InvokeAsync<T>(method, @params).ConfigureAwait(false);
     }
 
     public void SendNotification(string method, object? @params)
@@ -123,7 +123,7 @@ public sealed class LSPSession : IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _jsonRpc.InvokeAsync<object?>("shutdown");
+            await _jsonRpc.InvokeAsync<object?>("shutdown").ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is ConnectionLostException or ObjectDisposedException or InvalidOperationException)
         {
@@ -133,7 +133,7 @@ public sealed class LSPSession : IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _jsonRpc.NotifyAsync("exit");
+            await _jsonRpc.NotifyAsync("exit").ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is ConnectionLostException or ObjectDisposedException or InvalidOperationException)
         {

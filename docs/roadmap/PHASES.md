@@ -81,11 +81,11 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > Entry condition: Phase 3 is complete.
 > Implementation details: [`docs/phases/phase-4/IMPLEMENTATION_PLAN.md`](../phases/phase-4/IMPLEMENTATION_PLAN.md).
 
-- [ ] **LSPSession** — JSON-RPC over stdin/stdout to a language server
-- [ ] **LSPManager** — spawn `csharp-ls` / `omnisharp` per project
-- [ ] **Diagnostics** — red squigglies on errors
-- [ ] **Problems panel** — list all diagnostics in workspace
-- [ ] **Code completion** — Ctrl+Space triggers LSP completions
+- [x] **LSPSession** — JSON-RPC over stdin/stdout to a language server (M1)
+- [x] **LSPManager** — document synchronization: didOpen/didChange/didSave/didClose (M2)
+- [ ] **Diagnostics** — red squigglies on errors (M3)
+- [ ] **Problems panel** — list all diagnostics in workspace (M4)
+- [ ] **Code completion** — Ctrl+Space triggers LSP completions (M5)
 
 ## Phase 5: Output Panel (가짜 터미널)
 > ⚠️ 진짜 인터랙티브 터미널(PTY)은 Phase 9로 이동. OS마다 PTY 구현이 달라 난이도가 매우 높음.

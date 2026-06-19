@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using AvaloniaEdit.Document;
 
 namespace Aero.Models.Editor;
@@ -16,6 +17,7 @@ public class TextDocument
     private bool _isNew = true;
     private string _language = "Plain Text";
     private string _displayName = "Untitled";
+    private int _version;
 
     public TextDocument() : this(string.Empty)
     {
@@ -31,6 +33,35 @@ public class TextDocument
         _filePath = filePath;
         _isNew = false;
         _displayName = System.IO.Path.GetFileName(filePath);
+    }
+
+    /// <summary>
+    /// Stable file:// URI for LSP synchronization. Null for untitled/new documents.
+    /// </summary>
+    public string? Uri
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_filePath))
+                return null;
+
+            return new Uri(Path.GetFullPath(_filePath), UriKind.Absolute).AbsoluteUri;
+        }
+    }
+
+    /// <summary>
+    /// Monotonically increasing version used for LSP textDocument/didChange.
+    /// Incremented only when a change notification is actually sent.
+    /// </summary>
+    public int Version => _version;
+
+    /// <summary>
+    /// Advance the document version. Called only when a didChange notification is sent.
+    /// </summary>
+    /// <returns>The new version number.</returns>
+    public int AdvanceVersion()
+    {
+        return ++_version;
     }
 
     /// <summary>The underlying AvaloniaEdit document.</summary>

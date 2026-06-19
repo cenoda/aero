@@ -50,6 +50,7 @@
     <Compile Include="../src/Languages/ILanguageDetectionService.cs" />
     <Compile Include="../src/Languages/LanguageDetectionService.cs" />
     <Compile Include="../src/Languages/LSPSession.cs" />
+    <Compile Include="../src/Languages/LSPManager.cs" />
     <Compile Include="../src/Languages/Models/InitializeResult.cs" />
     <Compile Include="../src/Languages/Models/LSPDiagnosticsEventArgs.cs" />
     <Compile Include="../src/Languages/Models/LSPLogMessageEventArgs.cs" />

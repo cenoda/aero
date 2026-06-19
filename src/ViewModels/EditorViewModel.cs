@@ -257,8 +257,11 @@ public class EditorViewModel : ReactiveObject, IDisposable
     public void NotifyTextChanged()
     {
         var doc = ActiveTab?.Document;
-        if (doc != null)
-            _documentManager.MarkDirty(doc);
+        if (doc == null)
+            return;
+
+        _documentManager.MarkDirty(doc);
+        _bus.Publish(new DocMsg.DocumentTextChanged(doc));
     }
 
     /// <summary>Called by the view when the caret moves in the active TextEditor.</summary>

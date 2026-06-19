@@ -27,6 +27,11 @@ public partial class App : Application
         {
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();
+
+            // Eagerly resolve LSPManager so it subscribes to FolderOpened before any
+            // folder is opened and is disposed with the DI container on app exit.
+            _services.GetRequiredService<LSPManager>();
+
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
@@ -64,6 +69,18 @@ public partial class App : Application
         // Services
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
         services.AddSingleton<DocumentManager>();
+
+        // Phase 4 — LSP integration
+        services.AddSingleton<Func<string, string?, LSPSession>>(provider =>
+        {
+            var bus = provider.GetRequiredService<IMessageBus>();
+            return (serverName, rootUri) => LSPSession.StartProcess(
+                serverName,
+                arguments: null,
+                statusSink: msg => bus.Publish(new StatusMessage(msg)));
+        });
+        services.AddSingleton(typeof(TimeSpan), _ => TimeSpan.FromMilliseconds(300));
+        services.AddSingleton<LSPManager>();
 
         // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
         // IgnoreList has a public IEnumerable<string> constructor used by tests.

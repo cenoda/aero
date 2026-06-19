@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<TestSequence>
+  <Test Name="Aero.Tests.Languages.LSPManagerTests.DocumentOpened_CSharpFile_SendsDidOpen" DisplayName="Aero.Tests.Languages.LSPManagerTests.DocumentOpened_CSharpFile_SendsDidOpen" Source="/home/cenoda/aero/tests/bin/Debug/net9.0/aero.Tests.dll" Completed="False" />
+</TestSequence>

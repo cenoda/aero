@@ -18,6 +18,9 @@ public record ActiveDocumentChanged(Aero.Models.Editor.TextDocument? Document);
 /// <summary>A document was modified (has unsaved changes).</summary>
 public record DocumentModified(string FilePath, Aero.Models.Editor.TextDocument Document);
 
+/// <summary>A document's text changed (per-keystroke signal for LSP sync).</summary>
+public record DocumentTextChanged(Aero.Models.Editor.TextDocument Document);
+
 /// <summary>A document was saved.</summary>
 public record DocumentSaved(string FilePath, Aero.Models.Editor.TextDocument Document);
 
