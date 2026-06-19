@@ -4,3 +4,7 @@ obj/
 *.suo
 .vs/
 .blackboxcli/
+TestResults/
+*.dmp
+*.crashdump
+*.core
