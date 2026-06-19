@@ -454,3 +454,70 @@ Use these as the self-review checklist before closing Phase 4:
 - [ ] `dotnet test tests` passes
 - [ ] Manual Phase 4 smoke test passes
 - [ ] `docs/phases/phase-4/TOFIX.md` has no open items before Phase 5 starts
+
+---
+
+## Round 6 — Plan Review Against Phases 0–3 (2026-06-19)
+
+Findings from a final review of the implementation plan against the live codebase and the prior phases. See `docs/phases/phase-4/PLAN_REVIEW.md` for full rationale.
+
+### R6.1 Update `docs/design/LSP_DESIGN.md` for Phase 4 constraints *(priority: medium)*
+
+**Description:** `docs/design/LSP_DESIGN.md` shows incremental-or-full sync and a `DocumentOpened` record carrying `TextDocument`. The Phase 4 plan chooses full sync and the actual code uses `record DocumentOpened(string FilePath)`. The design doc is therefore inconsistent with both the plan and the codebase.
+
+**Required fix:** Add a prominent note to `docs/design/LSP_DESIGN.md` stating that Phase 4 uses full-document sync and looks up documents via `DocumentManager`, or update the design doc diagrams/snippets.
+
+**Status:** ✅ RESOLVED (2026-06-19) — added a "Phase 4 Constraints" section to `docs/design/LSP_DESIGN.md` and updated the sync snippets to reflect full-document sync and version-on-send semantics.
+
+### R6.2 Verify `LanguageInfo.Id` values are valid LSP `languageId`s *(priority: medium, BLOCKER for M2)*
+
+**Description:** The plan reuses `LanguageInfo.Id` from Phase 3's `ILanguageDetectionService` as the LSP `languageId` in `textDocument/didOpen`. This has not been explicitly verified. TextMate ids and LSP language ids often overlap (e.g., `"csharp"`), but they are not guaranteed to be identical for every language.
+
+**Evidence:** The LSP specification uses VS Code/TextMate language identifiers as the de facto `languageId` values. The Phase 3 `LanguageDetectionService` ids (`"csharp"`, `"fsharp"`, `"json"`, `"xml"`, `"markdown"`, `"javascript"`, `"typescript"`, `"typescriptreact"`, `"javascriptreact"`, `"python"`, `"html"`, `"css"`, `"scss"`, `"yaml"`, `"sql"`, `"rust"`, `"go"`, `"java"`, `"cpp"`, `"c"`, `"shellscript"`, `"powershell"`, `"plaintext"`) are all standard identifiers. For Phase 4, only `"csharp"` needs end-to-end verification with `csharp-ls`; the rest can be verified per-language as additional servers are added.
+
+**Required fix:** Document that `LanguageInfo.Id` is used directly as the LSP `languageId` and that Phase 4 verifies this only for C#.
+
+**Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.2 updated with language-id note.
+
+### R6.3 Define multi-folder / root replacement behavior *(priority: medium, BLOCKER for M1)*
+
+**Description:** The plan says "one C# LSP session per opened folder," but does not specify what happens when a second folder is opened while a session already exists. Re-opening the same path is covered by idempotency, but a *different* path is not.
+
+**Required fix:** Lock Phase 4 to a single active root. Opening a new folder should close the previous session and start a new one. Document this behavior.
+
+**Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.1 updated with single-active-root rule.
+
+### R6.4 Define back-fill behavior for already-open files when a folder is opened *(priority: medium, BLOCKER for M2)*
+
+**Description:** A user can open individual `.cs` files before opening a folder. Once a folder is opened, `LSPManager` initializes a session, but it is unclear whether already-open documents are sent to the server via `didOpen`.
+
+**Required fix:** Decide and document the behavior.
+
+**Resolution:** Phase 4 will back-fill: when a session initializes, `LSPManager` scans `DocumentManager.Documents` and sends `didOpen` for every document that has a valid `file://` URI and a language supported by the active session. This is added to the M2 deliverables and gate.
+
+**Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.1 and §6 M2 updated with back-fill requirement.
+
+### R6.5 Verify AvaloniaEdit diagnostic marker / squiggle API *(priority: high, BLOCKER for M3)*
+
+**Description:** The plan assumes an AvaloniaEdit marker-service seam for rendering diagnostics. AvaloniaEdit 11.3 may not expose the same `TextMarkerService` API that the WPF AvalonEdit did. If the API is unavailable or unstable, the M3 "red squigglies" gate cannot be met as written.
+
+**Evidence:** Assembly metadata inspection of `AvaloniaEdit.dll` 11.3.0 confirms:
+- No `TextMarkerService` type exists.
+- No types containing "Squiggle" exist.
+- The supported diagnostic-rendering seam is `AvaloniaEdit.Rendering.IBackgroundRenderer`, registered via `TextEditor.TextView.BackgroundRenderers`.
+- Range tracking is supported via `AvaloniaEdit.Document.TextSegment` / `TextSegmentCollection<T>`.
+- A reference implementation exists in `AvaloniaEdit.Search.SearchResultBackgroundRenderer`.
+
+**Required fix:** Update the implementation plan to use `IBackgroundRenderer` instead of `TextMarkerService`, and implement the diagnostic renderer against that API in M3. The fallback remains line-level background highlight + Problems panel.
+
+**Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.3 updated to use `IBackgroundRenderer`.
+
+### R6.6 Handle Save As URI change in LSP sync *(priority: low-medium)*
+
+**Description:** `SaveDocumentAsAsync` changes a document's `FilePath` and publishes `DocumentSaved`. The LSP server still has the old URI registered via `didOpen`. The plan does not state whether to send `didClose` for the old URI and `didOpen` for the new URI.
+
+**Required fix:** Decide the behavior.
+
+**Resolution:** Phase 4 will send `textDocument/didClose` for the old URI and `textDocument/didOpen` for the new URI after `SaveDocumentAsAsync` succeeds. This keeps the server's buffer identity in sync with the document path.
+
+**Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.1 updated with Save As path-change rule.

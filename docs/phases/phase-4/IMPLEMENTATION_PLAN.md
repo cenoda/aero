@@ -48,7 +48,7 @@ Before writing LSP code, verify these gates:
 |------|--------------|
 | Phase 3 checklist complete | `docs/roadmap/PHASES.md` Phase 3 items all `[x]` |
 | Build passes | `dotnet build src/aero.csproj` succeeds |
-| Tests pass | `dotnet test tests` passes (count verified at Phase 3 M0) |
+| Tests pass | `dotnet test tests` passes (254/254 as of Phase 3 M4) |
 | Manual smoke passes | `manual_test_phase3.sh` passes |
 | No Phase 3 blockers | `docs/phases/phase-3/TOFIX.md` has no open items |
 
@@ -165,17 +165,26 @@ Responsibilities:
 
 Dependencies:
 
-- `DocumentManager` — to look up the `TextDocument` referenced by `DocumentOpened` and to resolve open documents for completion
+- `DocumentManager` — to look up the `TextDocument` referenced by `DocumentOpened`, to resolve open documents for completion, and to back-fill `didOpen` when a session starts
 - `IDiagnosticStore` — the shared sink for diagnostics; `LSPManager` is a writer, not the owner
 
 Phase 4 session scope rule:
 
 - create **one C# LSP session per opened folder**
 - use the folder opened through `File → Open Folder` as the `rootUri`
+- maintain a **single active root** in Phase 4: opening a different folder closes the previous session and starts a new one
+- when a session initializes, back-fill `didOpen` for all documents already open in `DocumentManager` that have a valid `file://` URI
 - if no folder is open, LSP features remain unavailable for that document in Phase 4
 - display a status-bar message "LSP disabled: open a folder first" so the failure is visible rather than silent
 
 This avoids premature project/solution inference before Phase 6.
+
+Save As / path change rule:
+
+- when `SaveDocumentAsAsync` changes a document's `FilePath`, the old URI is no longer valid
+- `LSPManager` must send `textDocument/didClose` for the old URI and `textDocument/didOpen`
+  for the new URI after the save succeeds
+- this keeps the server's buffer identity in sync with the document's actual path
 
 Untitled documents:
 
@@ -242,6 +251,10 @@ Notes:
 - Phase 4 will use **full-document sync** for `didChange`, not incremental sync
 - `didSave` will be driven from the existing `DocumentManager.SaveDocumentAsync` /
   `SaveDocumentAsAsync` success path, which already publishes `DocumentSaved`
+- the LSP `languageId` sent in `textDocument/didOpen` is the `LanguageInfo.Id` from
+  `ILanguageDetectionService`. For Phase 4, only the C# id (`"csharp"`) must be
+  verified end-to-end; other language ids are standard VS Code/TextMate identifiers
+  and can be verified as each language server is added in later phases
 
 Reason for full sync choice:
 
@@ -304,17 +317,20 @@ Phase 4 must explicitly add editor integration for diagnostics and completion.
 
 #### Diagnostics rendering
 
-Use an AvaloniaEdit marker service approach (for example a `TextMarkerService`-style
-component attached to the editor control) to render diagnostic squiggles and/or line
-markers for the active document.
+AvaloniaEdit 11.3 does **not** ship a `TextMarkerService`-style squiggle API. The
+available seam is `AvaloniaEdit.Rendering.IBackgroundRenderer`, registered on
+`TextEditor.TextView.BackgroundRenderers`. Implement a small diagnostic renderer that
+uses `IBackgroundRenderer.Draw` to render error underlines and/or line backgrounds for
+the active document's diagnostic ranges, backed by `AvaloniaEdit.Document.TextSegment`
+or plain offset/length data.
 
 Phase 4 minimum requirement:
 
 - visible error indication in the editor for diagnostics in the active file
 
-If full red squiggle rendering proves unstable during implementation, the fallback is:
+If full underline/squiggle rendering proves unstable during implementation, the fallback is:
 
-- line-level marker/highlight + Problems panel visibility
+- line-level background highlight + Problems panel visibility
 
 Do **not** silently downgrade to "Problems panel only" without updating the Phase 4
 TOFIX and documenting the limitation.
@@ -433,7 +449,7 @@ Gate:
 
 Deliverables:
 
-- `didOpen`
+- `didOpen` on file open and on session init back-fill
 - debounced full-document `didChange`
 - `didClose`
 - `didSave`
@@ -444,6 +460,7 @@ Gate:
 - buffer updates flow to the server in the correct order
 - `didChange` uses full-document sync consistently
 - version numbers increment on each sent change
+- when a folder is opened, already-open documents receive `didOpen` so they are not invisible to the server
 - **Checkpoint:** `IDiagnosticStore` / `DiagnosticStore` are extracted by M3 so `LSPManager` does not own diagnostic storage. If `LSPManager` still exceeds ~400–500 lines after that, open a TOFIX item to split further.
 
 ## M3 — Diagnostics
@@ -454,7 +471,7 @@ Deliverables:
 - convert diagnostics to internal models
 - maintain latest diagnostics by file
 - expose workspace diagnostics to the UI
-- render active-file diagnostics in the editor through the AvaloniaEdit marker seam
+- render active-file diagnostics in the editor through the AvaloniaEdit `IBackgroundRenderer` seam
 
 Gate:
 

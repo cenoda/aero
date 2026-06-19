@@ -4,13 +4,30 @@
 
 ```
 User types in editor
-    → TextEditorViewModel sends LSP request
-    → LSPManager routes to correct LSPSession
+    → LSPManager routes document lifecycle and completion requests
     → LSPSession sends JSON-RPC over stdin/stdout
     → Language Server process responds
     → LSPSession deserializes response
-    → ViewModel updates (diagnostics, completions, hover)
+    → LSPManager / DiagnosticStore updates ViewModels (diagnostics, completions, hover)
 ```
+
+## Phase 4 Constraints
+
+This design doc describes the full LSP surface. The current implementation phase
+([`docs/phases/phase-4/IMPLEMENTATION_PLAN.md`](../phases/phase-4/IMPLEMENTATION_PLAN.md))
+is intentionally narrower:
+
+- **Single server:** `csharp-ls` is the only language server integrated in Phase 4.
+- **Single active root:** one LSP session per opened folder; opening a different folder
+  closes the previous session.
+- **Full-document sync only:** `textDocument/didChange` sends the entire document content.
+  Incremental sync is deferred to a later phase.
+- **Document identity:** `DocumentOpened` is published with a file path string; `LSPManager`
+  resolves the `TextDocument` through `DocumentManager`.
+- **Diagnostic rendering:** AvaloniaEdit 11.3 does not ship `TextMarkerService`. Phase 4
+  uses `AvaloniaEdit.Rendering.IBackgroundRenderer` for editor-visible diagnostics.
+- **Scope:** diagnostics, Problems panel, and `Ctrl+Space` completion. Hover, go-to-definition,
+  rename, formatting, signature help, and semantic tokens are out of scope.
 
 ## JSON-RPC Protocol
 
@@ -116,13 +133,13 @@ class LSPManager {
 When a document opens or changes, we must notify the server:
 
 ```
-Open:  textDocument/didOpen  (full text)
-Change: textDocument/didChange (incremental or full)
+Open:   textDocument/didOpen  (full text)
+Change: textDocument/didChange (full text in Phase 4)
 Close:  textDocument/didClose
 Save:   textDocument/didSave
 ```
 
-The `TextDocument` model tracks version numbers for incremental sync:
+The `TextDocument` model tracks version numbers for buffer sync:
 
 ```csharp
 class TextDocument {
@@ -130,6 +147,8 @@ class TextDocument {
     string _languageId;
 
     void OnTextChanged() {
+        // Phase 4: version is incremented only when a debounced change is actually sent,
+        // not on every keystroke, so the server's view of the version never races ahead.
         _version++;
         _lspSession?.SendNotification("textDocument/didChange", new {
             textDocument = new { uri = ToUri(Path), version = _version },
