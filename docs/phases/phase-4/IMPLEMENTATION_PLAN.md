@@ -156,35 +156,27 @@ Application-level coordinator for sessions and document synchronization.
 
 Responsibilities:
 
-- create/reuse `LSPSession` instances per language/root
+- create and own the single active `LSPSession` (one C# session per opened folder)
 - resolve the language server command
 - route document lifecycle events to the correct session
 - expose completion requests for the active document
-- push received LSP diagnostics into `IDiagnosticStore`
+- store the latest LSP diagnostics in a plain `DiagnosticStore`
 - publish LSP status messages into the app layer
 
 Dependencies:
 
-- `DocumentManager` — to look up the `TextDocument` referenced by `DocumentOpened`, to resolve open documents for completion, and to back-fill `didOpen` when a session starts
-- `IDiagnosticStore` — the shared sink for diagnostics; `LSPManager` is a writer, not the owner
+- `DocumentManager` — to look up the `TextDocument` referenced by `DocumentOpened` and to resolve the active document for completion
+- `DiagnosticStore` — a plain class holding the latest diagnostics per file URI
 
 Phase 4 session scope rule:
 
 - create **one C# LSP session per opened folder**
 - use the folder opened through `File → Open Folder` as the `rootUri`
 - maintain a **single active root** in Phase 4: opening a different folder closes the previous session and starts a new one
-- when a session initializes, back-fill `didOpen` for all documents already open in `DocumentManager` that have a valid `file://` URI
 - if no folder is open, LSP features remain unavailable for that document in Phase 4
 - display a status-bar message "LSP disabled: open a folder first" so the failure is visible rather than silent
 
 This avoids premature project/solution inference before Phase 6.
-
-Save As / path change rule:
-
-- when `SaveDocumentAsAsync` changes a document's `FilePath`, the old URI is no longer valid
-- `LSPManager` must send `textDocument/didClose` for the old URI and `textDocument/didOpen`
-  for the new URI after the save succeeds
-- this keeps the server's buffer identity in sync with the document's actual path
 
 Untitled documents:
 
@@ -192,33 +184,29 @@ Untitled documents:
 - untitled documents remain local-only in Phase 4
 - completion/diagnostics in untitled files are not expected to work
 
-Phase 4 diagnostic source rule:
+Phase 4 diagnostic ownership rule:
 
-- **`IDiagnosticStore` is the single source of truth for diagnostics in Phase 4**
-- `LSPManager` pushes LSP diagnostics into it
-- `ProblemsViewModel` consumes flattened/projected state only
-- Phase 6 will push build diagnostics into the same store
+- `LSPManager` owns diagnostics in Phase 4 via a plain `DiagnosticStore` class (no interface)
+- `ProblemsViewModel` consumes the flattened/projected state only
 
-A small `DiagnosticStore` service is introduced in Phase 4 (M3) so Phase 6 can push build
-diagnostics into the same sink without a mid-phase refactor. In Phase 4 it has one writer
-(`LSPManager`).
+A separate `IDiagnosticStore` abstraction is **not** introduced in Phase 4. If Phase 6 (MSBuild
+errors → Problems panel) needs a shared sink, extract the interface then — when there is a real
+second writer — rather than speculatively now.
 
 Suggested location:
 
 - `src/Languages/LSPManager.cs`
 
-### `IDiagnosticStore` / `DiagnosticStore`
+### `DiagnosticStore`
 
 Responsibilities:
 
-- maintain the latest diagnostics per file URI, tagged by source
-- accept diagnostics from LSP, build, or other sources
+- maintain the latest diagnostics per file URI
 - flatten diagnostics into a workspace-wide list for the Problems panel
 - expose severity, file, line, column, and message
 
 Suggested locations:
 
-- `src/Languages/IDiagnosticStore.cs`
 - `src/Languages/DiagnosticStore.cs`
 - `src/Languages/Models/` for DTOs (consistent with `LanguageInfo` living under `src/Languages/`)
 - `src/ViewModels/ProblemsViewModel.cs`
@@ -382,7 +370,7 @@ Add messages for:
   This is the source for debounced LSP `didChange` sync. The handler must capture `doc.Content`
   synchronously on the UI thread, because `TextDocument.Content` is thread-affine; the captured
   text is then passed to the background send path.
-- `DiagnosticsUpdated` — published by `IDiagnosticStore` when the workspace diagnostic set changes
+- `DiagnosticsUpdated` — published by `DiagnosticStore` when the workspace diagnostic set changes
 - optional request to jump to a diagnostic location
 - optional LSP/log status message for status bar visibility
 - `FolderOpened` — existing message that carries the opened folder path; `LSPManager` subscribes to this
@@ -449,7 +437,7 @@ Gate:
 
 Deliverables:
 
-- `didOpen` on file open and on session init back-fill
+- `didOpen` on file open
 - debounced full-document `didChange`
 - `didClose`
 - `didSave`
@@ -460,8 +448,7 @@ Gate:
 - buffer updates flow to the server in the correct order
 - `didChange` uses full-document sync consistently
 - version numbers increment on each sent change
-- when a folder is opened, already-open documents receive `didOpen` so they are not invisible to the server
-- **Checkpoint:** `IDiagnosticStore` / `DiagnosticStore` are extracted by M3 so `LSPManager` does not own diagnostic storage. If `LSPManager` still exceeds ~400–500 lines after that, open a TOFIX item to split further.
+- **Checkpoint:** if `LSPManager` exceeds ~400–500 lines, open a TOFIX item to split out `DiagnosticStore` further.
 
 ## M3 — Diagnostics
 
@@ -510,7 +497,6 @@ Gate:
 
 - `src/Languages/LSPSession.cs`
 - `src/Languages/LSPManager.cs`
-- `src/Languages/IDiagnosticStore.cs`
 - `src/Languages/DiagnosticStore.cs`
 - `src/Languages/Models/` *(small focused per-class files; no multi-class catch-all file)*
 - `src/ViewModels/ProblemsViewModel.cs`
@@ -658,6 +644,20 @@ Mitigation:
 - track active sessions by rootUri
 - reuse existing session if one already exists for the path
 - close and recreate only on explicit folder close or path change
+
+---
+
+## Phase 4 Limitations (documented, by design)
+
+These cases are intentionally out of scope for the basic first cut. They are documented
+rather than implemented, to keep Phase 4 lean; revisit in a later phase if a real need appears.
+
+- **Files opened before a folder:** if `.cs` files are already open when a folder is opened,
+  they are not back-filled to the server. Open the folder first to get LSP for a file.
+- **Save As path change:** when a document is saved to a new path, the server keeps the old
+  URI registered until the document is closed and reopened. Buffer identity is not re-synced on rename.
+- **Untitled documents:** remain local-only; no diagnostics/completion until saved to a path.
+- **External file changes** (`FolderChanged` from the watcher) are not synced back to the server.
 
 ---
 

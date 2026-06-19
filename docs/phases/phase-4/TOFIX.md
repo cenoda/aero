@@ -521,3 +521,39 @@ Findings from a final review of the implementation plan against the live codebas
 **Resolution:** Phase 4 will send `textDocument/didClose` for the old URI and `textDocument/didOpen` for the new URI after `SaveDocumentAsAsync` succeeds. This keeps the server's buffer identity in sync with the document path.
 
 **Status:** ✅ RESOLVED (2026-06-19) — `docs/phases/phase-4/IMPLEMENTATION_PLAN.md` §5.1 updated with Save As path-change rule.
+
+---
+
+## Round 7 — Scope Trim (2026-06-19)
+
+After six review rounds, a deliberate simplification pass to keep Phase 4 aligned with its
+"intentionally basic" charter. These are **reversals/reductions**, not new requirements. Do not
+re-add them in a future round without a concrete, present need — they were removed on purpose.
+
+### R7.1 Drop the `IDiagnosticStore` interface; keep a plain `DiagnosticStore` *(reduction)*
+
+**Rationale:** R5.3 introduced an `IDiagnosticStore` interface + separate service "for Phase 6"
+(two phases away). That is speculative generality. Phase 4 has exactly one writer (`LSPManager`).
+
+**Change:** Use a plain concrete `DiagnosticStore` class (no interface, no `src/Languages/IDiagnosticStore.cs`).
+If Phase 6 (MSBuild → Problems) adds a real second writer, extract the interface then.
+
+**Status:** ✅ APPLIED — plan §5.1, §5.4, §6 M2, §7 updated.
+
+### R7.2 Move back-fill of already-open files to a documented limitation *(reduction)*
+
+**Rationale:** R6.4 added scan-and-`didOpen` of already-open files on `FolderOpened` — an edge case
+(open file, then open its folder) that adds M2 logic beyond "basic."
+
+**Change:** Documented as a Phase 4 limitation ("open the folder first") instead of implemented.
+
+**Status:** ✅ APPLIED — removed from §5.1/§6 M2; added to "Phase 4 Limitations".
+
+### R7.3 Move Save As URI swap to a documented limitation *(reduction)*
+
+**Rationale:** R6.6 added `didClose`(old)+`didOpen`(new) on rename — an edge case that was also
+buggy on the untitled→first-save path (no old URI to close). Removing it dodges that bug entirely.
+
+**Change:** Documented as a Phase 4 limitation (server keeps old URI until close/reopen) instead of implemented.
+
+**Status:** ✅ APPLIED — removed Save As rule from §5.1; added to "Phase 4 Limitations".
