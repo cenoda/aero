@@ -70,7 +70,7 @@ public partial class App : Application
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
         services.AddSingleton<DocumentManager>();
 
-        // Phase 4 — LSP integration
+// Phase 4 — LSP integration
         services.AddSingleton<Func<string, string?, LSPSession>>(provider =>
         {
             var bus = provider.GetRequiredService<IMessageBus>();
@@ -80,6 +80,7 @@ public partial class App : Application
                 statusSink: msg => bus.Publish(new StatusMessage(msg)));
         });
         services.AddSingleton(typeof(TimeSpan), _ => TimeSpan.FromMilliseconds(300));
+        services.AddSingleton<DiagnosticStore>();
         services.AddSingleton<LSPManager>();
 
         // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)

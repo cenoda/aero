@@ -254,16 +254,18 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-    [Fact]
+[Fact]
     public void FactoryThrows_IsHandledGracefully_WithStatusMessage()
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();
         var documentManager = new DocumentManager(bus, languageDetection);
+        var diagnosticStore = new DiagnosticStore(bus);
         using var manager = new LSPManager(
             bus,
             documentManager,
             languageDetection,
+            diagnosticStore,
             (_, _) => throw new InvalidOperationException("csharp-ls not found"),
             TimeSpan.Zero);
 
@@ -274,7 +276,7 @@ public class LSPManagerTests : IDisposable
         Assert.Contains("csharp-ls not found", status.Text);
     }
 
-    [Fact]
+[Fact]
     public void OpenDifferentFolder_DisposesPreviousSession()
     {
         SingleThread.Run(async () =>
@@ -312,17 +314,56 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-    private static (LSPManager Manager, StubMessageBus Bus, DocumentManager DocumentManager, FakeSessionFactory Factory) CreateManager(
+[Fact]
+    public void PublishDiagnostics_ReceivedViaSession_LandsInStore()
+    {
+        SingleThread.Run(async () =>
+        {
+            var (manager, bus, documentManager, factory) = CreateManager();
+            using var _ = manager;
+
+            var folder = CreateTempDirectory();
+            var path = CreateTempFile(folder, ".cs", "class A { }");
+
+            bus.Publish(new FolderOpened(folder));
+            await WaitForInitializationAsync(factory);
+
+            var doc = await documentManager.OpenDocumentAsync(path);
+            var peer = factory.Peers[0];
+            Assert.True(await peer.DidOpenReceived.Task.WaitAsync(TimeSpan.FromSeconds(2)));
+
+            // Get the diagnostic store from the manager for verification.
+            var diagnosticStore = manager.GetDiagnosticStoreForTest();
+
+            // Send a publishDiagnostics notification from the fake peer.
+            var testUri = doc.Uri;
+            await peer.SendPublishDiagnosticsAsync(testUri);
+
+            // Wait for the diagnostic to be processed.
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+
+            // Verify the diagnostic landed in the store.
+            var diagnostics = diagnosticStore.GetDiagnostics(testUri);
+            Assert.NotNull(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal("oops", diagnostics[0].Message);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+        });
+    }
+
+private static (LSPManager Manager, StubMessageBus Bus, DocumentManager DocumentManager, FakeSessionFactory Factory) CreateManager(
         TimeSpan? debounce = null)
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();
         var documentManager = new DocumentManager(bus, languageDetection);
+        var diagnosticStore = new DiagnosticStore(bus);
         var factory = new FakeSessionFactory();
         var manager = new LSPManager(
             bus,
             documentManager,
             languageDetection,
+            diagnosticStore,
             factory.Create,
             debounce ?? TimeSpan.Zero);
         return (manager, bus, documentManager, factory);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using Avalonia.Controls;
@@ -10,6 +11,7 @@ using AvaloniaEdit.TextMate;
 using ReactiveUI;
 using TextMateSharp.Grammars;
 using Aero.Core;
+using Aero.Languages;
 using Aero.ViewModels;
 
 namespace Aero.Views;
@@ -20,6 +22,7 @@ public partial class EditorView : UserControl
     private int _subscribeGeneration;
     private Action<FindReplaceArgs>? _findReplaceHandler;
     private CompositeDisposable? _reactiveSubscriptions;
+    private EditorDiagnosticRenderer? _diagnosticRenderer;
 
     // One shared TextMate registry/theme for the editor panel.
     private readonly RegistryOptions _registryOptions = new(ThemeName.DarkPlus);
@@ -116,45 +119,63 @@ public partial class EditorView : UserControl
                 _activeEditor.TextChanged += OnTextChanged;
                 _activeEditor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
 
-                // Ensure TextMate is installed once per editor, then apply the grammar.
-                if (!_textMateInstallations.TryGetValue(_activeEditor, out var installation))
-                {
-                    installation = _activeEditor.InstallTextMate(_registryOptions);
-                    _textMateInstallations[_activeEditor] = installation;
-                    _activeEditor.Unloaded += OnEditorUnloaded;
-                }
-
-                ApplyGrammar(installation, newTab.LanguageId);
-
-                // Re-apply the grammar if the tab's LanguageId changes (e.g. Save As).
-                _languageIdSubscription = newTab.WhenAnyValue(x => x.LanguageId)
-                    .Subscribe(id => ApplyGrammar(installation, id));
+                // Register diagnostic renderer for the editor.
+                RegisterDiagnosticRenderer(newTab.Document);
             }
         }, DispatcherPriority.Loaded);
     }
 
-    private void ApplyGrammar(TextMate.Installation installation, string languageId)
+    private void RegisterDiagnosticRenderer(Models.Editor.TextDocument? doc)
     {
-        var scope = _registryOptions.GetScopeByLanguageId(languageId);
-        if (!string.IsNullOrEmpty(scope))
-        {
-            installation.SetGrammar(scope);
-        }
-        // Empty scope means plain text / unknown language — leave the editor uncolored.
-    }
-
-    private void OnEditorUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (sender is not TextEditor editor)
+        // Only create once per view.
+        if (_diagnosticRenderer != null)
             return;
 
-        editor.Unloaded -= OnEditorUnloaded;
+        // Get DiagnosticStore from DI if available.
+        var store = TryResolveDiagnosticStore();
+        if (store == null)
+            return;
 
-        if (_textMateInstallations.TryGetValue(editor, out var installation))
+        _diagnosticRenderer = new EditorDiagnosticRenderer(
+            store,
+            () => GetActiveDocumentUri(doc));
+
+if (_activeEditor != null)
         {
-            installation.Dispose();
-            _textMateInstallations.Remove(editor);
+            _activeEditor.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
         }
+    }
+
+    private static string? GetActiveDocumentUri(Models.Editor.TextDocument? doc)
+    {
+        if (doc == null)
+            return null;
+
+        // Return the file path as a file:// URI.
+        var fileName = doc.FilePath;
+        if (string.IsNullOrEmpty(fileName))
+            return null;
+
+        return new Uri(Path.GetFullPath(fileName), UriKind.Absolute).ToString();
+    }
+
+    private static DiagnosticStore? TryResolveDiagnosticStore()
+    {
+        try
+        {
+            if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var services = desktop.MainWindow?.DataContext?.GetType()
+                    .GetProperty("Services")?.GetValue(desktop.MainWindow?.DataContext) as IServiceProvider;
+                return services?.GetService(typeof(DiagnosticStore)) as DiagnosticStore;
+            }
+        }
+        catch
+        {
+            // Best-effort - return null if we can't resolve.
+        }
+
+        return null;
     }
 
     private void OnTextChanged(object? sender, EventArgs e)

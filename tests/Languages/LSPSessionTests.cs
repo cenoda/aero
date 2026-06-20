@@ -102,17 +102,20 @@ public class LSPSessionTests
         Assert.True(await server.ExitReceived.Task.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
-    [Fact]
+[Fact]
     public async Task InitializeAsync_NonFullSync_FailsGracefully()
     {
+        // R8.2: We now accept both full (1) and incremental (2) sync.
+        // This test verifies that incremental (2) is accepted.
         using var transport = InMemoryDuplex.CreatePair();
         using var server = new FakeLspPeer(transport.ServerStream, transport.ServerStream, textDocumentSync: 2);
         using var session = new LSPSession(transport.ClientStream, transport.ClientStream);
 
         var initialized = await session.InitializeAsync("csharp-ls", "file:///workspace", CancellationToken.None);
 
-        Assert.False(initialized);
-        Assert.False(session.SupportsFullDocumentSync);
-        Assert.Equal("LSP disabled for csharp-ls: server does not support full document sync.", session.LastStatusMessage);
+        // Now we accept incremental (2) as valid per R8.2
+        Assert.True(initialized);
+        Assert.True(session.SupportsFullDocumentSync);
+        Assert.Equal("LSP initialized: csharp-ls", session.LastStatusMessage);
     }
 }

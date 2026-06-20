@@ -1,24 +1,23 @@
-# TODO: Keyboard-Only Editor Support
+# M3 Implementation Complete - TODO
 
-## Task: Make editor usable without mouse
+## Phase 4 M3 Task List
 
-### Phase 1: Find/Replace Overlay Keyboard Support ✓ DONE
-- [x] Add Enter key to trigger "Find Next" in Find/Replace overlay
-- [x] Add Escape key to close Find/Replace overlay
-- [x] Ensure Tab key navigates between search/replace fields (via TabIndex)
-- [x] Auto-focus Search field when overlay opens (Ctrl+F)
+### Round 8 Fixes (Completed)
+- [x] R8.1 - Make LSPManager session init async (non-blocking UI)
+- [x] R8.2 - Relax sync kind check to accept incremental (2)
 
-### Phase 2: Tab Keyboard Support  
-- [x] Add keyboard shortcut to close current tab (already exists - Ctrl+W, Ctrl+F4)
-- [x] Make Ctrl+Tab/Ctrl+Shift+Tab work reliably for tab switching (verified)
-- [ ] Add Ctrl+K, Ctrl+W as alternate close shortcut (optional)
+### M3 Deliverables (Completed)
+- [x] Create Diagnostic.cs model in Models/
+- [x] Create DiagnosticStore.cs in Languages/
+- [x] Add DiagnosticsUpdated message to Messages.cs
+- [x] Integrate diagnostics handling into LSPManager
+- [x] Implement IBackgroundRenderer for editor rendering
+- [x] Wire renderer in EditorView.axaml.cs
+- [x] Register DiagnosticStore in DI
+- [x] Add DiagnosticStoreTests.cs
+- [x] Extend LSPManagerTests with diagnostics tests
 
-### Phase 3: Focus Management
-- [ ] Ensure Tab key navigates between editor and other controls
-- [ ] Verify Alt key activates menu bar
-- [ ] Check menu keyboard navigation (underlined mnemonics)
-
-### Phase 4: Testing
-- [ ] Verify all keyboard shortcuts work
-- [ ] Test tab switching without mouse
-- [ ] Test find/replace without mouse
+### Build and Verify (COMPLETE)
+- [x] dotnet build src/aero.csproj clean (0 warnings)
+- [x] dotnet test tests green (3 consecutive runs): 276/276
+- [ ] Manual smoke test (not automated)

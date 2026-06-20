@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Aero.Languages;
 
 namespace Aero.Core;
 
@@ -72,6 +74,12 @@ public record FolderOpened(string Path);
 /// deferred until Phase 7 when Git status badges need it.
 /// </summary>
 public record FolderChanged(string Path);
+
+/// <summary>
+/// Diagnostics in the workspace have changed. Published by DiagnosticStore
+/// when diagnostics are updated or cleared.
+/// </summary>
+public record DiagnosticsUpdated(IReadOnlyList<Diagnostic> Diagnostics);
 
 /// <summary>
 /// A transient status message for the status bar or log. Published by services

@@ -256,28 +256,31 @@ public sealed class LSPSession : IDisposable
         _statusSink?.Invoke(message);
     }
 
-    private static bool IsFullDocumentSyncSupported(JToken? textDocumentSync)
+private static bool IsFullDocumentSyncSupported(JToken? textDocumentSync)
     {
         if (textDocumentSync is null)
         {
             return false;
         }
 
+        int syncKind = -1;
+
         if (textDocumentSync.Type == JTokenType.Integer)
         {
-            return textDocumentSync.Value<int>() == FullDocumentSyncKind;
+            syncKind = textDocumentSync.Value<int>();
         }
-
-        if (textDocumentSync.Type == JTokenType.Object)
+        else if (textDocumentSync.Type == JTokenType.Object)
         {
             var changeToken = textDocumentSync["change"];
             if (changeToken?.Type == JTokenType.Integer)
             {
-                return changeToken.Value<int>() == FullDocumentSyncKind;
+                syncKind = changeToken.Value<int>();
             }
         }
 
-        return false;
+        // Accept both full (1) and incremental (2). Phase 4 will always send full
+        // regardless of what the server advertises per Plan §5.1.
+        return syncKind == FullDocumentSyncKind || syncKind == 2;
     }
 
     private sealed class RpcNotificationTarget

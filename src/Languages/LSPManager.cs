@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using Aero.Core;
 using Aero.Models.Editor;
 using Aero.Services;
+using Newtonsoft.Json.Linq;
 
 namespace Aero.Languages;
 
@@ -19,6 +21,7 @@ public sealed class LSPManager : IDisposable
     private readonly IMessageBus _bus;
     private readonly DocumentManager _documentManager;
     private readonly ILanguageDetectionService _languageDetection;
+    private readonly DiagnosticStore _diagnosticStore;
     private readonly Func<string, string?, LSPSession> _sessionFactory;
     private readonly TimeSpan _debounce;
 
@@ -37,16 +40,18 @@ public sealed class LSPManager : IDisposable
     private Action<DocumentSaved>? _documentSavedHandler;
     private Action<DocumentTextChanged>? _documentTextChangedHandler;
 
-    public LSPManager(
+public LSPManager(
         IMessageBus bus,
         DocumentManager documentManager,
         ILanguageDetectionService languageDetection,
+        DiagnosticStore diagnosticStore,
         Func<string, string?, LSPSession> sessionFactory,
         TimeSpan debounce)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
+        _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
         _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
         _debounce = debounce;
 
@@ -83,7 +88,13 @@ public sealed class LSPManager : IDisposable
         if (_documentTextChangedHandler != null)
             _bus.Unsubscribe<DocumentTextChanged>(_documentTextChangedHandler);
 
-        CancelAllPendingChanges();
+CancelAllPendingChanges();
+
+        // Unsubscribe from diagnostics on the session.
+        if (_session != null)
+        {
+            _session.PublishDiagnosticsReceived -= OnPublishDiagnosticsReceived;
+        }
 
         lock (_sessionLock)
         {
@@ -136,8 +147,8 @@ public sealed class LSPManager : IDisposable
         {
             SetStatus($"LSP previous session cleanup warning: {ex.Message}");
         }
-
-        CancelAllPendingChanges();
+        
+CancelAllPendingChanges();
 
         LSPSession? newSession = null;
         try
@@ -151,37 +162,48 @@ public sealed class LSPManager : IDisposable
             return;
         }
 
-        try
+// R8.1: Run session initialization on a background task to avoid blocking
+        // the UI thread. Documents opened during the init window will stay unsynced
+        // (consistent with the no-back-fill limitation per Plan §5).
+        _ = Task.Run(async () =>
         {
-            var initialized = newSession.InitializeAsync("csharp-ls", ToFileUri(folderPath), CancellationToken.None)
-                .GetAwaiter()
-                .GetResult();
-            if (!initialized)
+            try
             {
-                newSession.Dispose();
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            SetStatus($"LSP initialization failed: {ex.Message}");
-            newSession.Dispose();
-            return;
-        }
+                var initialized = await newSession!.InitializeAsync(
+                    "csharp-ls",
+                    ToFileUri(folderPath),
+                    CancellationToken.None);
 
-        lock (_sessionLock)
-        {
-            if (_isDisposed)
+                if (!initialized)
+                {
+                    newSession.Dispose();
+                    return;
+                }
+
+                // Subscribe to diagnostics from the session.
+                newSession.PublishDiagnosticsReceived += OnPublishDiagnosticsReceived;
+
+                lock (_sessionLock)
+                {
+                    if (_isDisposed)
+                    {
+                        newSession.PublishDiagnosticsReceived -= OnPublishDiagnosticsReceived;
+                        newSession.Dispose();
+                        return;
+                    }
+
+                    _session = newSession;
+                    _rootFolder = folderPath;
+                }
+
+                SetStatus($"LSP session started for {folderPath}");
+            }
+            catch (Exception ex)
             {
-                newSession.Dispose();
-                return;
+                SetStatus($"LSP initialization failed: {ex.Message}");
+                newSession?.Dispose();
             }
-
-            _session = newSession;
-            _rootFolder = folderPath;
-        }
-
-        SetStatus($"LSP session started for {folderPath}");
+        });
     }
 
     private void OnDocumentOpened(DocumentOpened msg)
@@ -349,7 +371,7 @@ public sealed class LSPManager : IDisposable
         }
     }
 
-    private void OnDocumentClosed(DocumentClosed msg)
+private void OnDocumentClosed(DocumentClosed msg)
     {
         if (_isDisposed)
             return;
@@ -357,10 +379,11 @@ public sealed class LSPManager : IDisposable
         var doc = msg.Document;
         CancelPendingChange(doc);
 
+        string? uri;
         lock (_sessionLock)
         {
             var session = _session;
-            var uri = doc.Uri;
+            uri = doc.Uri;
             if (session == null || string.IsNullOrEmpty(uri) || !_openUris.Contains(uri))
                 return;
 
@@ -374,6 +397,88 @@ public sealed class LSPManager : IDisposable
                         uri,
                     },
                 });
+        }
+
+        // Clear diagnostics for the closed file.
+        if (!string.IsNullOrEmpty(uri))
+        {
+            _diagnosticStore.ClearDiagnostics(uri);
+        }
+    }
+
+    private void OnPublishDiagnosticsReceived(object? sender, LSPDiagnosticsEventArgs e)
+    {
+        // Diagnostics arrive on a background JSON-RPC thread. Marshal to UI.
+        var dispatcher = GetUiDispatcher();
+        if (dispatcher != null && !dispatcher.CheckAccess())
+        {
+            dispatcher.Post(() => HandlePublishDiagnostics(e.Diagnostics));
+        }
+        else
+        {
+            HandlePublishDiagnostics(e.Diagnostics);
+        }
+    }
+
+    private void HandlePublishDiagnostics(PublishDiagnosticsParams @params)
+    {
+        if (_isDisposed)
+            return;
+
+        var uri = @params.Uri;
+        if (string.IsNullOrEmpty(uri))
+            return;
+
+        var diagnostics = new List<Diagnostic>();
+        if (@params.Diagnostics is JArray array)
+        {
+            foreach (var item in array)
+            {
+                var severity = item["severity"]?.Value<int>() ?? 1;
+                var message = item["message"]?.Value<string>() ?? "";
+                var source = item["source"]?.Value<string>();
+                var code = item["code"]?.Value<string>();
+
+                var range = item["range"];
+                int startLine = 0, startChar = 0, endLine = 0, endChar = 0;
+                if (range != null)
+                {
+                    var start = range["start"];
+                    var end = range["end"];
+                    if (start != null)
+                    {
+                        startLine = start["line"]?.Value<int>() ?? 0;
+                        startChar = start["character"]?.Value<int>() ?? 0;
+                    }
+                    if (end != null)
+                    {
+                        endLine = end["line"]?.Value<int>() ?? 0;
+                        endChar = end["character"]?.Value<int>() ?? 0;
+                    }
+                }
+
+diagnostics.Add(new Diagnostic(
+                    (DiagnosticSeverity)severity,
+                    uri,
+                    new TextRange(startLine, startChar, endLine, endChar),
+                    message,
+                    source,
+                    code));
+            }
+        }
+
+        _diagnosticStore.SetDiagnostics(uri, diagnostics);
+    }
+
+    private static Avalonia.Threading.Dispatcher? GetUiDispatcher()
+    {
+        try
+        {
+            return Avalonia.Threading.Dispatcher.UIThread;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
         }
     }
 
@@ -459,10 +564,16 @@ public sealed class LSPManager : IDisposable
         return new Uri(Path.GetFullPath(path), UriKind.Absolute).AbsoluteUri;
     }
 
-    private void SetStatus(string message)
+private void SetStatus(string message)
     {
         _bus.Publish(new StatusMessage(message));
     }
+
+    /// <summary>
+    /// Test accessor for LSPManagerTests. Exposes the diagnostic store
+    /// so tests can verify diagnostics are received.
+    /// </summary>
+    internal DiagnosticStore GetDiagnosticStoreForTest() => _diagnosticStore;
 
     private sealed class PendingChange
     {
