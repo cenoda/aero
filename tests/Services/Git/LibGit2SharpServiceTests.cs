@@ -140,7 +140,7 @@ public class LibGit2SharpServiceTests : IDisposable
         Assert.Equal(GitFileStatusKind.Added, readme!.StagingStatus);
     }
 
-    [Fact(Skip = "repo.Branches enumerator hangs on this environment — branch detection covered by GetRepositoryInfoAsync_WithValidRepo_ReturnsInfo")]
+    [Fact]
     public async Task GetBranchesAsync_AfterCommit_ReturnsCurrentBranch()
     {
         // Branch detection is tested indirectly via GetRepositoryInfoAsync (CurrentBranch field).

@@ -189,14 +189,23 @@ public sealed class LibGit2SharpService : IGitService
             var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
 
             var result = new List<GitBranchInfo>();
-            foreach (var branch in repo.Branches)
+
+            // Use repo.Refs to enumerate branches directly from the ref store,
+            // avoiding the repo.Branches enumerator which resolves remote tracking
+            // info and can hang in LibGit2Sharp 0.30 on repos with no upstream.
+            var headName = repo.Head?.CanonicalName;
+            foreach (var reference in repo.Refs.FromGlob("refs/heads/*"))
             {
+                var friendlyName = reference.CanonicalName
+                    .Replace("refs/heads/", string.Empty);
+                var isCurrent = reference.CanonicalName == headName;
+
                 result.Add(new GitBranchInfo(
-                    branch.FriendlyName,
-                    branch.CanonicalName,
-                    branch.IsCurrentRepositoryHead,
-                    branch.IsRemote,
-                    branch.TrackedBranch?.FriendlyName));
+                    friendlyName,
+                    reference.CanonicalName,
+                    isCurrent,
+                    IsRemote: false,
+                    UpstreamName: null));
             }
 
             return result;

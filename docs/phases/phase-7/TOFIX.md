@@ -222,12 +222,6 @@ blocks on a network or lock. `GetBranchesAsync` in production is not affected (i
 against real workspace repos where the user has a working git setup). The test environment
 is a minimal temp repo with no remotes, which may trigger a different code path.
 
-**Current state:** `GetBranchesAsync_AfterCommit_ReturnsCurrentBranch` is skipped with a
-clear reason. Branch detection is covered indirectly by `GetRepositoryInfoAsync` which
-returns `CurrentBranch` and passes consistently.
+**Current state:** `GetBranchesAsync_AfterCommit_ReturnsCurrentBranch` passes. Root cause was `repo.Branches` in LibGit2Sharp 0.30 resolving remote tracking info during enumeration, hanging on repos with no remotes. Fixed by switching to `repo.Refs.FromGlob("refs/heads/*")` which reads the ref store directly with no upstream resolution.
 
-**Required fix (future):** Upgrade to LibGit2Sharp 0.31+ if it resolves the enumeration
-hang, or add a `BranchFilter` option to `GetBranchesAsync` that passes
-`new BranchFilter { IsRemote = false }` to limit enumeration scope.
-
-**Status:** [ ] Deferred — not a blocker; production behavior unaffected.
+**Status:** [x] Fixed — `GetBranchesAsync` now uses `repo.Refs.FromGlob` instead of `repo.Branches`.
