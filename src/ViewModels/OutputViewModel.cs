@@ -123,6 +123,54 @@ public class OutputViewModel : ReactiveObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Run an external command programmatically. Unlike RunCommand, this does not
+    /// parse CommandText - takes explicit executable/arguments.
+    /// Used by ShellViewModel.BuildCommand.
+    /// </summary>
+    public async Task RunExternalAsync(
+        string executable,
+        string arguments,
+        string? workingDirectory,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(executable))
+            throw new ArgumentNullException(nameof(executable));
+
+        IsRunning = true;
+        _wasCancelled = false;
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        try
+        {
+            var exitCode = await _processRunner.RunAsync(
+                executable,
+                arguments,
+                workingDirectory,
+                AppendLine,
+                _cts.Token);
+
+            if (_wasCancelled)
+            {
+                AppendLine(CancelledLine);
+            }
+            else
+            {
+                AppendLine(string.Format(ExitLineFmt, exitCode));
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendLine($"[Error: {ex.Message}]");
+        }
+        finally
+        {
+            _cts.Dispose();
+            _cts = null;
+            IsRunning = false;
+        }
+    }
+
     private void Clear()
     {
         Lines.Clear();

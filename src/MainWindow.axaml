@@ -26,6 +26,7 @@
         <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseFileCommand}"/>
         <KeyBinding Gesture="Ctrl+Space" Command="{Binding EditorViewModel.CompletionCommand}"/>
         <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleOutputCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding BuildCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>
@@ -55,6 +56,9 @@
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
                 <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Build">
+                <MenuItem Header="_Build" Command="{Binding BuildCommand}" InputGesture="Ctrl+Shift+B"/>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding AboutCommand}"/>

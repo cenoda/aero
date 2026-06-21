@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,6 +13,7 @@ using ReactiveUI.Fody.Helpers;
 using Aero.Core;
 using Aero.Models.Editor;
 using Aero.Services;
+using Aero.Services.Build;
 using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.ViewModels;
@@ -28,6 +30,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly FileExplorerViewModel _fileExplorerViewModel;
     private readonly ProblemsViewModel _problemsViewModel;
     private readonly OutputViewModel _outputViewModel;
+    private readonly BuildServiceFactory _buildServiceFactory;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -35,6 +38,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocumentSaved>? _documentSavedHandler;
     private bool _disposed;
+    private string? _workspacePath;
 
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
@@ -67,6 +71,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> NextTabCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
+    public ReactiveCommand<Unit, Unit> BuildCommand { get; }
 
     public ShellViewModel(
         IMessageBus bus,
@@ -74,7 +79,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
         EditorViewModel editorViewModel,
         FileExplorerViewModel fileExplorerViewModel,
         ProblemsViewModel problemsViewModel,
-        OutputViewModel outputViewModel)
+        OutputViewModel outputViewModel,
+        BuildServiceFactory buildServiceFactory)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
@@ -82,6 +88,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         _fileExplorerViewModel = fileExplorerViewModel ?? throw new ArgumentNullException(nameof(fileExplorerViewModel));
         _problemsViewModel = problemsViewModel ?? throw new ArgumentNullException(nameof(problemsViewModel));
         _outputViewModel = outputViewModel ?? throw new ArgumentNullException(nameof(outputViewModel));
+        _buildServiceFactory = buildServiceFactory ?? throw new ArgumentNullException(nameof(buildServiceFactory));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -102,9 +109,14 @@ public class ShellViewModel : ReactiveObject, IDisposable
         NextTabCommand = ReactiveCommand.Create(NextTab);
         PreviousTabCommand = ReactiveCommand.Create(PreviousTab);
         AboutCommand = ReactiveCommand.Create(About);
+        BuildCommand = ReactiveCommand.CreateFromTask(BuildAsync);
 
         // Subscribe to messages — store handlers for unsubscribe
-        _folderOpenedHandler = msg => StatusText = msg.Path;
+        _folderOpenedHandler = msg =>
+        {
+            StatusText = msg.Path;
+            _workspacePath = msg.Path;
+        };
         _bus.Subscribe(_folderOpenedHandler);
         _statusMessageHandler = msg =>
         {
@@ -443,6 +455,67 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private void ToggleBottomPanel()
     {
         IsBottomPanelVisible = !IsBottomPanelVisible;
+    }
+
+    private async Task BuildAsync()
+    {
+        if (string.IsNullOrEmpty(_workspacePath))
+        {
+            StatusText = "No workspace open";
+            return;
+        }
+
+        var buildService = _buildServiceFactory.Detect(_workspacePath);
+        if (buildService == null)
+        {
+            StatusText = "No supported build system";
+            return;
+        }
+
+        // Show output panel
+        IsBottomPanelVisible = true;
+        ActiveBottomTabIndex = 1; // Output tab
+
+        // Clear previous output
+        _outputViewModel.Lines.Clear();
+
+        // Publish BuildStarted
+        _bus.Publish(new BuildStarted(_workspacePath));
+        StatusText = "Building...";
+
+        try
+        {
+            var cts = new CancellationTokenSource();
+
+            await _outputViewModel.RunExternalAsync(
+                "dotnet",
+                "build",
+                _workspacePath,
+                cts.Token);
+
+            // Get exit code from last line
+            var exitCode = 0;
+            var lastLine = _outputViewModel.Lines.Count > 0
+                ? _outputViewModel.Lines[_outputViewModel.Lines.Count - 1]
+                : "";
+            if (lastLine.Contains("exited with code"))
+            {
+                var parts = lastLine.Split(' ');
+                if (parts.Length > 0 && int.TryParse(parts[^1].TrimEnd(']'), out var code))
+                {
+                    exitCode = code;
+                }
+            }
+
+            // Publish BuildFinished
+            _bus.Publish(new BuildFinished(exitCode, ""));
+            StatusText = exitCode == 0 ? "Build succeeded" : "Build failed";
+        }
+        catch (OperationCanceledException)
+        {
+            _bus.Publish(new BuildFinished(-1, "Cancelled"));
+            StatusText = "Build cancelled";
+        }
     }
 
     private void About()
