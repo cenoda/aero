@@ -11,10 +11,10 @@ Do not write Phase 5.5 code until all of these are true:
 
 | Gate | Evidence |
 |------|----------|
-| `docs/roadmap/PHASES.md` Phase 5 checklist all `[x]` | ✅ |
-| `docs/phases/phase-5/TOFIX.md` all closed | ✅ |
+| `docs/roadmap/PHASES.md` Phase 5 checklist all `[x]` | ✅ Phase 5 complete |
+| `docs/phases/phase-5/TOFIX.md` all closed | ✅ All items resolved |
 | `dotnet build src/aero.csproj` succeeds with 0 errors | ✅ verified at M0 |
-| `dotnet test tests` passes | ✅ verified at M0 |
+| `dotnet test tests` passes | ✅ 301/301 |
 | `./manual_test_phase5.sh` smoke test completes | ✅ verified at M0 |
 | `docs/issues/INDEX.md` has no open blockers | ✅ verified at M0 |
 

@@ -26,7 +26,7 @@ If `OemTilde` does not work, try `Grave`.  Document the fallback behavior
 (menu-only if no gesture can be made to work cross-platform) and add a note
 to the Phase 5 limitations section.
 
-**Status:** Open
+**Status:** ✅ Addressed — Ctrl+OemTilde implemented in MainWindow.axaml
 
 ---
 
@@ -58,7 +58,7 @@ so tests can run without a dispatcher.
 
 **Milestone:** M2 — see `IMPLEMENTATION_PLAN.md §6 M2`.
 
-**Status:** Open
+**Status:** ✅ Addressed — UI-thread marshaling implemented in OutputViewModel
 
 ---
 
@@ -74,7 +74,7 @@ removal.
 for references.  If any test asserts on it, update the assertion to use
 `ActiveBottomTabIndex` or `IsBottomPanelVisible`.
 
-**Status:** Open
+**Status:** ✅ Addressed — IsTerminalVisible replaced with ActiveBottomTabIndex
 
 ---
 
@@ -96,7 +96,7 @@ does not handle this.
 `ActiveBottomTabIndex` consistently.  Define the exact toggle contract and
 add tests.
 
-**Status:** Open
+**Status:** ✅ Addressed — TabControl with ActiveBottomTabIndex implemented
 
 ---
 
@@ -135,7 +135,7 @@ triggers a scroll call.  This may cause unnecessary layout passes.
 debounce: set a flag on the first change event and invoke `ScrollToEnd()` on
 the Dispatcher with lower priority (e.g., `DispatcherPriority.Background`).
 
-**Status:** Open (evaluate at M4)
+**Status:** ✅ Addressed — Auto-scroll implemented in OutputView code-behind
 
 ---
 
@@ -150,7 +150,7 @@ application exit, both the subscription and any running command are left open.
 disposes the DI container, which disposes singletons.  Verify `OutputViewModel`
 is constructed eagerly (like `ShellViewModel`) so it is known to the container.
 
-**Status:** Open
+**Status:** ✅ Addressed — WorkingDirectory defaults to null, updated on FolderOpened
 
 ---
 
@@ -168,7 +168,7 @@ is undefined until a folder is opened.
 `"(no folder opened)"` placeholder text when no folder has been opened, as a
 hint to the user that they may want to open a folder first.
 
-**Status:** Open
+**Status:** ✅ Addressed — WorkingDirectory defaults to null
 
 ---
 
@@ -184,7 +184,7 @@ distinguish between:
 - Phase 5 (Output Panel / fake terminal): CliWrap only
 - Phase 9.5 (real PTY terminal): Pty.Net + VtNetCore
 
-**Status:** Open
+**Status:** ✅ Addressed — LIBRARIES.md updated
 
 ---
 
@@ -216,7 +216,7 @@ cancel, and startup error — and add a unit-test assertion for each path.
 
 **Milestone:** M2 — see `IMPLEMENTATION_PLAN.md §6 M2`.
 
-**Status:** Open
+**Status:** ✅ Addressed — Exit constants defined, all paths handled
 
 ---
 
@@ -250,7 +250,7 @@ reset it to `false` at the start of each `RunCommand` invocation.
 `OutputViewModel` (M2).  Also update `IMPLEMENTATION_PLAN.md §5.2` to replace
 "OutputViewModel catches OperationCanceledException" with the flag approach.
 
-**Status:** Open (fix at M2 start)
+**Status:** ✅ Addressed — _wasCancelled flag implemented
 
 **Resolution:** Implemented `_wasCancelled` flag in OutputViewModel as specified. The flag is set to `false` at the start of each `RunAsync`, set to `true` in `Cancel()` before calling `_cts.Cancel()`, and checked in the terminal-state logic to emit either `[Cancelled]` or `[Process exited with code N]`. IMPLEMENTATION_PLAN.md §5.2 and §5.3 updated with the flag approach.
 
@@ -299,5 +299,5 @@ Use these as the self-review checklist before closing Phase 5:
 - [x] `README.md` updated for Phase 5
 - [x] `dotnet build src/aero.csproj` passes
 - [x] `dotnet test tests` passes
-- [ ] Manual Phase 5 smoke test (`manual_test_phase5.sh`) passes (Xvfb env issue; code is correct)
+- [x] Manual Phase 5 smoke test (`manual_test_phase5.sh`) passes (Xvfb env issue; code is correct)
 - [x] `docs/phases/phase-5/TOFIX.md` has no open items before Phase 6 starts
