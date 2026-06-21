@@ -566,33 +566,102 @@ These can be added in future phases as the IDE matures.
 src/
   Services/
     Git/
-      IGitService.cs              ← M1
-      GitModels.cs                ← M1
-      GitServiceFactory.cs        ← M1
-      LibGit2SharpService.cs      ← M2
+      IGitService.cs              ← M1 (baseline)
+      GitModels.cs                ← M1 (baseline)
+      GitServiceFactory.cs        ← M1 (baseline)
+      LibGit2SharpService.cs      ← M2 (baseline)
+      GitGraphModels.cs           ← M7-G1 (extension)
+      GitWatcher.cs               ← M8-W1 (extension)
   ViewModels/
-    GitViewModel.cs               ← M3
-    GitFileViewModel.cs           ← M3
-    GitDiffViewModel.cs           ← M4
+    GitViewModel.cs               ← M3 (baseline) / M7-G2, M8-W2 (extension)
+    GitFileViewModel.cs           ← M3 (baseline)
+    GitDiffViewModel.cs           ← M4 (baseline)
+    GitGraphViewModel.cs          ← M7-G2 (extension)
+    GitGraphCommitDetailViewModel.cs ← M7-G4 (extension)
   Views/
-    GitPanelView.axaml            ← M3
-    GitPanelView.axaml.cs         ← M3
-    GitDiffView.axaml             ← M4
-    GitDiffView.axaml.cs          ← M4
+    GitPanelView.axaml            ← M3 (baseline) / M7-G3 (extension: tab switcher)
+    GitPanelView.axaml.cs         ← M3 (baseline)
+    GitDiffView.axaml             ← M4 (baseline)
+    GitDiffView.axaml.cs          ← M4 (baseline)
+    GitGraphView.axaml            ← M7-G3 (extension)
+    GitGraphView.axaml.cs         ← M7-G3 (extension)
+    GitGraphControl.cs            ← M7-G3 (extension)
 tests/
   Services/
-    GitServiceFactoryTests.cs     ← M1
-    LibGit2SharpServiceTests.cs   ← M2
+    GitServiceFactoryTests.cs     ← M1 (baseline)
+    LibGit2SharpServiceTests.cs   ← M2 (baseline)
+    GitWatcherTests.cs            ← M8-W1 (extension)
   ViewModels/
-    GitViewModelTests.cs          ← M3
-    GitDiffViewModelTests.cs      ← M4
+    GitViewModelTests.cs          ← M3 (baseline)
+    GitDiffViewModelTests.cs      ← M4 (baseline)
+    GitGraphViewModelTests.cs     ← M7-G2 (extension)
 ```
+
+---
+
+## 13. Extension Milestones (Post-Baseline)
+
+> These milestones were added after the baseline (M1–M6) was complete and reviewed.
+> See `EXTENSIONS.md` for full rationale and design decisions.
+
+### M7 — Branch Graph
+
+**Goal:** Visual DAG of commit history in a new "Graph" tab inside the Git panel.
+
+**New files:**
+- `src/Services/Git/GitGraphModels.cs` — `GitGraphCommit` record with parent SHAs + branch labels
+- `src/ViewModels/GitGraphViewModel.cs` — lane-assignment algorithm, selected commit
+- `src/ViewModels/GitGraphCommitDetailViewModel.cs` — detail panel for selected commit
+- `src/Views/GitGraphView.axaml` + `.axaml.cs` — tab wrapper
+- `src/Views/GitGraphControl.cs` — custom `Control` with `DrawingContext` rendering
+
+**Modified files:**
+- `src/Services/Git/IGitService.cs` — add `GetGraphAsync(int count, CancellationToken ct)`
+- `src/Services/Git/LibGit2SharpService.cs` — implement `GetGraphAsync`
+- `src/ViewModels/GitViewModel.cs` — add `GitGraphViewModel` property
+- `src/Views/GitPanelView.axaml` — add `TabControl` (Changes | Graph)
+- `src/App.axaml.cs` — register `GitGraphViewModel`
+
+**Tests:**
+- `tests/ViewModels/GitGraphViewModelTests.cs` — lane assignment, detail, null-service
+
+**Sub-milestones:**
+
+| ID | Deliverable |
+|----|-------------|
+| M7-G1 | `GitGraphModels`, `GetGraphAsync` on interface + service |
+| M7-G2 | `GitGraphViewModel` lane layout + unit tests |
+| M7-G3 | `GitGraphControl` + `GitGraphView` + tab switcher |
+| M7-G4 | `GitGraphCommitDetailViewModel` + detail pane |
+
+### M8 — Auto-Reload of Git State
+
+**Goal:** Watch `.git/HEAD`, `.git/index`, `.git/COMMIT_EDITMSG` for external changes.
+Refresh the Git panel automatically within 1.5 seconds of an external git operation.
+
+**New files:**
+- `src/Services/Git/GitWatcher.cs` — `FileSystemWatcher` wrapper, 500ms debounce, `Action` callback
+- `tests/Services/GitWatcherTests.cs` — debounce, start/stop, dispose idempotency
+
+**Modified files:**
+- `src/ViewModels/GitViewModel.cs` — create `GitWatcher` on repo open; dispose on close/dispose
+
+**Sub-milestones:**
+
+| ID | Deliverable |
+|----|-------------|
+| M8-W1 | `GitWatcher` + `GitWatcherTests` |
+| M8-W2 | `GitViewModel` watcher integration |
+
+> M8-W1 and M7-G1 have no dependency on each other and can proceed in parallel.
 
 ---
 
 ## 12. Commit Plan
 
 Following the "one concern per change" rule (§2 of `AGENTS.md`):
+
+**Baseline (M1–M6):**
 
 1. `git: add LibGit2Sharp + DiffPlex, IGitService interface, GitModels, GitServiceFactory`
 2. `git: implement LibGit2SharpService with status, stage, unstage, commit, diff, including thread safety and native library error handling`
@@ -602,3 +671,14 @@ Following the "one concern per change" rule (§2 of `AGENTS.md`):
 6. `git: add branch label to status bar, polish Git panel UI`
 7. `git: add unit and integration tests for Phase 7`
 8. `git: add manual_test_phase7.sh, update PHASES.md checklist`
+
+**Extensions (M7–M8):**
+
+9. `git: add GitGraphCommit model and GetGraphAsync to IGitService and LibGit2SharpService`
+10. `git: add GitGraphViewModel with lane-assignment algorithm and tests`
+11. `git: add GitGraphControl custom renderer and GitGraphView`
+12. `git: add GitGraphCommitDetailViewModel and detail pane`
+13. `git: add tab switcher (Changes | Graph) to GitPanelView`
+14. `git: add GitWatcher with 500ms debounce and tests`
+15. `git: wire GitWatcher into GitViewModel for auto-reload`
+16. `git: update PHASES.md and EXTENSIONS.md for Phase 7 extensions`

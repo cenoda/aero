@@ -226,3 +226,145 @@ is a minimal temp repo with no remotes, which may trigger a different code path.
 **Current state:** `GetBranchesAsync_AfterCommit_ReturnsCurrentBranch` passes. Root cause was `repo.Branches` in LibGit2Sharp 0.30 resolving remote tracking info during enumeration, hanging on repos with no remotes. Fixed by switching to `repo.Refs.FromGlob("refs/heads/*")` which reads the ref store directly with no upstream resolution.
 
 **Status:** [x] Fixed — `GetBranchesAsync` now uses `repo.Refs.FromGlob` instead of `repo.Branches`.
+
+---
+
+## Round 3 — Extension Pre-Implementation Risks (2026-06-22)
+
+These items cover the two features added after the Phase 7 baseline was complete.
+See `EXTENSIONS.md` for full design rationale.
+
+---
+
+### R3.1 `GetGraphAsync` must not call `commit.Parents` recursively *(priority: critical, BLOCKER for M7-G1)*
+
+**Description:** `LibGit2Sharp.Commit.Parents` is a lazy-evaluated collection. Naively
+traversing the full parent graph for `count` commits could load far more commits than
+requested (e.g., walking to the initial commit for every merge parent). On a large repo
+with thousands of commits and complex merge topology, this can take seconds and allocate
+heavily.
+
+**Required fix:** `GetGraphAsync` must fetch only the top-N commits from `repo.Commits`
+(respecting the `count` limit) and collect parent SHAs as strings — `parent.Sha` — without
+loading the parent commit objects. The ViewModel resolves parent positions by SHA lookup
+against the already-fetched list, not by traversal. Add a test with a 50-commit repo to
+verify the N limit is respected.
+
+**Status:** [ ] Open
+
+---
+
+### R3.2 `GitGraphControl` rendering must not block the UI thread *(priority: high, BLOCKER for M7-G3)*
+
+**Description:** `Control.Render(DrawingContext)` runs on the UI thread. If the lane-assignment
+algorithm or geometry calculations are done inside `Render()`, a graph with 200 commits will
+cause a perceptible stutter every time the panel redraws (scroll, resize, theme change).
+
+**Required fix:** All lane-assignment and geometry calculation (commit positions, line endpoints,
+label positions) must be computed in `GitGraphViewModel` off the UI thread (or at least outside
+`Render()`). `Render()` should only consume pre-computed `IReadOnlyList<GraphNodeGeometry>` and
+draw them. `GitGraphViewModel` recalculates geometry when the commit list changes, stores the
+result reactively, and invalidates the control via `InvalidateVisual()`.
+
+**Status:** [ ] Open
+
+---
+
+### R3.3 Lane-assignment algorithm correctness for merge commits *(priority: high)*
+
+**Description:** A greedy lane-assignment algorithm (left-to-right, first-fit) is correct for
+linear histories and simple feature branches. It can produce visually confusing results for
+repos with many concurrent long-lived branches or octopus merges (3+ parents), where lanes
+do not get recycled promptly and the graph widens unnecessarily.
+
+**Required fix:** Implement lane recycling: when a branch's tip commit is consumed (merged into
+another lane), mark that lane as free and reuse it for the next unassigned branch. Document the
+algorithm's known limitations (octopus merges, very wide graphs) in code comments and in
+`EXTENSIONS.md §Extension 1 Limitations`. Cap the graph width at 12 lanes — if the topology
+exceeds 12 concurrent lanes, collapse overflow lanes into a single gray "..." lane.
+
+**Status:** [ ] Open
+
+---
+
+### R3.4 `GitGraphControl` hit-testing for commit node selection *(priority: medium)*
+
+**Description:** Avalonia's `Control` does not provide built-in hit-testing against
+`DrawingContext`-drawn shapes. Detecting which commit node was clicked requires a manual
+distance check: on `PointerPressed`, compute the pointer position in control coordinates
+and find the nearest pre-computed node center within the node radius.
+
+**Required fix:** In `GitGraphControl.OnPointerPressed`, iterate `GitGraphViewModel.Nodes`
+and find the node whose center is within `NodeRadius` pixels of the pointer. If found,
+set `GitGraphViewModel.SelectedCommit` and call `e.Handled = true`. If no node is within
+range, deselect. Add a unit test for the hit-test logic (pure geometry, no UI required).
+
+**Status:** [ ] Open
+
+---
+
+### R3.5 `GitWatcher` on Linux: inotify limit may prevent watcher creation *(priority: medium)*
+
+**Description:** `FileSystemWatcher` on Linux uses inotify. The system default
+`fs.inotify.max_user_watches` is 8192. If the user is running many watchers (other IDE
+instances, build tools), creating a new watcher on `.git/` may silently fail or throw
+`IOException: "The configured user limit (128) on the number of inotify instances has been reached"`.
+
+**Required fix:** Wrap `GitWatcher` construction in a try/catch for `IOException`. If the
+watcher cannot be created, log a warning via `IMessageBus` (`StatusMessage`) and degrade
+gracefully — the Git panel still works, it just won't auto-reload. Do not throw from the
+`GitWatcher` constructor. Add a `bool IsWatching` property so `GitViewModel` can surface a
+tooltip like "Auto-reload unavailable (inotify limit reached). Click Refresh manually."
+
+**Status:** [ ] Open
+
+---
+
+### R3.6 `GitWatcher` debounce timer must not fire after `Dispose` *(priority: high)*
+
+**Description:** `GitWatcher` uses a `System.Threading.Timer` (or `Task.Delay`) for 500ms
+debouncing. If `Dispose()` is called while the timer is pending (e.g., `GitViewModel` is
+disposed immediately after a `.git/index` change), the timer callback may invoke the refresh
+callback on a disposed `GitViewModel`, causing `ObjectDisposedException` or a no-op on a
+collected object.
+
+**Required fix:** `GitWatcher.Dispose()` must stop the `FileSystemWatcher` first (set
+`EnableRaisingEvents = false`), then cancel/dispose the debounce timer, then null the
+callback. Use `Interlocked.Exchange` to atomically null the callback so a racing timer
+invocation sees null and exits cleanly. Add a test that disposes the watcher while the
+debounce is pending and verifies the callback is not invoked.
+
+**Status:** [ ] Open
+
+---
+
+### R3.7 `GitWatcher` must not duplicate events already handled by `FolderChanged` *(priority: low)*
+
+**Description:** The existing `FolderChanged`-triggered refresh runs with a 1-second cooldown.
+`GitWatcher` fires 500ms after a `.git/` change. If both fire close together (e.g., a
+`git stage` triggers both a workspace file change and a `.git/index` change), two refreshes
+may queue within the cooldown window. The cooldown gate will absorb one of them, but the
+sequence must be verified correct — no double-refresh, no stale state.
+
+**Required fix:** Verify that the existing `Stopwatch`-based cooldown in
+`RefreshStatusInternalAsync()` correctly absorbs the duplicate. Add a test that simulates a
+`FolderChanged` and a `GitWatcher` callback firing within 100ms of each other and verifies
+`RefreshStatusInternalAsync` is called exactly once.
+
+**Status:** [ ] Open
+
+---
+
+## Persistent Checks — Extensions (add to self-review before closing Phase 7)
+
+- [ ] `GetGraphAsync` fetches parent SHAs only — no recursive graph traversal (R3.1)
+- [ ] `GitGraphControl.Render()` consumes pre-computed geometry only — no algorithm in `Render()` (R3.2)
+- [ ] Lane recycling implemented; graph width capped at 12 lanes (R3.3)
+- [ ] Hit-testing uses pre-computed node centers; `SelectedCommit` set correctly (R3.4)
+- [ ] `GitWatcher` degrades gracefully on inotify failure; `IsWatching` surfaced (R3.5)
+- [ ] `GitWatcher.Dispose()` is race-safe; callback not invoked after dispose (R3.6)
+- [ ] Dual-trigger (FolderChanged + GitWatcher) produces exactly one refresh (R3.7)
+- [ ] `dotnet build src/aero.csproj` still passes (0 warnings, 0 errors) after extensions
+- [ ] `dotnet test tests` passes — target ≥ 395 tests
+- [ ] `EXTENSIONS.md` updated exit conditions all met
+- [ ] `PHASES.md` Phase 7 extension items marked `[x]`

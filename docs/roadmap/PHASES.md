@@ -148,6 +148,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Branch indicator in status bar
 - [x] File modified indicator in editor tab and file tree
 
+### Phase 7 Extensions (post-baseline additions — see `docs/phases/phase-7/EXTENSIONS.md`)
+- [ ] **Branch graph** — visual DAG of commit history with lane coloring, branch labels, and commit detail panel
+- [ ] **Auto-reload** — `GitWatcher` on `.git/HEAD` + `.git/index`; panel refreshes automatically on external git operations
+
 ## Phase 8: UI Polish
 - [ ] **Dockable panels** — drag to rearrange layout
 - [ ] **Theme system** — light/dark switch
