@@ -43,11 +43,15 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.*" />
 
-    <!-- Infrastructure -->
+<!-- Infrastructure -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
     <PackageReference Include="CliWrap" Version="3.*" />
     <PackageReference Include="StreamJsonRpc" Version="2.*" />
     <PackageReference Include="FuzzySharp" Version="2.*" />
+
+    <!-- Git (Phase 7) -->
+    <PackageReference Include="LibGit2Sharp" Version="0.30.*" />
+    <PackageReference Include="DiffPlex" Version="1.7.*" />
   </ItemGroup>
 
 </Project>
