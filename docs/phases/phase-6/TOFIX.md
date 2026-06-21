@@ -36,7 +36,7 @@ private. The build needs to reuse its `Lines`/marshaling/cancel/exit-line/line-c
 `RunExternalAsync(executable, arguments, workingDir, ct)`. Honor the single-active-command
 rule (`IsRunning`). See plan §5.5.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (ShellViewModel.BuildCommand calls OutputViewModel.RunExternalAsync) [2847722]
 
 ---
 
