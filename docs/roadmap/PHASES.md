@@ -98,6 +98,13 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] 실행 중 취소 버튼 (CancellationToken)
 - [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
+## Phase 5.5: Abstraction Implementation Pass
+> Implement abstraction-first design for completed phases.
+
+- [ ] **IProcessRunnerService interface** — abstraction for process execution
+- [ ] **ProcessRunnerServiceFactory** — auto-detect command type
+- [ ] **Verify existing ProcessRunner** — refactor to use interface
+
 ## Phase 6: Build & Output (Abstraction-First)
 > Multi-language build system support. Interface-first design for extensibility.
 
