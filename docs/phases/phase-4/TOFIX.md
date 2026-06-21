@@ -452,7 +452,7 @@ Use these as the self-review checklist before closing Phase 4:
 - [x] `README.md` documents required LSP server installation/setup
 - [x] `dotnet build src/aero.csproj` passes
 - [x] `dotnet test tests` passes
-- [ ] Manual Phase 4 smoke test passes
+- [x] Manual Phase 4 smoke test passes
 - [x] `docs/phases/phase-4/TOFIX.md` has no open items before Phase 5 starts
 
 ---

@@ -83,9 +83,9 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 
 - [x] **LSPSession** — JSON-RPC over stdin/stdout to a language server (M1)
 - [x] **LSPManager** — document synchronization: didOpen/didChange/didSave/didClose (M2)
-- [ ] **Diagnostics** — red squigglies on errors (M3)
-- [ ] **Problems panel** — list all diagnostics in workspace (M4)
-- [ ] **Code completion** — Ctrl+Space triggers LSP completions (M5)
+- [x] **Diagnostics** — red squigglies on errors (M3)
+- [x] **Problems panel** — list all diagnostics in workspace (M4)
+- [x] **Code completion** — Ctrl+Space triggers LSP completions (M5)
 
 ## Phase 5: Output Panel (가짜 터미널)
 > ⚠️ 진짜 인터랙티브 터미널(PTY)은 Phase 9로 이동. OS마다 PTY 구현이 달라 난이도가 매우 높음.

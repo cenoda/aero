@@ -43,8 +43,10 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
 
     private void OnDiagnosticsUpdated(DiagnosticsUpdated message)
     {
-        // Update on UI thread
-        var dispatcher = Avalonia.Threading.Dispatcher.UIThread;
+        // Update on UI thread — DiagnosticsUpdated may be published from a background
+        // thread (e.g. DiagnosticStore.PublishDiagnosticsUpdated). Marshal to UI thread
+        // to avoid cross-thread collection access on ObservableCollection.
+        var dispatcher = GetUiDispatcher();
         if (dispatcher != null && !dispatcher.CheckAccess())
         {
             dispatcher.Post(() => UpdateDiagnostics(message.Diagnostics));
@@ -52,6 +54,18 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
         else
         {
             UpdateDiagnostics(message.Diagnostics);
+        }
+    }
+
+    private static Avalonia.Threading.Dispatcher? GetUiDispatcher()
+    {
+        try
+        {
+            return Avalonia.Threading.Dispatcher.UIThread;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
         }
     }
 

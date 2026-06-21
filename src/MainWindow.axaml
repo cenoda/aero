@@ -68,10 +68,12 @@
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar (Phase 2 M2). Hidden when ShellViewModel.IsFileExplorerVisible is false. -->
-            <views:FileExplorerView Grid.Column="0"
-                                    DataContext="{Binding FileExplorerViewModel}"
-                                    IsVisible="{Binding IsFileExplorerVisible}"/>
+            <!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
+                 (parent DataContext), not FileExplorerViewModel (child DataContext override). -->
+            <Grid Grid.Column="0"
+                  IsVisible="{Binding IsFileExplorerVisible}">
+                <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
+            </Grid>
 
             <!-- Draggable divider between sidebar and editor -->
             <GridSplitter Grid.Column="1"
@@ -100,11 +102,14 @@
                               ResizeBehavior="PreviousAndNext"
                               IsVisible="{Binding IsBottomPanelVisible}"/>
 
-                <views:ProblemsView Grid.Row="2"
-                                   DataContext="{Binding ProblemsViewModel}"
-                                   IsVisible="{Binding IsBottomPanelVisible}"
-                                   MinHeight="100"
-                                   MaxHeight="300"/>
+                <!-- Wrap in a Grid so IsVisible binds against ShellViewModel (parent DataContext),
+                     not ProblemsViewModel (child DataContext override). -->
+                <Grid Grid.Row="2"
+                      IsVisible="{Binding IsBottomPanelVisible}"
+                      MinHeight="100"
+                      MaxHeight="300">
+                    <views:ProblemsView DataContext="{Binding ProblemsViewModel}"/>
+                </Grid>
 
                 <!-- Status bar -->
                 <Border Grid.Row="3"
