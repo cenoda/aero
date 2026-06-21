@@ -3,6 +3,22 @@
 This document covers the IDE itself — the part that works without any AI agents.
 For the agent orchestration layer, see `AGENT_ORCHESTRATION.md`.
 
+## Core Principles (Abstraction-First)
+
+Every feature is designed with abstraction in mind:
+
+| Feature | Interface | Implementations |
+|---------|-----------|-----------------|
+| Build | `IBuildService` | DotNetBuildService, NpmBuildService, CargoBuildService |
+| Syntax | `ISyntaxHighlighterService` | TextMateHighlighter, TreeSitterHighlighter |
+| Git | `IGitService` | LibGit2SharpService, GitCliService |
+| Terminal | `ITerminalService` | PtyTerminal, OutputPanel (Phase 5) |
+
+This allows:
+- Adding new languages without rewriting core
+- Auto-detecting project type and enabling services
+- Users can "turn off" unused features in settings
+
 ## Tech Stack
 
 | Layer       | Technology              |

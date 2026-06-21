@@ -21,6 +21,34 @@ Quick rules so all Aero code reads like one person wrote it.
 - File name = class name: `DocumentManager.cs`, `IAgent.cs`
 - XAML files: `Foo.axaml` + `Foo.axaml.cs` code-behind (minimal logic only)
 
+## Abstraction-First (IMPORTANT)
+
+Every feature must be designed with abstraction in mind:
+
+```csharp
+// ❌ Bad: .NET only
+class BuildService
+{
+    Task BuildAsync() => Process.Start("dotnet build");
+}
+
+// ✅ Good: Interface first
+interface IBuildService
+{
+    string Name { get; }
+    string ProjectFilePattern { get; }
+    Task<BuildResult> BuildAsync(BuildOptions options, CancellationToken ct);
+}
+
+class DotNetBuildService : IBuildService { ... }
+class NpmBuildService : IBuildService { ... }  // Future
+```
+
+**Rules:**
+1. Define `I{Feature}Service` before implementation
+2. Use factory for auto-detection
+3. Add new implementations without rewriting core
+
 ## Namespaces
 
 ```csharp

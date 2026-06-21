@@ -1,10 +1,16 @@
 # Aero IDE — Architecture Overview
 
-Aero is a **usable standalone IDE** (editor, tabs, terminal, git, build)
+Aero is a **general-purpose IDE** (editor, tabs, terminal, git, build)
 with a **multi-agent AI orchestration layer** as its killer feature.
 
-Multiple AI agents (Cline, Copilot, GPT-4, local models) run simultaneously,
-sharing workspace context and passing tasks between each other.
+Unlike traditional IDEs (IntelliJ = one language per product), Aero is designed
+to be language-agnostic from the start using abstraction-first design.
+
+**Core Principles:**
+- **Interface first** — every feature has an abstraction layer
+- **Auto-detection** — detect project type and enable appropriate services
+- **Extensible** — add new languages without rewriting core
+- **Disable unused** — turn off features not needed in settings
 
 **See also:**
 - `IDE_CORE.md` — the standalone IDE subsystems

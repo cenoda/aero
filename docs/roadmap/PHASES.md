@@ -98,15 +98,6 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] 실행 중 취소 버튼 (CancellationToken)
 - [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
-## Phase 5.5: Refactoring Pass
-> Clean up technical debt before continuing. No new features — only refactoring and documentation fixes.
-
-- [ ] Apply abstraction-first design to all completed phases (0-5)
-- [ ] Verify all services follow interface-first pattern
-- [ ] Update documentation to reflect multi-language IDE vision
-- [ ] Add ISyntaxHighlighterService abstraction (Phase 3)
-- [ ] Review I*Service interfaces for consistency
-
 ## Phase 6: Build & Output (Abstraction-First)
 > Multi-language build system support. Interface-first design for extensibility.
 

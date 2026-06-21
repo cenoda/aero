@@ -1,5 +1,7 @@
 # Core Infrastructure Patterns
 
+> **Note**: This document covers infrastructure patterns. For abstraction-first design principles, see `AGENTS.md` Section 4.
+
 ## MVVM — ReactiveUI 사용
 
 모든 ViewModel은 ReactiveUI의 `ReactiveObject`를 상속한다.

@@ -17,11 +17,44 @@ Add multi-cursor, minimap, snippets, and advanced LSP features.
 - Snippets are configurable and expandable
 - Go to definition, rename symbol, and format document work via LSP
 
+## Architecture (Abstraction-First)
+
+### LSP Already Abstracted
+
+Phase 4 already uses abstraction-first design for LSP:
+
+```csharp
+public interface ILSPService
+{
+    string Language { get; }  // "csharp", "python", "rust", etc.
+    Task InitializeAsync(CancellationToken ct);
+    Task<IEnumerable<CompletionItem>> GetCompletionsAsync(string filePath, Position pos);
+    Task<GotoResult?> GoToDefinitionAsync(string filePath, Position pos);
+    Task<RenameResult> RenameSymbolAsync(string filePath, Position pos, string newName);
+    // ...
+}
+```
+
+This allows adding new language servers without rewriting core logic.
+
+### Snippets (Abstraction-First)
+
+```csharp
+public interface ISnippetService
+{
+    IEnumerable<Snippet> GetSnippets(string language);
+    void AddSnippet(Snippet snippet);
+    void RemoveSnippet(string id);
+}
+
+public record Snippet(string Id, string Prefix, string Body, string Description);
+```
+
 ## Checklist
 
 - [ ] **Multi-cursor editing** — Ctrl+D to select next occurrence
 - [ ] **Minimap** — scrollable code overview
-- [ ] **Snippets** — configurable code snippets
+- [ ] **ISnippetService** — abstraction for snippets
 - [ ] **Go to definition** — via LSP
 - [ ] **Rename symbol** — via LSP
 - [ ] **Format document** — via LSP
@@ -29,6 +62,17 @@ Add multi-cursor, minimap, snippets, and advanced LSP features.
 ### Phase 9.5: Real Terminal (Optional)
 
 > ⚠️ High difficulty. Only attempt if everything else is solid.
+
+```csharp
+public interface ITerminalService
+{
+    string Shell { get; }  // "bash", "cmd", "powershell"
+    Task StartAsync(CancellationToken ct);
+    Task WriteAsync(string input, CancellationToken ct);
+    IAsyncEnumerable<string> ReadOutputAsync(CancellationToken ct);
+    void Resize(int columns, int rows);
+}
+```
 
 - [ ] **Pty.Net** — OS-specific PTY (Linux/Mac/Windows)
 - [ ] **VtNetCore** — VT100/xterm escape code parsing

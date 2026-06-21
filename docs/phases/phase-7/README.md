@@ -4,7 +4,7 @@
 
 ## Goal
 
-Add Git panel, diff viewer, and commit UI.
+Add Git panel, diff viewer, and commit UI using abstraction-first design.
 
 ## Entry Condition
 
@@ -18,9 +18,61 @@ Add Git panel, diff viewer, and commit UI.
 - Status bar shows current branch
 - Modified files show indicators in tabs and file tree
 
+## Architecture (Abstraction-First)
+
+### Interface
+
+```csharp
+public interface IGitService
+{
+    // Repository operations
+    Task<GitRepository> OpenRepositoryAsync(string path);
+    Task<IEnumerable<GitFile>> GetStatusAsync(CancellationToken ct);
+    Task<IEnumerable<GitCommit>> GetLogAsync(int count, CancellationToken ct);
+    
+    // File operations
+    Task StageAsync(string filePath, CancellationToken ct);
+    Task UnstageAsync(string filePath, CancellationToken ct);
+    Task<GitCommit> CommitAsync(string message, CancellationToken ct);
+    
+    // Branch operations
+    Task<IEnumerable<GitBranch>> GetBranchesAsync(CancellationToken ct);
+    Task CheckoutAsync(string branchName, CancellationToken ct);
+}
+
+public record GitRepository(string Path, string CurrentBranch);
+public record GitFile(string Path, GitFileStatus Status);  // Modified, Staged, Untracked
+public record GitCommit(string Hash, string Message, DateTimeOffset Author, string AuthorEmail);
+public record GitBranch(string Name, bool IsCurrent, bool IsRemote);
+```
+
+### Implementations
+
+```
+IGitService (interface)
+    │
+    ├── LibGit2SharpService  ← Phase 7: typed objects
+    └── GitCliService        ← Future: git CLI wrapper
+```
+
+### Factory
+
+```csharp
+public class GitServiceFactory
+{
+    public IGitService? Detect(string workspacePath)
+    {
+        // Check for .git directory
+        // Return appropriate service
+    }
+}
+```
+
 ## Checklist
 
-- [ ] **GitRepository** — wrap git CLI or libgit2sharp
+- [ ] **IGitService interface** — abstraction with repository, file, branch operations
+- [ ] **LibGit2SharpService** — implements IGitService
+- [ ] **GitServiceFactory** — auto-detect .git directory
 - [ ] **Git panel** — staged/unstaged changes list
 - [ ] **Diff viewer** — inline diff with +/- gutter
 - [ ] Commit UI (message, stage/unstage, commit button)

@@ -19,6 +19,24 @@ Add docking, themes, command palette, keybindings, welcome page, and settings.
 - Welcome page shows on startup
 - Settings page allows editing preferences
 
+## Feature Toggle (Disable Unused)
+
+This phase adds the "turn off unused features" capability:
+
+```csharp
+public class SettingsService
+{
+    // Enable/disable features
+    public bool EnableBuildSystem { get; set; } = true;
+    public bool EnableGitIntegration { get; set; } = true;
+    public bool EnableLSP { get; set; } = true;
+    public bool EnableSyntaxHighlighting { get; set; } = true;
+    // ...
+}
+```
+
+Users can disable features they don't need, reducing resource usage.
+
 ## Checklist
 
 - [ ] **Dockable panels** — drag to rearrange layout
@@ -27,6 +45,7 @@ Add docking, themes, command palette, keybindings, welcome page, and settings.
 - [ ] **Keybinding config** — customizable shortcuts
 - [ ] **Welcome page** — recent projects, new file, etc.
 - [ ] **Settings page** — preferences UI (font, theme, tab size, etc.)
+- [ ] **Feature toggle** — enable/disable unused features
 
 ## Related Documents
 
