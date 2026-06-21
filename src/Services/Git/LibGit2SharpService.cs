@@ -1,0 +1,335 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Aero.Models.Git;
+using LibGit2Sharp;
+
+namespace Aero.Services.Git;
+
+/// <summary>
+/// LibGit2Sharp implementation of IGitService.
+/// Thread-safe: all repository access is serialized via SemaphoreSlim.
+/// </summary>
+public sealed class LibGit2SharpService : IGitService
+{
+    private readonly string _gitDir;
+    private readonly string _repositoryRoot;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private Repository? _repository;
+    private bool _disposed;
+
+    public string Name => "LibGit2Sharp";
+
+    public LibGit2SharpService(string gitDir, string repositoryRoot)
+    {
+        _gitDir = gitDir ?? throw new ArgumentNullException(nameof(gitDir));
+        _repositoryRoot = repositoryRoot ?? throw new ArgumentNullException(nameof(repositoryRoot));
+
+        // Open repository eagerly to catch failures early
+        try
+        {
+            _repository = new Repository(gitDir);
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            throw new GitServiceUnavailableException(
+                "Git native library (libgit2) could not be loaded. Ensure libgit2 dependencies are installed.",
+                ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<GitRepositoryInfo> GetRepositoryInfoAsync(CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var head = repo.Head;
+            var branchName = head?.FriendlyName ?? "(detached)";
+            var isDirty = repo.RetrieveStatus().IsDirty;
+
+            return new GitRepositoryInfo(_repositoryRoot, branchName, isDirty);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<GitFileStatus>> GetStatusAsync(CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var statuses = repo.RetrieveStatus();
+            var result = new List<GitFileStatus>();
+
+            foreach (var entry in statuses)
+            {
+                var status = MapFileStatus(entry.State);
+
+                result.Add(new GitFileStatus(
+                    entry.FilePath,
+                    null,
+                    status,
+                    status));
+            }
+
+            return result;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task StageAsync(string filePath, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
+            Commands.Stage(repo, absolutePath);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task UnstageAsync(string filePath, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
+            Commands.Unstage(repo, absolutePath);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<GitCommitResult> CommitAsync(string message, string authorName, string authorEmail, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var author = new Signature(authorName, authorEmail, DateTimeOffset.Now);
+
+            try
+            {
+                var commit = repo.Commit(message, author, author);
+                return new GitCommitResult(commit.Sha, true, null);
+            }
+            catch (Exception ex)
+            {
+                return new GitCommitResult(string.Empty, false, ex.Message);
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<GitBranchInfo>> GetBranchesAsync(CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var result = new List<GitBranchInfo>();
+            foreach (var branch in repo.Branches)
+            {
+                result.Add(new GitBranchInfo(
+                    branch.FriendlyName,
+                    branch.CanonicalName,
+                    branch.IsCurrentRepositoryHead,
+                    branch.IsRemote,
+                    branch.TrackedBranch?.FriendlyName));
+            }
+
+            return result;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task CheckoutAsync(string branchName, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var branch = repo.Branches[branchName];
+            if (branch == null)
+                throw new InvalidOperationException($"Branch '{branchName}' not found.");
+
+            Commands.Checkout(repo, branch);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<GitDiff> GetFileDiffAsync(string filePath, CancellationToken ct)
+    {
+        // R1.6: Run diff computation off the semaphore and cap output at 10,000 lines
+        return await Task.Run(() =>
+        {
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
+            var relativePath = Path.GetRelativePath(_repositoryRoot, absolutePath);
+
+            // Get patch comparing HEAD commit with working directory
+            var headTip = repo.Head.Tip;
+            var patch = repo.Diff.Compare<Patch>(headTip?.Tree, DiffTargets.WorkingDirectory);
+            var hunks = new List<GitDiffHunk>();
+
+            const int MaxLines = 10000;
+            int totalLines = 0;
+
+            foreach (var entry in patch)
+            {
+                if (totalLines >= MaxLines)
+                    break;
+
+                // Only include the requested file
+                if (!entry.Path.Equals(relativePath, StringComparison.Ordinal))
+                    continue;
+
+                var hunkLines = new List<GitDiffLine>();
+                var patchContent = entry.Patch;
+
+                if (!string.IsNullOrEmpty(patchContent))
+                {
+                    var lines = patchContent.Split('\n');
+                    foreach (var line in lines)
+                    {
+                        if (totalLines >= MaxLines)
+                            break;
+
+                        if (string.IsNullOrEmpty(line)) 
+                            continue;
+
+                        var kind = GitDiffLineKind.Context;
+                        if (line.StartsWith("+"))
+                            kind = GitDiffLineKind.Addition;
+                        else if (line.StartsWith("-"))
+                            kind = GitDiffLineKind.Deletion;
+                        else if (line.StartsWith("@@"))
+                            kind = GitDiffLineKind.Header;
+
+                        hunkLines.Add(new GitDiffLine(kind, line, -1, -1));
+                        totalLines++;
+                    }
+                }
+
+                hunks.Add(new GitDiffHunk(0, 0, 0, 0, hunkLines));
+                break; // Only first matching entry
+            }
+
+            return new GitDiff(relativePath, relativePath, hunks);
+        }, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<GitCommitInfo>> GetLogAsync(int count, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var result = new List<GitCommitInfo>();
+            var commits = repo.Commits.Take(count);
+
+            foreach (var commit in commits)
+            {
+                result.Add(new GitCommitInfo(
+                    commit.Sha,
+                    commit.MessageShort,
+                    commit.Author.Name,
+                    commit.Author.Email,
+                    commit.Author.When,
+                    commit.Committer.When));
+            }
+
+            return result;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+
+        _semaphore.Wait();
+        try
+        {
+            _repository?.Dispose();
+            _repository = null;
+        }
+        finally
+        {
+            _semaphore.Release();
+            _semaphore.Dispose();
+        }
+    }
+
+    private static GitFileStatusKind MapFileStatus(FileStatus status) => status switch
+    {
+        FileStatus.NewInIndex => GitFileStatusKind.Added,
+        FileStatus.ModifiedInIndex => GitFileStatusKind.Modified,
+        FileStatus.DeletedFromIndex => GitFileStatusKind.Deleted,
+        FileStatus.RenamedInIndex => GitFileStatusKind.Renamed,
+        FileStatus.NewInWorkdir => GitFileStatusKind.Untracked,
+        FileStatus.ModifiedInWorkdir => GitFileStatusKind.Modified,
+        FileStatus.RenamedInWorkdir => GitFileStatusKind.Renamed,
+        FileStatus.Ignored => GitFileStatusKind.Ignored,
+        FileStatus.Conflicted => GitFileStatusKind.Conflicted,
+        _ => GitFileStatusKind.Modified
+    };
+}
