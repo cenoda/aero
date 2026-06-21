@@ -1,6 +1,7 @@
 using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
+using Aero.Services.Build;
 using Aero.Terminal;
 using Aero.ViewModels;
 using Avalonia;
@@ -105,6 +106,10 @@ public static ServiceProvider BuildServices()
 
         // Phase 5 — Output panel (fake terminal)
         services.AddSingleton<IProcessRunner, ProcessRunner>();
+
+        // Phase 6 — Build system
+        services.AddSingleton<DotNetBuildService>();
+        services.AddSingleton<BuildServiceFactory>();
 
         // ViewModels
         services.AddSingleton<ShellViewModel>();

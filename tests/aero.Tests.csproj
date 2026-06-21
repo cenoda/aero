@@ -72,6 +72,7 @@
     <Compile Include="../src/Services/Build/IBuildService.cs" />
     <Compile Include="../src/Services/Build/BuildModels.cs" />
     <Compile Include="../src/Services/Build/DotNetBuildService.cs" />
+    <Compile Include="../src/Services/Build/BuildServiceFactory.cs" />
   </ItemGroup>
 
 </Project>
