@@ -199,14 +199,14 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 - [ ] LibGit2Sharp + DiffPlex are the only new NuGet packages
 - [ ] All Git ViewModels follow MVVM — no View references from ViewModels
 - [ ] All Git services registered in `src/App.axaml.cs`; eager-resolve for message subscribers
-- [x] No `async void` outside Avalonia event handlers; no static service access
-- [x] Git status refresh is debounced / cooldown-gated (R1.3)
-- [x] Repository access serialized via `SemaphoreSlim` (R1.1)
-- [x] Native library load failure handled gracefully (R1.2)
-- [x] Checkout conflicts surfaced to user (R1.7)
-- [x] Large diff capped (R1.6)
-- [x] `dotnet build src/aero.csproj` passes
-- [x] `dotnet test tests` passes
-- [x] `manual_test/manual_test_phase7.sh` passes
-- [x] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
-- [x] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts
+- [ ] No `async void` outside Avalonia event handlers; no static service access
+- [ ] Git status refresh is debounced / cooldown-gated (R1.3)
+- [ ] Repository access serialized via `SemaphoreSlim` (R1.1)
+- [ ] Native library load failure handled gracefully (R1.2)
+- [ ] Checkout conflicts surfaced to user (R1.7)
+- [ ] Large diff capped (R1.6)
+- [ ] `dotnet build src/aero.csproj` passes
+- [ ] `dotnet test tests` passes
+- [ ] `manual_test/manual_test_phase7.sh` passes
+- [ ] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
+- [ ] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts

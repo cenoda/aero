@@ -426,7 +426,7 @@ Files modified:
 - `src/ViewModels/ShellViewModel.cs` — add `GitViewModel`, `GitBranch`, wire
   `FolderOpened`/`FolderChanged` → Git status refresh
 - `src/Views/MainWindow.axaml` — add Git panel to sidebar, branch label to status bar
-- `src/Program.cs` — register `GitServiceFactory`, `GitViewModel` in DI
+- `src/App.axaml.cs` — register `GitServiceFactory`, `GitViewModel` in DI (`BuildServices()`)
 
 Tests:
 - `tests/ViewModels/GitViewModelTests.cs` — mock `IGitService`, test stage/unstage/commit
@@ -523,7 +523,7 @@ subscribe to this message — same pattern as `DiagnosticStore` → `ProblemsVie
 
 | Existing | New Tests | Projected Total |
 |----------|-----------|-----------------|
-| 337 | ~35-40 | **~375** |
+| 328 | ~35-40 | **~365-370** |
 
 ---
 
