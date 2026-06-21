@@ -25,25 +25,94 @@ Add Git panel, diff viewer, and commit UI using abstraction-first design.
 ```csharp
 public interface IGitService
 {
-    // Repository operations
-    Task<GitRepository> OpenRepositoryAsync(string path);
-    Task<IEnumerable<GitFile>> GetStatusAsync(CancellationToken ct);
-    Task<IEnumerable<GitCommit>> GetLogAsync(int count, CancellationToken ct);
-    
-    // File operations
+    /// <summary>Human-readable name, e.g. "libgit2sharp".</summary>
+    string Name { get; }
+
+    // Repository
+    Task<GitRepositoryInfo> GetRepositoryInfoAsync(CancellationToken ct);
+
+    // Status
+    Task<IReadOnlyList<GitFileStatus>> GetStatusAsync(CancellationToken ct);
+
+    // Stage / Unstage
     Task StageAsync(string filePath, CancellationToken ct);
     Task UnstageAsync(string filePath, CancellationToken ct);
-    Task<GitCommit> CommitAsync(string message, CancellationToken ct);
-    
-    // Branch operations
-    Task<IEnumerable<GitBranch>> GetBranchesAsync(CancellationToken ct);
+
+    // Commit
+    Task<GitCommitResult> CommitAsync(string message, string authorName, string authorEmail, CancellationToken ct);
+
+    // Branch
+    Task<IReadOnlyList<GitBranchInfo>> GetBranchesAsync(CancellationToken ct);
     Task CheckoutAsync(string branchName, CancellationToken ct);
+
+    // Diff
+    Task<GitDiff> GetFileDiffAsync(string filePath, CancellationToken ct);
+
+    // Log
+    Task<IReadOnlyList<GitCommitInfo>> GetLogAsync(int count, CancellationToken ct);
 }
 
-public record GitRepository(string Path, string CurrentBranch);
-public record GitFile(string Path, GitFileStatus Status);  // Modified, Staged, Untracked
-public record GitCommit(string Hash, string Message, DateTimeOffset Author, string AuthorEmail);
-public record GitBranch(string Name, bool IsCurrent, bool IsRemote);
+public record GitRepositoryInfo(
+    string RootPath,
+    string CurrentBranch,
+    bool IsDirty);
+
+public enum GitFileStatusKind
+{
+    Modified,
+    Added,
+    Deleted,
+    Renamed,
+    Copied,
+    Untracked,
+    Ignored,
+    Staged,
+    Conflicted
+}
+
+public record GitFileStatus(
+    string FilePath,
+    string? OldFilePath,     // for renames
+    GitFileStatusKind StagingStatus,   // WorkDir vs Index
+    GitFileStatusKind Status);
+
+public record GitBranchInfo(
+    string Name,
+    string CanonicalName,
+    bool IsCurrent,
+    bool IsRemote,
+    string? UpstreamName);
+
+public record GitCommitInfo(
+    string Sha,
+    string Message,
+    string AuthorName,
+    string AuthorEmail,
+    DateTimeOffset AuthorDate,
+    DateTimeOffset CommitDate);
+
+public record GitCommitResult(
+    string Sha,
+    bool Success,
+    string? Error);
+
+public record GitDiff(
+    string FilePath,
+    string OldFilePath,
+    IReadOnlyList<GitDiffHunk> Hunks);
+
+public record GitDiffHunk(
+    int OldStart, int OldCount,
+    int NewStart, int NewCount,
+    IReadOnlyList<GitDiffLine> Lines);
+
+public enum GitDiffLineKind { Context, Addition, Deletion, Header }
+
+public record GitDiffLine(
+    GitDiffLineKind Kind,
+    string Content,
+    int OldLineNumber,   // -1 if addition
+    int NewLineNumber);  // -1 if deletion
 ```
 
 ### Implementations

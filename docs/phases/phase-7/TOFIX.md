@@ -166,12 +166,11 @@ change-kind enhancement to a future phase. Do NOT add `FolderChangeKind` now (YA
 
 ---
 
-### R1.10 No unit tests for `LibGit2SharpService` in isolation *(priority: medium, BLOCKER for M2)*
+### R1.10 Integration tests for `LibGit2SharpService` *(priority: medium, BLOCKER for M2)*
 
 **Description:** `LibGit2SharpService` directly wraps a `Repository` object. Testing it
-requires actual git repositories on disk (integration tests). Pure unit tests with mocks
-aren't possible because `Repository` is a concrete class. This is the same situation as
-Phase 4's `LSPSession` (tested with a real server).
+requires actual git repositories on disk (integration tests), not unit tests with mocks.
+This is the same situation as Phase 4's `LSPSession` (tested with a real server).
 
 **Required fix:** Write integration tests that create temp directories, run `git init`,
 add files, commit, and then exercise `LibGit2SharpService` methods. Use
