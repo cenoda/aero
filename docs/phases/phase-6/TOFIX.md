@@ -62,7 +62,7 @@ appends to the panel *and* buffers for parsing), never from `OutputViewModel.Lin
 ignore lines without a `file(line,col)` prefix (documented limitation). Tests must assert against
 these exact captured strings, not invented ones.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (M1 tests verify — `ParseErrors_ParsesErrorLine`, `_ParsesWarningLine`, `_StripsTrailingProjectBracket`) [fb3b45c]
 
 ---
 
