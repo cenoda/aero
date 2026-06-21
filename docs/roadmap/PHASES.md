@@ -141,12 +141,12 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Click error in Problems → jump to file/line
 
 ## Phase 7: Git Integration
-- [ ] **GitRepository** — wrap git CLI or libgit2sharp
-- [ ] **Git panel** — staged/unstaged changes list
-- [ ] **Diff viewer** — inline diff with +/- gutter
-- [ ] Commit UI (message, stage/unstage, commit button)
-- [ ] Branch indicator in status bar
-- [ ] File modified indicator in editor tab and file tree
+- [x] **GitRepository** — wrap git CLI or libgit2sharp
+- [x] **Git panel** — staged/unstaged changes list
+- [x] **Diff viewer** — inline diff with +/- gutter
+- [x] Commit UI (message, stage/unstage, commit button)
+- [x] Branch indicator in status bar
+- [x] File modified indicator in editor tab and file tree
 
 ## Phase 8: UI Polish
 - [ ] **Dockable panels** — drag to rearrange layout

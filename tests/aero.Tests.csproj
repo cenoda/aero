@@ -29,6 +29,9 @@
     <!-- Git (Phase 7) -->
     <PackageReference Include="LibGit2Sharp" Version="0.30.*" />
     <PackageReference Include="DiffPlex" Version="1.7.*" />
+
+    <!-- Mocking for tests -->
+    <PackageReference Include="NSubstitute" Version="5.*" />
   </ItemGroup>
 
   <ItemGroup>

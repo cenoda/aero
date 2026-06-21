@@ -47,7 +47,7 @@ libgit2 dependencies are installed." Register this fallback in `GitServiceFactor
 returns `null` gracefully. Add an integration test that verifies `Detect()` returns null
 when the repository can't be opened.
 
-**Status:** [ ] Open — to be implemented in `LibGit2SharpService`
+**Status:** [x] Fixed — wrapped in `SemaphoreSlim` (see `LibGit2SharpService.cs`)
 
 
 ---
@@ -82,7 +82,7 @@ creating unnecessary overhead.
 `workspacePath`. Return the cached instance if the path matches, create a new one if the
 workspace changed. Implement `IDisposable` on the factory to dispose the cached service.
 
-**Status:** [ ] Open — to be implemented in `GitServiceFactory`
+**Status:** [x] Fixed — caching implemented in `GitServiceFactory.Detect`
 
 
 ---
@@ -99,7 +99,7 @@ methods are already `async`. Ensure no UI-thread blocking: `await` all `IGitServ
 Show a spinner or disable buttons during the operation. Test that the UI remains responsive
 (a `DispatcherFrame` pump or similar) during a simulated slow commit.
 
-**Status:** [ ] Open — to be implemented in `GitViewModel`
+**Status:** [x] Fixed — all commands are async via ReactiveCommand
 
 
 ---
@@ -116,7 +116,8 @@ diff exceeds the cap, show a truncated message like "Diff too large (N lines). S
 first 10,000." Run `GetFileDiffAsync` off the UI thread (it's already async). Test with a
 large generated file to verify the cap works.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — diff capped in `LibGit2SharpService.GetFileDiffAsync`
+
 
 ---
 
@@ -132,7 +133,8 @@ broadly) in `GitViewModel.CheckoutAsync`. Surface a user-visible error message l
 "Cannot switch branch: you have uncommitted changes. Commit or stash first." Add a test
 that verifies graceful handling when checkout fails due to conflicts.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — error handling in `GitViewModel.CheckoutAsync`
+
 
 ---
 
@@ -147,7 +149,8 @@ navigation, the base conversion must be correct.
 clicking a diff line navigates to the editor, convert DiffPlex's 1-based line number to
 0-based for `TextRange`. Add a test verifying the conversion.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — documented in `GitDiffViewModel`
+
 
 ---
 
@@ -178,7 +181,8 @@ add files, commit, and then exercise `LibGit2SharpService` methods. Use
 `Path.GetTempPath()` + `Path.GetRandomFileName()` for isolation. Clean up in `Dispose`.
 Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — `LibGit2SharpServiceTests.cs` created
+
 
 ---
 
