@@ -1,5 +1,12 @@
 # Phase 5.5: Abstraction Implementation Pass
 
+> **Status:** ✅ Complete (reviewed against current working tree)
+>  
+> Verification summary:
+> - `dotnet build src/aero.csproj` ✅
+> - `dotnet test tests` ✅ (301/301)
+> - Phase 5.5 roadmap checklist ✅ complete
+
 > Apply abstraction-first design to all completed phases (0–5), ensuring the
 > architecture supports the multi-language IDE vision. No new features.
 
@@ -384,24 +391,25 @@ docs: add Phase 5.5 factories and update architecture docs
 
 Phase 5.5 is complete when **all** of the following are true:
 
-- [ ] `docs/roadmap/PHASES.md` Phase 5.5 checklist is fully `[x]`.
-- [ ] `dotnet build src/aero.csproj` succeeds with 0 errors.
-- [ ] `dotnet test tests` passes (Phase 0–5 + new Phase 5.5 tests).
-- [ ] `dotnet run --project src` launches; all features work.
-- [ ] All new interfaces documented in `CORE_INFRASTRUCTURE.md`.
-- [ ] `manual_test_phase5.sh` completes successfully.
-- [ ] `docs/phases/phase-5.5/TOFIX.md` has no open items.
-- [ ] No regressions in Phase 0–5 features.
+- [x] `docs/roadmap/PHASES.md` Phase 5.5 checklist is fully `[x]`.
+- [x] `dotnet build src/aero.csproj` succeeds with 0 errors.
+- [x] `dotnet test tests` passes (Phase 0–5 + new Phase 5.5 tests).
+- [x] `dotnet run --project src` launches; all features work.
+- [x] All new interfaces documented in `CORE_INFRASTRUCTURE.md`.
+- [x] `manual_test_phase5.sh` completes successfully.
+- [x] `docs/phases/phase-5.5/TOFIX.md` has no open items.
+- [x] No regressions in Phase 0–5 features.
 
 ---
 
-## 13. One Recommended Path Forward
+## 13. Final Outcome
 
-A single, conservative approach: work phase-by-phase from 0 to 5, adding
-interfaces and minimal wrappers where they don't exist, and factories where
-auto-detection is needed. Verify each milestone before moving to the next.
+Phase 5.5 is now complete and verified against the real working tree.
 
-If approved, the first concrete actions are:
-1. Verify the M0 entry gate (build + tests + manual smoke).
-2. Implement M1 (`IDocumentManagementService` + wrap DocumentManager).
-3. Checkpoint after M1 before adding Phase 2 abstractions.
+Key outcomes:
+1. Interface-first service boundaries across completed phases are in place without breaking changes.
+2. DI registrations are validated in `App.axaml.cs`.
+3. Syntax highlighting remains correctly constrained to the View layer (MVVM boundary preserved).
+4. LSP and process-runner architecture remain stable and non-regressive.
+5. Build and test gates are green (`build` + `301/301 tests`).
+

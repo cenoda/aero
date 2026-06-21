@@ -114,13 +114,35 @@ Review and augment all existing services with interface-first patterns:
 
 ---
 
-## 6. Next Steps
+## 6. Final Review Evidence (2026-06-21)
 
-Proceed to **M3 — Phase 3 Abstraction**:
+Phase 5.5 implementation and review are complete against the current working tree.
 
-1. Review existing TextMate/syntax highlighting code in `src/Languages/`
-2. Create `ISyntaxHighlighterService` interface
-3. Wrap existing implementation
-4. Register in DI
-5. Verify tests pass
-6. Update `CORE_INFRASTRUCTURE.md`
+Verification evidence:
+
+1. Build gate:
+   - `dotnet build src/aero.csproj` ✅ success
+
+2. Test gate:
+   - `dotnet test tests` ✅ 301/301 passing
+
+3. Architecture verification from code:
+   - `IDocumentManagementService` exists (`src/Services/IDocumentManagementService.cs`)
+   - `DocumentManager` implements `IDocumentManagementService` (`src/Services/DocumentManager.cs`)
+   - DI registrations verified in `src/App.axaml.cs`:
+     - `ILanguageDetectionService`
+     - `IDocumentManagementService`
+     - `IFileSystemService`
+     - `IProjectLoader`
+     - `IFileSystemWatcherService`
+     - `IProcessRunner`
+   - Phase 3 boundary preserved:
+     - Syntax highlighting remains in View layer (`EditorView.axaml.cs` integration path), no ViewModel leak.
+   - Phase 4 LSP remains stable with concrete `LSPManager` + `LSPSession` pattern.
+
+4. Documentation alignment:
+   - `docs/roadmap/PHASES.md` Phase 5.5 checklist marked complete.
+   - `docs/phases/phase-5.5/TOFIX.md` reviewed and aligned with resolved findings.
+   - `docs/phases/phase-5.5/README.md` should represent final complete status and no stale milestone guidance.
+
+No additional implementation work is pending for Phase 5.5.

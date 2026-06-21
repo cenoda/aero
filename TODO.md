@@ -1,13 +1,12 @@
-# TODO - Cleanup Phase
+# Phase 5.5 Review TODO
 
-## Tasks
-
-- [x] 1. Move M3_PLAN.md to docs/phases/phase-4/
-- [x] 2. Move M3_COMPLETION_REPORT.md to docs/phases/phase-4/
-- [x] 3. Convert Diagnostic to record for value equality
-- [x] 4. Convert TextRange to record for value equality
-- [x] 5. Update DiagnosticStore to use value-based equality
-
-## In Progress
-
-1. Move stray M3 files to docs/phases/phase-4/
+- [x] Validate runtime state from real working tree code (interfaces/DI core checks)
+- [x] Run verification gates:
+  - [x] `dotnet test tests` (301/301 pass)
+  - [x] `dotnet build src/aero.csproj` (success)
+- [ ] Update docs to consistent final review state:
+  - [x] `docs/roadmap/PHASES.md` (Phase 5.5 checklist -> [x])
+  - [ ] `docs/phases/phase-5.5/README.md` (status/exit criteria aligned to actual implementation)
+  - [ ] `docs/phases/phase-5.5/IMPLEMENTATION_PLAN.md` (remove stale next-steps, add review evidence)
+  - [ ] `docs/phases/phase-5.5/TOFIX.md` (close placeholder review rounds + persistent checks)
+- [ ] Final verification readback of updated docs

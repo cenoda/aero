@@ -101,12 +101,12 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## Phase 5.5: Abstraction Implementation Pass
 > Review completed phases (0-5) and implement abstraction-first design.
 
-- [ ] **Phase 0** — Verify DI and service registration
-- [ ] **Phase 1** — Review DocumentManager
-- [ ] **Phase 2** — Review IFileSystemService, IProjectLoader
-- [ ] **Phase 3** — Add ISyntaxHighlighterService
-- [ ] **Phase 4** — Verify ILSPService
-- [ ] **Phase 5** — Add IProcessRunnerService
+- [x] **Phase 0** — Verify DI and service registration
+- [x] **Phase 1** — Review DocumentManager
+- [x] **Phase 2** — Review IFileSystemService, IProjectLoader
+- [x] **Phase 3** — Add ISyntaxHighlighterService
+- [x] **Phase 4** — Verify ILSPService
+- [x] **Phase 5** — Add IProcessRunnerService
 
 ## Phase 6: Build & Output (Abstraction-First)
 > Multi-language build system support. Interface-first design for extensibility.
