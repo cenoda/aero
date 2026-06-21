@@ -501,10 +501,11 @@ public class ShellViewModel : ReactiveObject, IDisposable
         try
         {
             // Route through IBuildService.BuildAsync to get proper exit code and errors (R2.3)
+            // Use AppendLine for thread-safe UI updates (R2.12)
             var options = new BuildOptions(_workspacePath);
             var result = await _buildService.BuildAsync(
                 options,
-                line => _outputViewModel.Lines.Add(line),
+                _outputViewModel.AppendLine,
                 _buildCts.Token);
 
             // Publish BuildFinished with exit code from BuildResult

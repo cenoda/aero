@@ -180,7 +180,7 @@ public class OutputViewModel : ReactiveObject, IDisposable
     /// Append a line to the output collection, marshaling to the UI thread
     /// if necessary (per TOFIX R1.2).
     /// </summary>
-    private void AppendLine(string line)
+    public void AppendLine(string line)
     {
         var dispatcher = GetUiDispatcher();
         if (dispatcher != null && !dispatcher.CheckAccess())
