@@ -163,7 +163,8 @@ Plan §5.4 and R1.4 explicitly required `TextRange(Line-1, Column-1, …)`.
 `new TextRange(e.Line - 1, e.Column - 1, e.Line - 1, e.Column - 1)` (guard against negatives).
 Add a test asserting a parsed `error CSxxxx` on line 5 yields `Range.StartLine == 4`.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `ShellViewModel.BuildAsync` maps with
+`new TextRange(e.Line - 1, e.Column - 1, e.Line - 1, e.Column - 1)`. (Test still owed — see R2.11.)
 
 ### R2.2 Navigation uses the wrong line/column base → LSP jumps to the wrong line *(priority: high, BLOCKER)*
 
@@ -178,7 +179,8 @@ the bug for LSP.
 **Required fix:** Once R2.1 makes ranges 0-based for all sources, convert in navigation:
 `GetOffset(line + 1, column + 1)` with bounds clamping. Add a navigation test.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `OpenFileAndNavigateAsync` now calls
+`GetOffset(line + 1, column + 1)`; combined with R2.1 both sources are consistent (0-based range).
 
 ### R2.3 `IBuildService.BuildAsync` is bypassed in the real flow *(priority: high, BLOCKER)*
 
@@ -194,7 +196,9 @@ is dead code outside unit tests.
 an `onLine` that appends to the Output panel; use the returned `BuildResult` for exit code +
 parsed errors. Add a `BuildCommand` test asserting it drives `IBuildService` (stub).
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `BuildAsync` now calls
+`_buildService.BuildAsync(options, onLine, ct)` and uses `result.ExitCode`/`result.Success`/`result.Errors`.
+**The streaming callback introduced a new threading regression — see R2.12.** (Test still owed — R2.11.)
 
 ### R2.4 Exit code & errors are scraped from the capped `OutputViewModel.Lines` *(priority: high, BLOCKER — R1.3/R6.5)*
 
@@ -207,7 +211,9 @@ exit-code scrape is fragile. This is exactly what R1.3/R6.5 warned against.
 **Required fix:** Take exit code and errors from `BuildResult` (the service captures its own buffer,
 per plan §5.6). Do not parse from `OutputViewModel.Lines`.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — exit code comes from `result.ExitCode`; errors from
+`result.Errors` (parsed inside `DotNetBuildService` over its own `capturedLines` buffer), not from
+the capped UI collection.
 
 ### R2.5 No single-active-build guard *(priority: medium — R6.6)*
 
@@ -218,7 +224,10 @@ operation's `finally` disposes the new CTS and flips `IsRunning` — a concurren
 **Required fix:** No-op with a status message when `_outputViewModel.IsRunning` (or add a
 `canExecute` guard on `BuildCommand`).
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `BuildAsync` returns early with
+"Build already in progress" when `_buildCts != null`. Note: this guards build-vs-build only;
+build no longer shares `OutputViewModel.IsRunning`, so a command-bar run and a build can still
+interleave output (see R2.13).
 
 ### R2.6 Warnings on a successful build are dropped *(priority: medium)*
 
@@ -227,7 +236,8 @@ with warnings (exit 0) never populates the Problems panel.
 
 **Required fix:** Always parse and publish diagnostics (errors and warnings) regardless of exit code.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — diagnostics are now populated whenever
+`result.Errors.Count > 0`, independent of exit code; `ParseErrors` already captures `warning` rows.
 
 ### R2.7 `ProblemsViewModel` updates twice per change *(priority: low / cleanup)*
 
@@ -239,7 +249,10 @@ in the plan (the panel was to stay on the bus path) — scope creep.
 **Required fix:** Pick one path. Simplest: drop the `DiagnosticStore.DiagnosticsUpdated` event +
 its subscription and keep the existing message-bus flow.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `ProblemsViewModel` no longer subscribes to the
+`DiagnosticStore.DiagnosticsUpdated` event; only the bus path remains. Minor leftover: the now-unused
+`DiagnosticStore.DiagnosticsUpdated` event and the `_diagnosticStore` field in `ProblemsViewModel`
+are dead code — remove when convenient (R2.14).
 
 ### R2.8 Build `CancellationTokenSource` leaked; no cancel path *(priority: low)*
 
@@ -250,7 +263,7 @@ unreachable as written.
 **Required fix:** Dispose the CTS (`using`/`finally`), or wire a real cancel (e.g. reuse the Output
 panel Cancel). If cancel is out of scope for Phase 6, drop the dead CTS/catch and document it.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `_buildCts` is disposed and nulled in a `finally` block.
 
 ### R2.9 Manual test mutates the real source tree *(priority: low)*
 
@@ -281,3 +294,58 @@ and re-verified. Per `plan-rules` §5, gates must be verifiable.
 `IBuildService.BuildAsync`; navigation lands on the correct line for a 0-based range.
 
 **Status:** ☐ Open
+
+---
+
+## Round 3 — Post-Fix Review (2026-06-21)
+
+Re-review after the R2.1/R2.2/R2.3/R2.4/R2.5/R2.6/R2.7/R2.8 fixes. Build clean, **317/317 tests pass**.
+The six correctness fixes are verified correct. One **new regression** was introduced by the R2.3 fix,
+plus two minor follow-ons.
+
+### R2.12 Build output is appended to a UI collection from a background thread *(priority: critical, BLOCKER — regression from R2.3)*
+
+**Description:** The R2.3 fix streams build output with
+`line => _outputViewModel.Lines.Add(line)`. `IProcessRunner`/CliWrap invokes this callback on
+**background thread-pool threads** (the exact reason Phase 5 `OutputViewModel.AppendLine` has a
+dispatcher guard — Phase 5 TOFIX R1.2). `OutputViewModel.Lines` is an `ObservableCollection` bound
+to the Output `ListBox`, so mutating it off the UI thread throws `InvalidOperationException` in the
+running app. Unit tests don't catch it (no Avalonia app/dispatcher in headless tests), which is why
+317 still pass. Secondary: this path also bypasses the `MaxLines` FIFO cap, so verbose builds grow
+the panel unbounded.
+
+**Required fix:** Stream through a UI-thread-safe, cap-enforcing append. Options:
+- expose a public `OutputViewModel.AppendLine` (or `AppendExternalLine`) and pass it as `onLine`, or
+- have `BuildAsync` receive a callback that marshals via the dispatcher pattern.
+Do **not** mutate `_outputViewModel.Lines` directly from the build callback.
+
+**Status:** ☐ Open
+
+### R2.13 Build no longer integrates with `OutputViewModel` running-state *(priority: low)*
+
+**Description:** Build now runs on its own `_buildCts` and appends straight to `Lines`, so
+`OutputViewModel.IsRunning` is not set during a build. The command-bar Run button stays enabled and a
+manual command can run concurrently with a build, interleaving output. The R2.5 guard only prevents
+build-vs-build.
+
+**Required fix:** Either set `OutputViewModel` running-state for the build duration (so Run/Cancel
+reflect it) or document the interleave as a known limitation.
+
+**Status:** ☐ Open
+
+### R2.14 Dead code left by R2.7 *(priority: low / cleanup)*
+
+**Description:** `DiagnosticStore.DiagnosticsUpdated` event and the `_diagnosticStore` field in
+`ProblemsViewModel` are now unused after dropping the duplicate subscription.
+
+**Required fix:** Remove the unused event and field (or wire the field if a direct path is wanted).
+
+**Status:** ☐ Open
+
+### Still open from Round 2 (not addressed in this fix batch)
+
+- **R2.9** — manual test mutates the real `src/` tree.
+- **R2.10** — PHASES.md Phase 6 boxes all `[x]` though the phase isn't closeable (R2.12 blocks).
+- **R2.11** — test coverage gap: still 317 tests, none added for the off-by-one (R2.1), the
+  `IBuildService.BuildAsync` routing (R2.3), or navigation. These tests would have caught R2.1 and
+  would guard against future drift.
