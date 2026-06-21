@@ -57,9 +57,6 @@
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
             </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
-            </MenuItem>
         </Menu>
 
         <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
