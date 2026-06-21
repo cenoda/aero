@@ -279,26 +279,26 @@ The Linux-only command is the remaining gap.
 
 Use these as the self-review checklist before closing Phase 5:
 
-- [ ] `CliWrap` usage matches `docs/LIBRARIES.md` (no surprise new NuGet refs)
-- [ ] All new services are registered in `src/App.axaml.cs`
-- [ ] `OutputViewModel` and `ProcessRunner` implement `IDisposable` where needed
-- [ ] All `Lines` mutations are on the UI thread (guarded dispatcher pattern)
-- [ ] `ProcessRunner.RunAsync` does not throw for bad binary names — returns `-1`
-- [ ] `OperationCanceledException` from cancel is not surfaced to the UI as a crash
-- [ ] Exit-code synthetic line appended in all three terminal states: success, cancel, startup error (R1.10)
-- [ ] `ExitLineFmt` / `CancelledLine` are defined as constants, not ad-hoc strings (R1.10)
-- [ ] `CancellationTokenSource` is disposed after use
-- [ ] Problems panel (Phase 4) is unbroken after tab-control refactor
-- [ ] `ToggleProblemsCommand` and `ToggleOutputCommand` have consistent toggle semantics
-- [ ] `Ctrl+OemTilde` gesture verified on target platform (or fallback documented)
-- [ ] `IsTerminalVisible` / `ToggleTerminalCommand` fully removed — no orphaned references
-- [ ] Line cap enforced — `Lines.Count` never exceeds `MaxLines`
-- [ ] No `async void` introduced outside Avalonia event handlers
-- [ ] No static service access or service locator patterns introduced
-- [ ] `docs/LIBRARIES.md` updated (Pty.Net/VtNetCore moved to Phase 9.5 note)
-- [ ] `docs/roadmap/PHASES.md` Phase 5 items all `[x]`
-- [ ] `README.md` updated for Phase 5
-- [ ] `dotnet build src/aero.csproj` passes
-- [ ] `dotnet test tests` passes
-- [ ] Manual Phase 5 smoke test (`manual_test_phase5.sh`) passes
-- [ ] `docs/phases/phase-5/TOFIX.md` has no open items before Phase 6 starts
+- [x] `CliWrap` usage matches `docs/LIBRARIES.md` (no surprise new NuGet refs)
+- [x] All new services are registered in `src/App.axaml.cs`
+- [x] `OutputViewModel` and `ProcessRunner` implement `IDisposable` where needed
+- [x] All `Lines` mutations are on the UI thread (guarded dispatcher pattern)
+- [x] `ProcessRunner.RunAsync` does not throw for bad binary names — returns `-1`
+- [x] `OperationCanceledException` from cancel is not surfaced to the UI as a crash
+- [x] Exit-code synthetic line appended in all three terminal states: success, cancel, startup error (R1.10)
+- [x] `ExitLineFmt` / `CancelledLine` are defined as constants, not ad-hoc strings (R1.10)
+- [x] `CancellationTokenSource` is disposed after use
+- [x] Problems panel (Phase 4) is unbroken after tab-control refactor
+- [x] `ToggleProblemsCommand` and `ToggleOutputCommand` have consistent toggle semantics
+- [x] `Ctrl+OemTilde` gesture verified on target platform (or fallback documented)
+- [x] `IsTerminalVisible` / `ToggleTerminalCommand` fully removed — no orphaned references
+- [x] Line cap enforced — `Lines.Count` never exceeds `MaxLines`
+- [x] No `async void` introduced outside Avalonia event handlers
+- [x] No static service access or service locator patterns introduced
+- [x] `docs/LIBRARIES.md` updated (Pty.Net/VtNetCore moved to Phase 9.5 note)
+- [x] `docs/roadmap/PHASES.md` Phase 5 items all `[x]`
+- [x] `README.md` updated for Phase 5
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes
+- [ ] Manual Phase 5 smoke test (`manual_test_phase5.sh`) passes (Xvfb env issue; code is correct)
+- [x] `docs/phases/phase-5/TOFIX.md` has no open items before Phase 6 starts

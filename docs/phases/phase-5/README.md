@@ -19,10 +19,10 @@ Run external commands and stream their output in a panel.
 
 ## Checklist
 
-- [ ] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
-- [ ] **Output panel** — stdout/stderr 실시간 스트리밍
-- [ ] Ctrl+` 로 패널 토글
-- [ ] 실행 중 취소 버튼 (CancellationToken)
+- [x] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
+- [x] **Output panel** — stdout/stderr 실시간 스트리밍
+- [x] Ctrl+` 로 패널 토글
+- [x] 실행 중 취소 버튼 (CancellationToken)
 
 ## Related Documents
 
