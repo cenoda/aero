@@ -39,4 +39,4 @@
 - `docs/LIBRARIES.md` - NuGet packages
 
 ## TODO
-- Phase 7: Git Integration (blocked by Phase 6 completion)
+- Phase 8: UI Polish (not started)

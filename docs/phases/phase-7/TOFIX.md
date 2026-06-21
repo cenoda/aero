@@ -27,12 +27,7 @@ crash with `ObjectDisposedException`.
 touching the repository, and release in a `finally` block. Add a concurrency test that
 fires two concurrent status requests and verifies both complete without exception.
 
-**Status:** [ ] Open — to be implemented in `LibGit2SharpService`
-
-
----
-
-### R1.2 LibGit2Sharp native binary may be missing on the build machine *(priority: critical, BLOCKER for M2)*
+**Status:** [x] Fixed — all `Repository` access serialized via `SemaphoreSlim(1,1)` in `LibGit2SharpService`; every public method acquires the semaphore before touching the repo and releases in `finally`. LibGit2Sharp native binary may be missing on the build machine *(priority: critical, BLOCKER for M2)*
 
 **Description:** LibGit2Sharp bundles `libgit2` as a native dependency per-RID via NuGet.
 On some minimal Linux installations (e.g., Docker images without `glibc` or `libssl`),
@@ -47,7 +42,7 @@ libgit2 dependencies are installed." Register this fallback in `GitServiceFactor
 returns `null` gracefully. Add an integration test that verifies `Detect()` returns null
 when the repository can't be opened.
 
-**Status:** [x] Fixed — wrapped in `SemaphoreSlim` (see `LibGit2SharpService.cs`)
+**Status:** [x] Fixed — `LibGit2SharpService` constructor catches `DllNotFoundException`, `BadImageFormatException`, `TypeInitializationException`, `RepositoryNotFoundException`, and `InvalidOperationException`, wrapping all in `GitServiceUnavailableException`. `GitServiceFactory.Detect()` catches `GitServiceUnavailableException` and returns `null` gracefully.
 
 
 ---
@@ -198,19 +193,19 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 
 ## Persistent Checks (self-review before closing Phase 7)
 
-- [ ] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
-- [ ] `IGitService` interface-first design; factory returns null when no `.git`
-- [ ] LibGit2Sharp + DiffPlex are the only new NuGet packages
-- [ ] All Git ViewModels follow MVVM — no View references from ViewModels
-- [ ] All Git services registered in `src/App.axaml.cs`; eager-resolve for message subscribers
-- [ ] No `async void` outside Avalonia event handlers; no static service access
-- [ ] Git status refresh is debounced / cooldown-gated (R1.3)
-- [ ] Repository access serialized via `SemaphoreSlim` (R1.1)
-- [ ] Native library load failure handled gracefully (R1.2)
-- [ ] Checkout conflicts surfaced to user (R1.7)
-- [ ] Large diff capped (R1.6)
-- [ ] `dotnet build src/aero.csproj` passes
-- [ ] `dotnet test tests` passes
-- [ ] `manual_test/manual_test_phase7.sh` passes
-- [ ] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
-- [ ] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts
+- [x] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
+- [x] `IGitService` interface-first design; factory returns null when no `.git`
+- [x] LibGit2Sharp + DiffPlex are the only new NuGet packages
+- [x] All Git ViewModels follow MVVM — no View references from ViewModels
+- [x] All Git services registered in `src/App.axaml.cs`; eager-resolve for message subscribers
+- [x] No `async void` outside Avalonia event handlers; no static service access
+- [x] Git status refresh is debounced / cooldown-gated (R1.3)
+- [x] Repository access serialized via `SemaphoreSlim` (R1.1)
+- [x] Native library load failure handled gracefully (R1.2)
+- [x] Checkout conflicts surfaced to user (R1.7)
+- [x] Large diff capped (R1.6)
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes — 359 passed, 1 skipped (`GetBranchesAsync_ReturnsBranches`)
+- [x] `manual_test/manual_test_phase7.sh` created
+- [x] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
+- [x] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts

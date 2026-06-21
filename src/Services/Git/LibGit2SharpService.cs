@@ -31,7 +31,9 @@ public sealed class LibGit2SharpService : IGitService
         // Try to open repository, but handle missing/invalid repo gracefully (R1.2, R1.4 fix)
         try
         {
-            _repository = new Repository(gitDir);
+            // Use repositoryRoot instead of gitDir - LibGit2Sharp finds .git automatically
+            // Opening via .git dir directly can cause empty branch enumeration on some versions
+            _repository = new Repository(repositoryRoot);
         }
         catch (InvalidOperationException)
         {

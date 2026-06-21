@@ -129,10 +129,25 @@ public class LibGit2SharpServiceTests : IDisposable
         Assert.Equal(GitFileStatusKind.Added, readme!.StagingStatus);
     }
 
-    [Fact(Skip = "Branches enumeration environment-dependent")]
-    public async Task GetBranchesAsync_ReturnsBranches()
+    [Fact]
+    public async Task GetBranchesAsync_AfterCommit_ReturnsCurrentBranch()
     {
-        // Skipped: requires deeper investigation of LibGit2Sharp branch enumeration
+        // Arrange: create a repo with one commit — always produces one local branch
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        // Act
+        using var sut = CreateService();
+        var branches = await sut.GetBranchesAsync(CancellationToken.None);
+
+        // Assert: at least one local branch, exactly one marked current
+        var localBranches = branches.Where(b => !b.IsRemote).ToList();
+        Assert.NotEmpty(localBranches);
+        Assert.Single(localBranches.Where(b => b.IsCurrent));
     }
 
     [Fact]
