@@ -19,11 +19,11 @@ Connect to language servers for diagnostics, completion, and the problems panel.
 
 ## Checklist
 
-- [ ] **LSPSession** — JSON-RPC over stdin/stdout to a language server
-- [ ] **LSPManager** — spawn `csharp-ls` / `omnisharp` per project
-- [ ] **Diagnostics** — red squigglies on errors
-- [ ] **Problems panel** — list all diagnostics in workspace
-- [ ] **Code completion** — Ctrl+Space triggers LSP completions
+- [x] **LSPSession** — JSON-RPC over stdin/stdout to a language server
+- [x] **LSPManager** — spawn `csharp-ls` / `omnisharp` per project
+- [x] **Diagnostics** — red squigglies on errors
+- [x] **Problems panel** — list all diagnostics in workspace
+- [x] **Code completion** — Ctrl+Space triggers LSP completions
 
 ## Related Documents
 

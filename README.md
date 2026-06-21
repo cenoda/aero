@@ -16,18 +16,20 @@ on top of a stable core instead of compensating for one.
 
 ## Features
 
-### ✅ What Works Today (Phase 1 Complete)
+### ✅ What Works Today (Phase 4 Complete)
 - Tabbed text editor with AvaloniaEdit (syntax-aware, line numbers)
 - File open/save via Ctrl+O / Ctrl+S and system dialogs
 - Undo/Redo (full AvaloniaEdit undo stack)
 - Find/Replace with inline overlay panel (Ctrl+F)
 - Status bar with cursor position (Ln X, Col Y)
 - Dirty document tracking with save-on-close prompts
-
-### 🚧 In Progress
 - File Explorer panel with tree view (Phase 2)
 - Syntax highlighting via TextMate grammars (Phase 3)
 - LSP integration for diagnostics and completions (Phase 4)
+- Problems panel with diagnostics list
+- Ctrl+Space for code completion
+
+### 🚧 In Progress
 - Build system, Git integration, dockable panels, and more
 
 ### 🧠 The Agent Layer (Coming After Phase 8)
