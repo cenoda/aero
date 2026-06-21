@@ -282,7 +282,7 @@ public sealed class LSPSession : IDisposable
         _statusSink?.Invoke(message);
     }
 
-private static bool IsFullDocumentSyncSupported(JToken? textDocumentSync)
+    private static bool IsFullDocumentSyncSupported(JToken? textDocumentSync)
     {
         if (textDocumentSync is null)
         {

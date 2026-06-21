@@ -437,23 +437,23 @@ handler, then schedule the background send.
 
 Use these as the self-review checklist before closing Phase 4:
 
-- [ ] `StreamJsonRpc` was added only after verifying it matches `docs/LIBRARIES.md`
-- [ ] All new services are registered in `src/App.axaml.cs`
-- [ ] All new public service methods have tests
-- [ ] LSP process startup failures do not crash the app
-- [ ] `didOpen` / `didChange` / `didClose` / `didSave` ordering is correct
-- [ ] `didChange` uses full-document sync consistently in Phase 4
-- [ ] Diagnostics are replaced, not accidentally accumulated forever, per file
-- [ ] Closing a document clears its diagnostics from the Problems panel
-- [ ] Active-file diagnostics are visibly rendered in the editor
-- [ ] `Ctrl+Space` shows an observable completion UI result
-- [ ] No `async void` was introduced outside Avalonia event handlers
-- [ ] No static service access or service locator patterns were introduced
-- [ ] `README.md` documents required LSP server installation/setup
-- [ ] `dotnet build src/aero.csproj` passes
-- [ ] `dotnet test tests` passes
+- [x] `StreamJsonRpc` was added only after verifying it matches `docs/LIBRARIES.md`
+- [x] All new services are registered in `src/App.axaml.cs`
+- [x] All new public service methods have tests
+- [x] LSP process startup failures do not crash the app
+- [x] `didOpen` / `didChange` / `didClose` / `didSave` ordering is correct
+- [x] `didChange` uses full-document sync consistently in Phase 4
+- [x] Diagnostics are replaced, not accidentally accumulated forever, per file
+- [x] Closing a document clears its diagnostics from the Problems panel
+- [x] Active-file diagnostics are visibly rendered in the editor
+- [x] `Ctrl+Space` shows an observable completion UI result
+- [x] No `async void` was introduced outside Avalonia event handlers
+- [x] No static service access or service locator patterns were introduced
+- [x] `README.md` documents required LSP server installation/setup
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes
 - [ ] Manual Phase 4 smoke test passes
-- [ ] `docs/phases/phase-4/TOFIX.md` has no open items before Phase 5 starts
+- [x] `docs/phases/phase-4/TOFIX.md` has no open items before Phase 5 starts
 
 ---
 
@@ -580,7 +580,7 @@ under lock once initialized. Documents opened during the init window remain unsy
 with the existing no-back-fill limitation). The existing tests already await the peer's init TCS,
 so they are unaffected.
 
-**Status:** OPEN — fix as the first step of M3.
+**Status:** ✅ RESOLVED (2026-06-21) — `LSPManager.OnFolderOpened` now runs initialization on `Task.Run`. The UI thread is unblocked immediately; `_session` is assigned under lock only after `InitializeAsync` completes on the background thread.
 
 ### R8.2 Validate `csharp-ls` advertised sync kind vs the full-sync requirement *(priority: high, fix at M3 start)*
 
@@ -592,7 +592,7 @@ entirely even though Phase 4 always sends full-document text.
 likely relax the check to accept incremental-or-full (Phase 4 still sends full text either way),
 or document the actual behavior. Do not leave LSP silently disabled against the primary server.
 
-**Status:** OPEN — validate against the real server at M3.
+**Status:** ✅ RESOLVED (2026-06-21) — `LSPSession.IsFullDocumentSyncSupported` now accepts both full (1) and incremental (2) sync kinds. Phase 4 continues to send full-document text regardless of what the server advertises. Test `InitializeAsync_NonFullSync_FailsGracefully` updated to assert `initialized == true` for incremental servers.
 
 ### R8.3 `TimeSpan` registered directly in DI *(priority: low)*
 
@@ -603,4 +603,60 @@ fragile — any other future consumer needing a `TimeSpan` would collide.
 **Required fix:** Replace with a small options type (e.g., an `LspOptions` record carrying the
 debounce interval) or construct `LSPManager` via a factory lambda that passes the literal.
 
-**Status:** OPEN — low priority; clean up during M3 or later.
+**Status:** ✅ RESOLVED (2026-06-21) — replaced bare `TimeSpan` singleton with a factory lambda
+in `App.axaml.cs` that constructs `LSPManager` directly, passing `TimeSpan.FromMilliseconds(300)`
+as a literal. No `TimeSpan` is registered in the DI container.
+
+---
+
+## Round 9 — Post-M4/M5 Hardening Review (2026-06-21)
+
+Independent review of all Phase 4 source files after M3/M4/M5 completion.
+
+### R9.1 `_lspManager!` null-forgiving dereference without null guard *(priority: high, CRASH)*
+
+**Description:** `EditorViewModel.RequestCompletionAsync()` used `_lspManager!.RequestCompletionAsync(...)`
+with the null-forgiving operator. `_lspManager` is declared `LSPManager?` with a default of `null`
+(to allow test construction without an LSP manager). If `CompletionCommand` is invoked when
+`_lspManager` is null, this throws `NullReferenceException` instead of failing gracefully.
+
+**Required fix:** Add a null guard before the dereference and return a graceful "LSP not available" fallback.
+
+**Status:** ✅ RESOLVED (2026-06-21) — added `if (_lspManager == null)` guard in
+`RequestCompletionAsync`; shows "(LSP not available)" for 2 seconds then auto-hides.
+
+### R9.2 `Task.Delay(2000)` mutates `IsCompletionVisible` after `Dispose` *(priority: low)*
+
+**Description:** `EditorViewModel.RequestCompletionAsync()` had `await Task.Delay(2000)` followed
+unconditionally by `IsCompletionVisible = false`. If the ViewModel is disposed during the 2-second
+wait (e.g., app exit), this sets a property on a disposed object.
+
+**Required fix:** Check `_disposed` before setting `IsCompletionVisible` after the delay.
+
+**Status:** ✅ RESOLVED (2026-06-21) — both the LSP-unavailable and no-suggestions paths now check
+`if (!_disposed)` before resetting the property, and both await with `.ConfigureAwait(false)`.
+
+### R9.3 Indentation errors in `LSPManager.cs` and `LSPSession.cs` *(priority: low)*
+
+**Description:** Six locations had class-body-level declarations with 0-space indentation instead
+of the required 4-space indentation: constructor (`LSPManager`, line 43), two
+`CancelAllPendingChanges()` call sites (lines 91 and 151), the R8.1 comment block (line 165),
+`OnDocumentClosed` method (line 374), `SetStatus` method (line 601), and
+`diagnostics.Add(...)` call (line 460). `LSPSession.cs` had `IsFullDocumentSyncSupported` at
+line 285 with the same issue.
+
+**Required fix:** Restore correct 4-space class-body indentation at all seven locations.
+
+**Status:** ✅ RESOLVED (2026-06-21) — all seven misindented declarations corrected.
+
+### R9.4 `README.md` not updated for Phase 4 completion *(priority: medium)*
+
+**Description:** The Persistent Checks list requires `README.md` to document LSP server
+installation. The README still said "Current phase: Phase 3 (Syntax Highlighting)", the phase
+table showed Phases 2–4 as "In Progress/Planned", and the Prerequisites section had no mention
+of `csharp-ls`.
+
+**Required fix:** Update the README phase status and add `csharp-ls` installation instructions.
+
+**Status:** ✅ RESOLVED (2026-06-21) — updated README to reflect Phase 4 complete, corrected
+phase table (Phases 0–4 all ✅), and added `csharp-ls` install instructions with graceful-failure note.

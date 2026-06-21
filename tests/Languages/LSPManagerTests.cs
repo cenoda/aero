@@ -336,7 +336,8 @@ public class LSPManagerTests : IDisposable
             var diagnosticStore = manager.GetDiagnosticStoreForTest();
 
             // Send a publishDiagnostics notification from the fake peer.
-            var testUri = doc.Uri;
+            // doc.Uri is non-null because this is a file-backed document with a real path.
+            var testUri = doc.Uri!;
             await peer.SendPublishDiagnosticsAsync(testUri);
 
             // Wait for the diagnostic to be processed.

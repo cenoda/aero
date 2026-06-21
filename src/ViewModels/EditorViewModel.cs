@@ -459,12 +459,22 @@ public class EditorViewModel : ReactiveObject, IDisposable
         if (doc == null)
             return;
 
+        if (_lspManager == null)
+        {
+            CompletionText = "(LSP not available)";
+            IsCompletionVisible = true;
+            await Task.Delay(2000).ConfigureAwait(false);
+            if (!_disposed)
+                IsCompletionVisible = false;
+            return;
+        }
+
         var caret = doc.CaretOffset;
         var line = doc.InnerDocument.GetLineByOffset(caret);
         var lineOffset = line.Offset;
         var col = caret - lineOffset;
 
-        var completions = await _lspManager!.RequestCompletionAsync(doc, line.LineNumber - 1, col, CancellationToken.None).ConfigureAwait(false);
+        var completions = await _lspManager.RequestCompletionAsync(doc, line.LineNumber - 1, col, CancellationToken.None).ConfigureAwait(false);
 
         if (completions.Count > 0)
         {
@@ -475,9 +485,10 @@ public class EditorViewModel : ReactiveObject, IDisposable
         {
             CompletionText = "(no suggestions)";
             IsCompletionVisible = true;
-            // Auto-hide after 2 seconds
-            await Task.Delay(2000);
-            IsCompletionVisible = false;
+            // Auto-hide after 2 seconds; guard against setting property after Dispose.
+            await Task.Delay(2000).ConfigureAwait(false);
+            if (!_disposed)
+                IsCompletionVisible = false;
         }
     }
 }

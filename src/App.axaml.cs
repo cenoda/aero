@@ -79,9 +79,17 @@ public partial class App : Application
                 arguments: null,
                 statusSink: msg => bus.Publish(new StatusMessage(msg)));
         });
-        services.AddSingleton(typeof(TimeSpan), _ => TimeSpan.FromMilliseconds(300));
         services.AddSingleton<DiagnosticStore>();
-        services.AddSingleton<LSPManager>();
+        // R8.3: Use a factory lambda to pass the debounce interval directly rather than
+        // registering a bare TimeSpan singleton (which would collide with any future
+        // service that also needs a TimeSpan injected from DI).
+        services.AddSingleton<LSPManager>(provider => new LSPManager(
+            provider.GetRequiredService<IMessageBus>(),
+            provider.GetRequiredService<DocumentManager>(),
+            provider.GetRequiredService<ILanguageDetectionService>(),
+            provider.GetRequiredService<DiagnosticStore>(),
+            provider.GetRequiredService<Func<string, string?, LSPSession>>(),
+            TimeSpan.FromMilliseconds(300)));
 
         // Phase 2 — File Explorer & Project System
         // IgnoreList has a public IEnumerable<string> constructor used by tests.

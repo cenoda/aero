@@ -40,7 +40,7 @@ public sealed class LSPManager : IDisposable
     private Action<DocumentSaved>? _documentSavedHandler;
     private Action<DocumentTextChanged>? _documentTextChangedHandler;
 
-public LSPManager(
+    public LSPManager(
         IMessageBus bus,
         DocumentManager documentManager,
         ILanguageDetectionService languageDetection,
@@ -88,7 +88,7 @@ public LSPManager(
         if (_documentTextChangedHandler != null)
             _bus.Unsubscribe<DocumentTextChanged>(_documentTextChangedHandler);
 
-CancelAllPendingChanges();
+        CancelAllPendingChanges();
 
         // Unsubscribe from diagnostics on the session.
         if (_session != null)
@@ -147,8 +147,8 @@ CancelAllPendingChanges();
         {
             SetStatus($"LSP previous session cleanup warning: {ex.Message}");
         }
-        
-CancelAllPendingChanges();
+
+        CancelAllPendingChanges();
 
         LSPSession? newSession = null;
         try
@@ -162,7 +162,7 @@ CancelAllPendingChanges();
             return;
         }
 
-// R8.1: Run session initialization on a background task to avoid blocking
+        // R8.1: Run session initialization on a background task to avoid blocking
         // the UI thread. Documents opened during the init window will stay unsynced
         // (consistent with the no-back-fill limitation per Plan §5).
         _ = Task.Run(async () =>
@@ -371,7 +371,7 @@ CancelAllPendingChanges();
         }
     }
 
-private void OnDocumentClosed(DocumentClosed msg)
+    private void OnDocumentClosed(DocumentClosed msg)
     {
         if (_isDisposed)
             return;
@@ -457,7 +457,7 @@ private void OnDocumentClosed(DocumentClosed msg)
                     }
                 }
 
-diagnostics.Add(new Diagnostic(
+                diagnostics.Add(new Diagnostic(
                     (DiagnosticSeverity)severity,
                     uri,
                     new TextRange(startLine, startChar, endLine, endChar),
@@ -598,7 +598,7 @@ diagnostics.Add(new Diagnostic(
         return new Uri(Path.GetFullPath(path), UriKind.Absolute).AbsoluteUri;
     }
 
-private void SetStatus(string message)
+    private void SetStatus(string message)
     {
         _bus.Publish(new StatusMessage(message));
     }

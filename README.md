@@ -60,6 +60,13 @@ on top of a stable core instead of compensating for one.
 
 ### Prerequisites
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- **C# LSP server** (for diagnostics and completions — Phase 4 feature):
+  ```bash
+  dotnet tool install --global csharp-ls
+  ```
+  Verify installation with `csharp-ls --version`. Aero uses `csharp-ls` as the C# language server.
+  If `csharp-ls` is unavailable, the editor still works — LSP features are silently disabled
+  and a status-bar message is shown.
 
 ### Build & Run
 
@@ -93,15 +100,15 @@ The IDE is fully functional without agents. Agents are plugins.
 
 ## Development Status
 
-**Current phase: Phase 3 (Syntax Highlighting)**
+**Current phase: Phase 4 (LSP Integration) — Complete**
 
 | Phase | Status |
 |-------|--------|
 | 0 — Foundation | ✅ Complete |
 | 1 — Editor | ✅ Complete |
-| 2 — File Explorer | 🚧 In Progress |
-| 3 — Syntax Highlighting | ⬜ Planned |
-| 4 — LSP Integration | ⬜ Planned |
+| 2 — File Explorer | ✅ Complete |
+| 3 — Syntax Highlighting | ✅ Complete |
+| 4 — LSP Integration | ✅ Complete |
 | 5 — Output Panel | ⬜ Planned |
 | 6 — Build | ⬜ Planned |
 | 7 — Git | ⬜ Planned |
