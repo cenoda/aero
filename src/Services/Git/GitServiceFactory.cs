@@ -30,40 +30,49 @@ public sealed class GitServiceFactory : IDisposable
 
         var normalizedPath = Path.GetFullPath(workspacePath);
 
-        // Return cached instance if path matches
-        if (_cachedService != null && string.Equals(_cachedWorkspacePath, normalizedPath, StringComparison.Ordinal))
-        {
-            return _cachedService;
-        }
-
-        // Look for .git directory
-        var gitDir = Path.Combine(normalizedPath, ".git");
-        if (!Directory.Exists(gitDir))
-        {
-            // No repository at this path
-            return null;
-        }
-
-        // Dispose old service if workspace changed
-        if (_cachedService != null)
-        {
-            _cachedService.Dispose();
-            _cachedService = null;
-            _cachedWorkspacePath = null;
-        }
-
-        // Create new service (libgit2sharp implementation)
-        // R1.2 + R1.4 fix: catch service unavailability and return null gracefully
+        // Issue #4 fix: Use lock for thread-safe access to cached service
+        _lock.Wait();
         try
         {
-            _cachedService = new LibGit2SharpService(gitDir, normalizedPath);
-            _cachedWorkspacePath = normalizedPath;
-            return _cachedService;
+            // Return cached instance if path matches
+            if (_cachedService != null && string.Equals(_cachedWorkspacePath, normalizedPath, StringComparison.Ordinal))
+            {
+                return _cachedService;
+            }
+
+            // Look for .git directory
+            var gitDir = Path.Combine(normalizedPath, ".git");
+            if (!Directory.Exists(gitDir))
+            {
+                // No repository at this path
+                return null;
+            }
+
+            // Dispose old service if workspace changed
+            if (_cachedService != null)
+            {
+                _cachedService.Dispose();
+                _cachedService = null;
+                _cachedWorkspacePath = null;
+            }
+
+            // Create new service (libgit2sharp implementation)
+            // R1.2 + R1.4 fix: catch service unavailability and return null gracefully
+            try
+            {
+                _cachedService = new LibGit2SharpService(gitDir, normalizedPath);
+                _cachedWorkspacePath = normalizedPath;
+                return _cachedService;
+            }
+            catch (GitServiceUnavailableException)
+            {
+                // Repository couldn't be opened - not a valid git repo
+                return null;
+            }
         }
-        catch (GitServiceUnavailableException)
+        finally
         {
-            // Repository couldn't be opened - not a valid git repo
-            return null;
+            _lock.Release();
         }
     }
 

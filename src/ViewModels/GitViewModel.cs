@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -34,7 +35,8 @@ public class GitViewModel : ReactiveObject, IDisposable
     private bool _disposed;
 
     // R1.3: Debounce/cooldown for status refresh
-    private DateTime _lastRefresh = DateTime.MinValue;
+    // Issue #9 fix: Use Stopwatch for monotonic time (immune to system clock adjustments)
+    private readonly Stopwatch _refreshCooldownStopwatch = new();
     private readonly TimeSpan _refreshCooldown = TimeSpan.FromSeconds(1);
 
     [Reactive] public bool HasGitRepository { get; set; }
@@ -127,9 +129,8 @@ public class GitViewModel : ReactiveObject, IDisposable
         if (!string.Equals(msg.Path, _workspacePath, StringComparison.Ordinal))
             return;
 
-        // R1.3: Cooldown check - don't refresh too frequently
-        var now = DateTime.UtcNow;
-        if ((now - _lastRefresh) < _refreshCooldown)
+        // Issue #9 fix: Use Stopwatch for monotonic time check
+        if (_refreshCooldownStopwatch.IsRunning && _refreshCooldownStopwatch.Elapsed < _refreshCooldown)
             return;
 
         await RefreshStatusInternalAsync();
@@ -165,7 +166,8 @@ public class GitViewModel : ReactiveObject, IDisposable
 
         try
         {
-            _lastRefresh = DateTime.UtcNow;
+            // Issue #9 fix: Start monotonic stopwatch for cooldown tracking
+            _refreshCooldownStopwatch.Restart();
 
             // Get status asynchronously
             var repoInfo = await _gitService.GetRepositoryInfoAsync(token);
@@ -232,10 +234,14 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
         if (_gitService == null)
             return;
 
-        foreach (var file in UnstagedChanges.ToList())
+        // Issue #8 fix: Batch stage all files then refresh once
+        var files = UnstagedChanges.Select(f => f.FilePath).ToList();
+        foreach (var file in files)
         {
-            await StageFileAsync(file.FilePath);
+            await _gitService.StageAsync(file, CancellationToken.None);
         }
+        // Single refresh after all staging
+        await RefreshStatusInternalAsync();
     }
 
     /// <summary>Unstage all staged files.</summary>
@@ -244,10 +250,14 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
         if (_gitService == null)
             return;
 
-        foreach (var file in StagedChanges.ToList())
+        // Issue #8 fix: Batch unstage all files then refresh once
+        var files = StagedChanges.Select(f => f.FilePath).ToList();
+        foreach (var file in files)
         {
-            await UnstageFileAsync(file.FilePath);
+            await _gitService.UnstageAsync(file, CancellationToken.None);
         }
+        // Single refresh after all unstaging
+        await RefreshStatusInternalAsync();
     }
 
     /// <summary>Stage a single file.</summary>
@@ -347,7 +357,8 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
         if (_folderChangedHandler != null)
             _bus.Unsubscribe<FolderChanged>(_folderChangedHandler);
 
-        _factory.Dispose();
+        // Issue #5 fix: Don't dispose factory - it's a DI singleton, managed by the container
+        // The container will dispose it when the app exits
     }
 }
 

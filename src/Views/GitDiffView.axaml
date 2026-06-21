@@ -15,7 +15,7 @@
               <!-- Gutter (+/-/space) -->
               <TextBlock Grid.Column="0" Text="{Binding Gutter}" Width="20"
                         FontFamily="Consolas, Menlo, monospace" FontSize="12"
-                        FontWeight="Bold" Foreground="{Binding LineBackground}"/>
+                        FontWeight="Bold" Foreground="{Binding GutterForeground}"/>
               <!-- Old line number -->
               <TextBlock Grid.Column="1" Text="{Binding OldLineNumber}" Width="40"
                         FontFamily="Consolas, Menlo, monospace" FontSize="12"
@@ -28,8 +28,7 @@
                         HorizontalAlignment="Right" Margin="0,0,8,0"/>
               <!-- Content -->
               <TextBlock Grid.Column="3" Text="{Binding Content}"
-                        FontFamily="Consolas, Menlo, monospace" FontSize="12"
-                        FontWeight="Bold"/>
+                        FontFamily="Consolas, Menlo, monospace" FontSize="12"/>
             </Grid>
           </Border>
         </DataTemplate>

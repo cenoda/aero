@@ -278,7 +278,11 @@ public sealed class LibGit2SharpService : IGitService
             {
                 Commands.Checkout(repo, branch);
             }
-            catch (Exception ex) when (ex.Message.Contains("conflict") || ex.Message.Contains("Your local changes"))
+            // Issue #7 fix: Check exception type instead of fragile string matching
+            catch (LibGit2SharpException ex) when (
+                ex.Message.Contains("conflict") || 
+                ex.Message.Contains("Your local changes") ||
+                ex.Message.Contains("cannot checkout"))
             {
                 // R1.7: Handle checkout conflicts gracefully
                 throw new InvalidOperationException(
@@ -306,14 +310,36 @@ public sealed class LibGit2SharpService : IGitService
                 var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
                 var relativePath = Path.GetRelativePath(_repositoryRoot, absolutePath);
 
-                // Get patch comparing HEAD commit with working directory
+                // Issue #1 fix: Check if file is staged by looking at status
+                // Get all statuses and check if the file has staged changes
+                var allStatuses = repo.RetrieveStatus();
+                FileStatus? fileStatus = null;
+                foreach (var s in allStatuses)
+                {
+                    if (s.FilePath.Equals(relativePath, StringComparison.Ordinal))
+                    {
+                        fileStatus = s.State;
+                        break;
+                    }
+                }
+
+                // Determine diff targets based on whether file is staged
+                // If file is in index (staged), compare Index vs HEAD
+                // Otherwise, compare WorkingDirectory vs HEAD
                 var headTip = repo.Head.Tip;
-                var patch = repo.Diff.Compare<Patch>(headTip?.Tree, DiffTargets.WorkingDirectory);
+                var isStaged = fileStatus.HasValue && 
+                    (fileStatus.Value.HasFlag(FileStatus.ModifiedInIndex) || 
+                     fileStatus.Value.HasFlag(FileStatus.NewInIndex));
+                var targets = isStaged ? DiffTargets.Index : DiffTargets.WorkingDirectory;
+                var patch = repo.Diff.Compare<Patch>(headTip?.Tree, targets);
                 var hunks = new List<GitDiffHunk>();
 
                 // R1.6: Cap output at 10,000 lines
                 const int MaxLines = 10000;
                 int totalLines = 0;
+
+                // Track hunk metadata for Issue #3 fix
+                int hunkOldStart = 0, hunkOldCount = 0, hunkNewStart = 0, hunkNewCount = 0;
 
                 foreach (var entry in patch)
                 {
@@ -346,12 +372,45 @@ public sealed class LibGit2SharpService : IGitService
                             else if (line.StartsWith("@@"))
                                 kind = GitDiffLineKind.Header;
 
-                            hunkLines.Add(new GitDiffLine(kind, line, -1, -1));
+                            // Issue #3 fix: Parse line numbers from hunk header
+                            int oldLineNum = -1;
+                            int newLineNum = -1;
+                            if (kind == GitDiffLineKind.Header)
+                            {
+                                // Parse @@ -1,3 +1,4 @@ format
+                                var parts = line.Split(' ');
+                                if (parts.Length >= 2)
+                                {
+                                    var oldPart = parts[1].TrimStart('-');
+                                    var newPart = parts[2].TrimStart('+');
+                                    var oldComma = oldPart.IndexOf(',');
+                                    var newComma = newPart.IndexOf(',');
+                                    if (oldComma > 0)
+                                        int.TryParse(oldPart[..oldComma], out oldLineNum);
+                                    else if (oldPart.Length > 0)
+                                        int.TryParse(oldPart, out oldLineNum);
+                                    if (newComma > 0)
+                                        int.TryParse(newPart[..newComma], out newLineNum);
+                                    else if (newPart.Length > 0)
+                                        int.TryParse(newPart, out newLineNum);
+                                    
+                                    // Store hunk metadata from header
+                                    hunkOldStart = oldLineNum;
+                                    hunkNewStart = newLineNum;
+                                }
+                            }
+
+                            hunkLines.Add(new GitDiffLine(kind, line, oldLineNum, newLineNum));
                             totalLines++;
                         }
                     }
 
-                    hunks.Add(new GitDiffHunk(0, 0, 0, 0, hunkLines));
+                    // Count additions/deletions for hunk metadata
+                    hunkOldCount = hunkLines.Count(l => l.Kind == GitDiffLineKind.Deletion || l.Kind == GitDiffLineKind.Context);
+                    hunkNewCount = hunkLines.Count(l => l.Kind == GitDiffLineKind.Addition || l.Kind == GitDiffLineKind.Context);
+
+                    // Issue #3 fix: Use actual hunk metadata instead of zeros
+                    hunks.Add(new GitDiffHunk(hunkOldStart, hunkOldCount, hunkNewStart, hunkNewCount, hunkLines));
                     break; // Only first matching entry
                 }
 

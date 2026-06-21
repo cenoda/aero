@@ -23,6 +23,14 @@ public class GitDiffLineViewModel
             GitDiffLineKind.Header => "@@",
             _ => " "
         };
+        // Issue #2 fix: Use contrasting foreground colors for gutter text visibility
+        GutterForeground = kind switch
+        {
+            GitDiffLineKind.Addition => new SolidColorBrush(0xFF008000), // Dark green
+            GitDiffLineKind.Deletion => new SolidColorBrush(0xFF800000), // Dark red
+            GitDiffLineKind.Header => new SolidColorBrush(0xFF0000FF), // Dark blue
+            _ => new SolidColorBrush(0xFF808080) // Gray for context
+        };
         LineBackground = kind switch
         {
             GitDiffLineKind.Addition => new SolidColorBrush(0x2000FF00), // Green with alpha
@@ -44,6 +52,9 @@ public class GitDiffLineViewModel
 
     /// <summary>Gutter character (+, -, or space).</summary>
     public string Gutter { get; }
+
+    /// <summary>Foreground brush for gutter text (contrasting color for visibility).</summary>
+    public IBrush GutterForeground { get; }
 
     /// <summary>Old file line number (1-based), null if not applicable.</summary>
     public int? OldLineNumber { get; }

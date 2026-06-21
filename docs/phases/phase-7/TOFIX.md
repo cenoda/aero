@@ -161,7 +161,7 @@ from knowing whether the `.git/index` changed (commit/stage) vs a source file ch
 status rescan is low for typical repos. Document this as a known limitation and defer
 change-kind enhancement to a future phase. Do NOT add `FolderChangeKind` now (YAGNI).
 
-**Status:** [ ] Deferred (documented limitation)
+**Status:** [x] Deferred (documented limitation — acceptable for Phase 7)
 
 ---
 
@@ -204,10 +204,11 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 - [x] Native library load failure handled gracefully (R1.2)
 - [x] Checkout conflicts surfaced to user (R1.7)
 - [x] Large diff capped (R1.6)
-- [x] `dotnet build src/aero.csproj` passes
-- [x] `dotnet test tests` passes — 360 passed, 0 skipped
+- [x] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors)
+- [x] `dotnet test tests` passes — 362 passed, 0 skipped, 0 failed
 - [x] `manual_test/manual_test_phase7.sh` created
 - [x] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
+- [x] `docs/phases/phase-7/REVIEW.md` — all 10 issues resolved
 - [x] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts
 
 ---

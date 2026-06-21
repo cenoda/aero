@@ -195,6 +195,53 @@ public class LibGit2SharpServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFileDiffAsync_UnstagedFile_ReturnsDiff()
+    {
+        // Arrange: create a repo with one commit
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test\nLine 2");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        // Act: modify but don't stage
+        CreateFile("README.md", "# Updated\nLine 2");
+
+        using var sut = CreateService();
+        var diff = await sut.GetFileDiffAsync("README.md", CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(diff);
+        Assert.NotEmpty(diff.Hunks);
+    }
+
+    [Fact]
+    public async Task GetFileDiffAsync_HunkMetadata_ParsedCorrectly()
+    {
+        // Arrange: create a repo with one commit
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("test.cs", "line1\nline2\nline3\nline4\nline5");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        // Act: modify multiple lines
+        CreateFile("test.cs", "line1\nmodified\nline3\nline4\nline5");
+        
+        using var sut = CreateService();
+        var diff = await sut.GetFileDiffAsync("test.cs", CancellationToken.None);
+
+        // Assert: hunk metadata should not be zeros
+        Assert.NotNull(diff);
+        Assert.NotEmpty(diff.Hunks);
+        var hunk = diff.Hunks[0];
+        Assert.NotEqual(0, hunk.OldStart);
+        Assert.NotEqual(0, hunk.NewStart);
+    }
+
+    [Fact]
     public void Constructor_InvalidPath_ThrowsGitServiceUnavailableException()
     {
         // Arrange & Act
