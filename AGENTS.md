@@ -140,7 +140,60 @@ src/Agent/Adapters/CliAdapter.cs →  namespace Aero.Agent.Adapters
 
 ---
 
-## 4. Dependency Rules
+## 4. Abstraction-First Design (IMPORTANT)
+
+**Aero is a general-purpose IDE, not .NET-specific.**
+
+Every feature must be designed with abstraction in mind from the start.
+
+### Why Abstraction?
+
+| Without Abstraction | With Abstraction |
+|-------------------|-----------------|
+| IntelliJ (one language = one product) | VS Code (one editor = many languages) |
+| Hard to add new languages | Easy to add new languages |
+| "Turn off" not possible | "Turn off unused features" |
+
+### Abstraction Rules
+
+1. **Interface first** — Define `I{Feature}Service` before implementation
+2. **Factory for detection** — Auto-detect project type and create service
+3. **Extensible** — Add new implementations without rewriting core
+4. **Disable unused** — Support "turn off unused features" in Phase 8 settings
+
+### Examples
+
+```csharp
+// ❌ Bad: .NET only
+class BuildService
+{
+    Task BuildAsync() => Process.Start("dotnet build");
+}
+
+// ✅ Good: Abstraction-first
+interface IBuildService
+{
+    string Name { get; }
+    string ProjectFilePattern { get; }
+    Task<BuildResult> BuildAsync(BuildOptions options, CancellationToken ct);
+}
+
+class DotNetBuildService : IBuildService { ... }  // Phase 6
+class NpmBuildService : IBuildService { ... }      // Future
+class CargoBuildService : IBuildService { ... }    // Future
+```
+
+### When to Apply
+
+Apply abstraction to:
+- **Build System** (Phase 6) — ✅ Already abstracted
+- **Syntax Highlighting** (Phase 3) — Future: tree-sitter, LSP grammar
+- **Git** (Phase 7) — Future: LibGit2Sharp vs git CLI
+- **Terminal** (Phase 9.5) — Future: PtyNet, vt100
+
+---
+
+## 5. Dependency Rules
 
 ### Library-First Principle
 

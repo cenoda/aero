@@ -1,22 +1,33 @@
 # Aero IDE
 
-**A fourth-generation IDE built from scratch for agent-native software development.**
+**A general-purpose IDE built from scratch with abstraction-first design.**
 
 **Aero** stands for **Agent Environment for Rapid Orchestration**.
 
-Aero is built from scratch in C# with Avalonia. Think of it as an IDE designed for
-the next generation of software development: a strong standalone editor first, with
+Aero is built from scratch in C# with Avalonia. Think of it as VS Code but built from
+scratch — a strong standalone editor that supports multiple languages, with
 multi-agent orchestration designed into the architecture rather than bolted on later.
 
-The IDE is being built to work as a fully functional product on its own. The agent
-layer comes after the editor foundation is solid, so orchestration features can sit
-on top of a stable core instead of compensating for one.
+The IDE is designed to be language-agnostic from the start. Features are abstracted
+so new languages can be added without rewriting core logic. Users can "turn off" unused
+features in settings.
+
+---
+
+## Vision
+
+| Traditional IDE | Aero |
+|----------------|------|
+| IntelliJ (one language = one product) | One editor = many languages |
+| Install plugins for each language | Built-in multi-language support |
+| Can't turn off unused features | Turn off unused features in settings |
+| .NET-specific or JS-specific | Language-agnostic core |
 
 ---
 
 ## Features
 
-### ✅ What Works Today (Phase 4 Complete)
+### ✅ What Works Today (Phase 5 Complete)
 - Tabbed text editor with AvaloniaEdit (syntax-aware, line numbers)
 - File open/save via Ctrl+O / Ctrl+S and system dialogs
 - Undo/Redo (full AvaloniaEdit undo stack)
@@ -28,9 +39,12 @@ on top of a stable core instead of compensating for one.
 - LSP integration for diagnostics and completions (Phase 4)
 - Problems panel with diagnostics list
 - Ctrl+Space for code completion
+- Output panel with process runner (Phase 5)
 
 ### 🚧 In Progress
-- Build system, Git integration, dockable panels, and more
+- Phase 5.5: Refactoring Pass (abstraction-first design)
+- Phase 6: Multi-language Build System
+- Phase 7: Git Integration
 
 ### 🧠 The Agent Layer (Coming After Phase 8)
 - Multiple AI agents running side-by-side
@@ -53,6 +67,26 @@ on top of a stable core instead of compensating for one.
 | Text Editor | [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit) |
 | DI | `Microsoft.Extensions.DependencyInjection` |
 | Event Bus | Custom `MessageBus` (record-based) |
+
+### Abstraction-First Design
+
+Aero uses interface-first design for extensibility:
+
+```csharp
+// Build system example
+interface IBuildService
+{
+    string Name { get; }
+    string ProjectFilePattern { get; }
+    Task<BuildResult> BuildAsync(BuildOptions options, CancellationToken ct);
+}
+
+class DotNetBuildService : IBuildService { ... }  // .NET
+class NpmBuildService : IBuildService { ... }    // Future: Node.js
+class CargoBuildService : IBuildService { ... } // Future: Rust
+```
+
+This pattern applies to all features: syntax highlighting, LSP, Git, etc.
 
 ---
 
@@ -100,7 +134,7 @@ The IDE is fully functional without agents. Agents are plugins.
 
 ## Development Status
 
-**Current phase: Phase 4 (LSP Integration) — Complete**
+**Current phase: Phase 5 (Output Panel) — Complete**
 
 | Phase | Status |
 |-------|--------|
@@ -110,8 +144,9 @@ The IDE is fully functional without agents. Agents are plugins.
 | 3 — Syntax Highlighting | ✅ Complete |
 | 4 — LSP Integration | ✅ Complete |
 | 5 — Output Panel | ✅ Complete |
-| 6 — Build | ⬜ Planned |
-| 7 — Git | ⬜ Planned |
+| 5.5 — Refactoring Pass | ⬜ In Progress |
+| 6 — Multi-language Build | ⬜ Planned |
+| 7 — Git Integration | ⬜ Planned |
 | 8 — UI Polish | ⬜ Planned |
 | 9 — Advanced Features | ⬜ Planned |
 | 10 — Plugin System | ⬜ Planned |

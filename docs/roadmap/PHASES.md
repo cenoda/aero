@@ -98,10 +98,24 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] 실행 중 취소 버튼 (CancellationToken)
 - [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
-## Phase 6: Build & Output
-- [ ] **BuildService** — run `dotnet build` and capture output
-- [ ] **Output panel** — stream stdout/stderr
-- [ ] Parse MSBuild error format → populate Problems panel
+## Phase 5.5: Refactoring Pass
+> Clean up technical debt before continuing. No new features — only refactoring and documentation fixes.
+
+- [ ] Apply abstraction-first design to all completed phases (0-5)
+- [ ] Verify all services follow interface-first pattern
+- [ ] Update documentation to reflect multi-language IDE vision
+- [ ] Add ISyntaxHighlighterService abstraction (Phase 3)
+- [ ] Review I*Service interfaces for consistency
+
+## Phase 6: Build & Output (Abstraction-First)
+> Multi-language build system support. Interface-first design for extensibility.
+
+- [ ] **IBuildService interface** — abstraction with BuildCommand, ProjectFilePattern
+- [ ] **BuildOptions / BuildResult models** — configuration and output
+- [ ] **DotNetBuildService** — implements IBuildService for .NET
+- [ ] **BuildServiceFactory** — auto-detect project type and create service
+- [ ] **Output panel** — stream stdout/stderr (reuses Phase 5)
+- [ ] Parse build error format → populate Problems panel
 - [ ] Ctrl+Shift+B to build
 - [ ] Click error in Problems → jump to file/line
 
