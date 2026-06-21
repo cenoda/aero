@@ -19,7 +19,7 @@ namespace Aero.Languages;
 public sealed class LSPManager : IDisposable
 {
     private readonly IMessageBus _bus;
-    private readonly DocumentManager _documentManager;
+    private readonly IDocumentManagementService _documentManager;
     private readonly ILanguageDetectionService _languageDetection;
     private readonly DiagnosticStore _diagnosticStore;
     private readonly Func<string, string?, LSPSession> _sessionFactory;
@@ -42,7 +42,7 @@ public sealed class LSPManager : IDisposable
 
     public LSPManager(
         IMessageBus bus,
-        DocumentManager documentManager,
+        IDocumentManagementService documentManager,
         ILanguageDetectionService languageDetection,
         DiagnosticStore diagnosticStore,
         Func<string, string?, LSPSession> sessionFactory,

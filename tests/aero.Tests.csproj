@@ -35,6 +35,7 @@
     <Compile Include="../src/Models/Editor/TextDocument.cs" />
     <Compile Include="../src/Models/Project/FileSystemEntry.cs" />
     <Compile Include="../src/Models/Project/ProjectInfo.cs" />
+    <Compile Include="../src/Services/IDocumentManagementService.cs" />
     <Compile Include="../src/Services/DocumentManager.cs" />
     <Compile Include="../src/Services/IIgnoreList.cs" />
     <Compile Include="../src/Services/IgnoreList.cs" />

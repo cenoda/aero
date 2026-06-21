@@ -29,7 +29,7 @@ public interface IDocumentManagementService
 }
 ```
 
-**Status:** Open
+**Status:** ✅ Fixed — `IDocumentManagementService` created with 1:1 method signatures, `DocumentManager` implements it, all consumers updated to use the interface.
 
 ---
 
@@ -52,7 +52,7 @@ services.AddSingleton<DocumentManager>(); // if still needed by existing code
 
 Or refactor consumers to use the interface.
 
-**Status:** Open
+**Status:** ✅ Fixed — Both `IDocumentManagementService` and `DocumentManager` registered in DI. All consumers (`EditorViewModel`, `ShellViewModel`, `FileExplorerViewModel`, `LSPManager`) updated to use `IDocumentManagementService` interface.
 
 ---
 
@@ -200,7 +200,7 @@ public class StubProcessRunner { ... }
 public class StubProcessRunner : IProcessRunnerService { ... }
 ```
 
-**Status:** Open
+**Status:** ✅ Fixed — All test files updated to use `IDocumentManagementService` type. `tests/aero.Tests.csproj` updated to include the new interface file. All 301/301 tests pass.
 
 ---
 

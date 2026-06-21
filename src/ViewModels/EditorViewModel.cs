@@ -37,7 +37,7 @@ public record FindReplaceArgs(
 /// </summary>
 public class EditorViewModel : ReactiveObject, IDisposable
 {
-    private readonly DocumentManager _documentManager;
+    private readonly IDocumentManagementService _documentManager;
     private readonly IMessageBus _bus;
     private readonly ILanguageDetectionService _languageDetection;
     private readonly DiagnosticStore _diagnosticStore;
@@ -82,7 +82,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> CompletionCommand { get; }
 
     public EditorViewModel(
-        DocumentManager documentManager,
+        IDocumentManagementService documentManager,
         IMessageBus bus,
         FindReplaceViewModel findReplace,
         ILanguageDetectionService languageDetection,

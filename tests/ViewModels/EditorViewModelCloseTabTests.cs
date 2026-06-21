@@ -17,7 +17,7 @@ namespace Aero.Tests.ViewModels;
 /// </summary>
 public class EditorViewModelCloseTabTests
 {
-    private static (EditorViewModel vm, StubMessageBus bus, DocumentManager dm) Create()
+    private static (EditorViewModel vm, StubMessageBus bus, IDocumentManagementService dm) Create()
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();

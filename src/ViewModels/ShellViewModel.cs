@@ -23,7 +23,7 @@ namespace Aero.ViewModels;
 public class ShellViewModel : ReactiveObject, IDisposable
 {
     private readonly IMessageBus _bus;
-    private readonly DocumentManager _documentManager;
+    private readonly IDocumentManagementService _documentManager;
     private readonly EditorViewModel _editorViewModel;
     private readonly FileExplorerViewModel _fileExplorerViewModel;
     private readonly ProblemsViewModel _problemsViewModel;
@@ -70,7 +70,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
     public ShellViewModel(
         IMessageBus bus,
-        DocumentManager documentManager,
+        IDocumentManagementService documentManager,
         EditorViewModel editorViewModel,
         FileExplorerViewModel fileExplorerViewModel,
         ProblemsViewModel problemsViewModel,

@@ -69,6 +69,7 @@ public partial class App : Application
 
         // Services
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
+        services.AddSingleton<IDocumentManagementService, DocumentManager>();
         services.AddSingleton<DocumentManager>();
 
         // Phase 4 — LSP integration

@@ -352,7 +352,7 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-private static (LSPManager Manager, StubMessageBus Bus, DocumentManager DocumentManager, FakeSessionFactory Factory) CreateManager(
+private static (LSPManager Manager, StubMessageBus Bus, IDocumentManagementService DocumentManager, FakeSessionFactory Factory) CreateManager(
         TimeSpan? debounce = null)
     {
         var bus = new StubMessageBus();

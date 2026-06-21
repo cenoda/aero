@@ -26,7 +26,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 {
     private readonly IFileSystemService _fileSystem;
     private readonly IProjectLoader _projectLoader;
-    private readonly DocumentManager _documentManager;
+    private readonly IDocumentManagementService _documentManager;
     private readonly IFileSystemWatcherService _watcher;
     private readonly IMessageBus _bus;
 
@@ -71,7 +71,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     public FileExplorerViewModel(
         IFileSystemService fileSystem,
         IProjectLoader projectLoader,
-        DocumentManager documentManager,
+        IDocumentManagementService documentManager,
         IFileSystemWatcherService watcher,
         IMessageBus bus)
     {

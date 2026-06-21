@@ -13,7 +13,7 @@ namespace Aero.Services;
 /// Manages open documents in the editor.
 /// Handles open, close, save operations and tracks active document.
 /// </summary>
-public class DocumentManager
+public class DocumentManager : IDocumentManagementService
 {
     private readonly IMessageBus _bus;
     private readonly ILanguageDetectionService _languageDetection;

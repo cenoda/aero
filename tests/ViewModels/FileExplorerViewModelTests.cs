@@ -24,7 +24,7 @@ public class FileExplorerViewModelTests : IDisposable
     private readonly MockFileSystemService _fs;
     private readonly MockFileSystemWatcherService _watcher;
     private readonly StubProjectLoader _projects;
-    private readonly DocumentManager _documentManager;
+    private readonly IDocumentManagementService _documentManager;
     private readonly FileExplorerViewModel _vm;
 
     public FileExplorerViewModelTests()

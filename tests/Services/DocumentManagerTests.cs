@@ -17,7 +17,7 @@ public class DocumentManagerTests
     // Helpers
     // -----------------------------------------------------------------------
 
-    private static (DocumentManager dm, StubMessageBus bus) Create()
+    private static (IDocumentManagementService dm, StubMessageBus bus) Create()
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();

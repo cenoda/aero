@@ -13,7 +13,7 @@ namespace Aero.Tests.ViewModels;
 
 public class EditorViewModelLanguageTests
 {
-    private static (EditorViewModel vm, StubMessageBus bus, DocumentManager dm, ILanguageDetectionService detector) Create()
+    private static (EditorViewModel vm, StubMessageBus bus, IDocumentManagementService dm, ILanguageDetectionService detector) Create()
     {
         var bus = new StubMessageBus();
         var detector = new LanguageDetectionService();

@@ -19,7 +19,7 @@ namespace Aero.Tests.ViewModels;
 /// </summary>
 public class EditorViewModelDiagnosticsTests
 {
-    private static (EditorViewModel vm, StubMessageBus bus, DiagnosticStore store) Create()
+    private static (EditorViewModel vm, StubMessageBus bus, IDocumentManagementService dm, DiagnosticStore store) Create()
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();
@@ -27,13 +27,13 @@ public class EditorViewModelDiagnosticsTests
         var findReplace = new FindReplaceViewModel();
         var store = new DiagnosticStore(bus);
         var vm = new EditorViewModel(dm, bus, findReplace, languageDetection, store);
-        return (vm, bus, store);
+        return (vm, bus, dm, store);
     }
 
     [Fact]
     public void DiagnosticStore_Property_ReturnsSameInstanceAsInjected()
     {
-        var (vm, _, store) = Create();
+        var (vm, _, _, store) = Create();
 
         Assert.Same(store, vm.DiagnosticStore);
     }
@@ -41,7 +41,7 @@ public class EditorViewModelDiagnosticsTests
     [Fact]
     public void DiagnosticsChanged_RaisedWhen_DiagnosticsUpdated_Published()
     {
-        var (vm, bus, store) = Create();
+        var (vm, bus, _, store) = Create();
 
         var raisedCount = 0;
         vm.DiagnosticsChanged += () => raisedCount++;
@@ -64,7 +64,7 @@ public class EditorViewModelDiagnosticsTests
     [Fact]
     public void DiagnosticsChanged_RaisedForEachUpdate()
     {
-        var (vm, bus, store) = Create();
+        var (vm, bus, _, store) = Create();
 
         var raisedCount = 0;
         vm.DiagnosticsChanged += () => raisedCount++;
@@ -84,7 +84,7 @@ public class EditorViewModelDiagnosticsTests
     [Fact]
     public void DiagnosticsChanged_NotRaisedAfterDispose()
     {
-        var (vm, bus, store) = Create();
+        var (vm, bus, _, store) = Create();
 
         var raisedCount = 0;
         vm.DiagnosticsChanged += () => raisedCount++;
@@ -100,7 +100,7 @@ public class EditorViewModelDiagnosticsTests
     [Fact]
     public void DiagnosticsChanged_NotRaisedWhenDiagnosticsUnchanged()
     {
-        var (vm, bus, store) = Create();
+        var (vm, bus, _, store) = Create();
 
         var raisedCount = 0;
         vm.DiagnosticsChanged += () => raisedCount++;
