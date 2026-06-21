@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Aero.Languages;
+using Aero.Models.Git;
 
 namespace Aero.Core;
 
@@ -126,8 +127,13 @@ public record ConfirmDelete(
 /// <summary>
 /// Git status has changed (files staged/unstaged, branch, etc.).
 /// Published when a folder is opened or changed, after Git status refresh.
+/// Includes staged and unstaged files so subscribers don't need to call back.
 /// </summary>
-public record GitStatusChanged(string WorkspacePath);
+public record GitStatusChanged(
+    string WorkspacePath,
+    IReadOnlyList<GitFileStatus> StagedFiles,
+    IReadOnlyList<GitFileStatus> UnstagedFiles,
+    string CurrentBranch);
 
 /// <summary>
 /// The current branch changed (checkout, etc.).

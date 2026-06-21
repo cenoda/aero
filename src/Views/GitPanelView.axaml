@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="https://github.com/avaloniaui/avaloniaui"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Aero.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="400"
+             x:Class="Aero.Views.GitPanelView"
+             x:DataType="vm:GitViewModel">
+  <Grid RowDefinitions="Auto,*,Auto">
+    
+    <!-- Header -->
+    <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}" Padding="8">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="Git" FontWeight="Bold" FontSize="14"/>
+        <TextBlock Text=" - " Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+        <TextBlock Text="{Binding CurrentBranch}" FontSize="12"
+                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Staged / Unstaged Changes -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="4">
+      
+      <!-- Staged Changes (Left) -->
+      <Border Grid.Column="0" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
+            <TextBlock Text="Staged" FontWeight="SemiBold" FontSize="11"/>
+          </Border>
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding StagedChanges}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:GitFileStatusViewModel">
+                  <StackPanel Orientation="Horizontal" Margin="4,2">
+                    <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Green"/>
+                    <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- Unstaged Changes (Right) -->
+      <Border Grid.Column="1" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
+            <TextBlock Text="Unstaged" FontWeight="SemiBold" FontSize="11"/>
+          </Border>
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding UnstagedChanges}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:GitFileStatusViewModel">
+                  <StackPanel Orientation="Horizontal" Margin="4,2">
+                    <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Orange"/>
+                    <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Commit Box -->
+    <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}" Padding="8">
+      <StackPanel>
+        <TextBox x:Name="CommitMessageBox"
+                Text="{Binding CommitMessage, Mode=TwoWay}"
+                Watermark="Commit message..."
+                AcceptsReturn="False"
+                Height="32"/>
+        <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+          <Button Grid.Column="0" Content="Commit" Command="{Binding CommitCommand}"
+                  HorizontalAlignment="Stretch" Margin="0,0,4,0"/>
+          <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshCommand}"/>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+  </Grid>
+</UserControl>

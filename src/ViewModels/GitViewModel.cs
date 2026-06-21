@@ -12,6 +12,8 @@ using Aero.Services.Git;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using IMessageBus = Aero.Core.IMessageBus;
+using GitFileStatus = Aero.Models.Git.GitFileStatus;
+using GitFileStatusKind = Aero.Models.Git.GitFileStatusKind;
 
 namespace Aero.ViewModels;
 
@@ -188,7 +190,14 @@ public class GitViewModel : ReactiveObject, IDisposable
                 Branches.Add(branch);
             }
 
-            StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
+StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
+
+            // Publish GitStatusChanged
+            var stagedFiles = StagedChanges.Select(s => new GitFileStatus(
+                s.FilePath, null, GitFileStatusKind.Staged, s.Status)).ToList();
+            var unstagedFiles = UnstagedChanges.Select(s => new GitFileStatus(
+                s.FilePath, null, s.StagingStatus, s.Status)).ToList();
+            _bus.Publish(new GitStatusChanged(_workspacePath!, stagedFiles, unstagedFiles, CurrentBranch));
         }
         catch (OperationCanceledException)
         {

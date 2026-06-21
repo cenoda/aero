@@ -16,6 +16,8 @@ using Avalonia.Platform.Storage;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using IMessageBus = Aero.Core.IMessageBus;
+using GitStatusChanged = Aero.Core.GitStatusChanged;
+using GitBranchChanged = Aero.Core.GitBranchChanged;
 
 namespace Aero.ViewModels;
 
@@ -33,6 +35,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly OutputViewModel _outputViewModel;
     private readonly BuildServiceFactory _buildServiceFactory;
     private readonly DiagnosticStore _diagnosticStore;
+    private readonly GitViewModel _gitViewModel;
     private IBuildService? _buildService;
     private CancellationTokenSource? _buildCts;
 
@@ -41,6 +44,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private Action<StatusMessage>? _statusMessageHandler;
     private Action<ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocumentSaved>? _documentSavedHandler;
+    private Action<GitStatusChanged>? _gitStatusChangedHandler;
+    private Action<GitBranchChanged>? _gitBranchChangedHandler;
     private bool _disposed;
     private string? _workspacePath;
 
@@ -55,6 +60,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public FileExplorerViewModel FileExplorerViewModel => _fileExplorerViewModel;
     public ProblemsViewModel ProblemsViewModel => _problemsViewModel;
     public OutputViewModel OutputViewModel => _outputViewModel;
+    public GitViewModel GitViewModel => _gitViewModel;
 
     // Commands
     public ReactiveCommand<Unit, Unit> NewFileCommand { get; }
@@ -77,7 +83,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
     public ReactiveCommand<Unit, Unit> BuildCommand { get; }
 
-    public ShellViewModel(
+public ShellViewModel(
         IMessageBus bus,
         IDocumentManagementService documentManager,
         EditorViewModel editorViewModel,
@@ -85,7 +91,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
         ProblemsViewModel problemsViewModel,
         OutputViewModel outputViewModel,
         BuildServiceFactory buildServiceFactory,
-        DiagnosticStore diagnosticStore)
+        DiagnosticStore diagnosticStore,
+        GitViewModel gitViewModel)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
@@ -95,6 +102,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         _outputViewModel = outputViewModel ?? throw new ArgumentNullException(nameof(outputViewModel));
         _buildServiceFactory = buildServiceFactory ?? throw new ArgumentNullException(nameof(buildServiceFactory));
         _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
+        _gitViewModel = gitViewModel ?? throw new ArgumentNullException(nameof(gitViewModel));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -142,8 +150,26 @@ public class ShellViewModel : ReactiveObject, IDisposable
         _bus.Subscribe(_statusMessageHandler);
         _activeDocumentChangedHandler = OnActiveDocumentChanged;
         _bus.Subscribe(_activeDocumentChangedHandler);
-        _documentSavedHandler = OnDocumentSaved;
+_documentSavedHandler = OnDocumentSaved;
         _bus.Subscribe(_documentSavedHandler);
+
+        // Subscribe to Git messages (Phase 7)
+        _gitStatusChangedHandler = OnGitStatusChanged;
+        _bus.Subscribe(_gitStatusChangedHandler);
+        _gitBranchChangedHandler = OnGitBranchChanged;
+        _bus.Subscribe(_gitBranchChangedHandler);
+    }
+
+    private void OnGitStatusChanged(GitStatusChanged msg)
+    {
+        // Update local state if needed — GitViewModel already has this data
+        // This handler exists so Shell can react to status changes if needed
+    }
+
+    private void OnGitBranchChanged(GitBranchChanged msg)
+    {
+        // Update branch display in status bar
+        StatusText = $"Switched to {msg.BranchName}";
     }
 
     private void NewFile()
@@ -610,9 +636,14 @@ public class ShellViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<StatusMessage>(_statusMessageHandler);
         if (_activeDocumentChangedHandler != null)
             _bus.Unsubscribe<ActiveDocumentChanged>(_activeDocumentChangedHandler);
-        if (_documentSavedHandler != null)
+if (_documentSavedHandler != null)
             _bus.Unsubscribe<DocumentSaved>(_documentSavedHandler);
+        if (_gitStatusChangedHandler != null)
+            _bus.Unsubscribe<GitStatusChanged>(_gitStatusChangedHandler);
+        if (_gitBranchChangedHandler != null)
+            _bus.Unsubscribe<GitBranchChanged>(_gitBranchChangedHandler);
 
         _outputViewModel.Dispose();
+        _gitViewModel.Dispose();
     }
 }
