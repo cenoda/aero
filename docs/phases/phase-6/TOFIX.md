@@ -319,7 +319,9 @@ the panel unbounded.
 - have `BuildAsync` receive a callback that marshals via the dispatcher pattern.
 Do **not** mutate `_outputViewModel.Lines` directly from the build callback.
 
-**Status:** ☐ Open
+**Status:** ✅ RESOLVED (2026-06-21) — `OutputViewModel.AppendLine` is now `public` (dispatcher
+guard + `MaxLines` cap intact), and `BuildAsync` passes `_outputViewModel.AppendLine` as the `onLine`
+callback. No direct `Lines.Add` from the background build callback. Build clean, 317/317 tests pass.
 
 ### R2.13 Build no longer integrates with `OutputViewModel` running-state *(priority: low)*
 
