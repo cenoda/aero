@@ -13,6 +13,7 @@ using TextMateSharp.Grammars;
 using Aero.Core;
 using Aero.Languages;
 using Aero.ViewModels;
+using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.Views;
 
@@ -23,6 +24,9 @@ public partial class EditorView : UserControl
     private Action<FindReplaceArgs>? _findReplaceHandler;
     private CompositeDisposable? _reactiveSubscriptions;
     private EditorDiagnosticRenderer? _diagnosticRenderer;
+    private DiagnosticStore? _diagnosticStore;
+    private Action<DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
+    private IMessageBus? _bus;
 
     // One shared TextMate registry/theme for the editor panel.
     private readonly RegistryOptions _registryOptions = new(ThemeName.DarkPlus);
@@ -50,6 +54,13 @@ public partial class EditorView : UserControl
         _languageIdSubscription?.Dispose();
         _languageIdSubscription = null;
 
+        // Unsubscribe from DiagnosticsUpdated
+        if (_bus != null && _diagnosticsUpdatedHandler != null)
+        {
+            _bus.Unsubscribe<DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
+            _diagnosticsUpdatedHandler = null;
+        }
+
         // Unsubscribe from previous ViewModel's FindReplaceRequested to prevent leak
         if (DataContext is EditorViewModel previousVm && _findReplaceHandler != null)
         {
@@ -69,6 +80,29 @@ public partial class EditorView : UserControl
             // Execute find/replace operations against the live editor control
             _findReplaceHandler = OnFindReplaceRequested;
             vm.FindReplaceRequested += _findReplaceHandler;
+
+            // Subscribe to DiagnosticStoreReady to receive the store reference and MessageBus.
+            // This is AGENTS-compliant: no reflection, no service locator.
+            Action<DiagnosticStoreReady>? storeReadyHandler = null;
+            storeReadyHandler = msg =>
+            {
+                _diagnosticStore = msg.Store;
+                _bus = msg.Bus;
+                _bus.Unsubscribe<DiagnosticStoreReady>(storeReadyHandler!);
+                // Subscribe to DiagnosticsUpdated once we have the bus.
+                _diagnosticsUpdatedHandler = OnDiagnosticsUpdated;
+                _bus.Subscribe(_diagnosticsUpdatedHandler);
+            };
+            _bus?.Subscribe(storeReadyHandler);
+        }
+    }
+
+    private void OnDiagnosticsUpdated(DiagnosticsUpdated msg)
+    {
+        // Trigger a redraw on the active editor to show updated diagnostics.
+        if (_activeEditor != null)
+        {
+            _activeEditor.TextArea.TextView.Redraw();
         }
     }
 
@@ -119,63 +153,95 @@ public partial class EditorView : UserControl
                 _activeEditor.TextChanged += OnTextChanged;
                 _activeEditor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
 
-                // Register diagnostic renderer for the editor.
-                RegisterDiagnosticRenderer(newTab.Document);
+                // Ensure TextMate is installed once per editor, then apply the grammar.
+                if (!_textMateInstallations.TryGetValue(_activeEditor, out var installation))
+                {
+                    installation = _activeEditor.InstallTextMate(_registryOptions);
+                    _textMateInstallations[_activeEditor] = installation;
+                    _activeEditor.Unloaded += OnEditorUnloaded;
+                }
+
+                ApplyGrammar(installation, newTab.LanguageId);
+
+                // Re-apply the grammar if the tab's LanguageId changes (e.g. Save As).
+                _languageIdSubscription = newTab.WhenAnyValue(x => x.LanguageId)
+                    .Subscribe(id => ApplyGrammar(installation, id));
+
+                // Add diagnostic renderer to each editor when it becomes active.
+                RegisterDiagnosticRendererForEditor(newTab.Document);
             }
         }, DispatcherPriority.Loaded);
     }
 
-    private void RegisterDiagnosticRenderer(Models.Editor.TextDocument? doc)
+    /// <summary>
+    /// Applies a grammar based on the language id.
+    /// </summary>
+    private void ApplyGrammar(TextMate.Installation installation, string languageId)
     {
-        // Only create once per view.
-        if (_diagnosticRenderer != null)
-            return;
-
-        // Get DiagnosticStore from DI if available.
-        var store = TryResolveDiagnosticStore();
-        if (store == null)
-            return;
-
-        _diagnosticRenderer = new EditorDiagnosticRenderer(
-            store,
-            () => GetActiveDocumentUri(doc));
-
-if (_activeEditor != null)
+        var scope = _registryOptions.GetScopeByLanguageId(languageId);
+        if (!string.IsNullOrEmpty(scope))
         {
-            _activeEditor.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
+            installation.SetGrammar(scope);
+        }
+        // Empty scope means plain text / unknown language — leave the editor uncolored.
+    }
+
+    /// <summary>
+    /// Called when the editor control is unloaded (e.g., tab closed) — cleans up TextMate.
+    /// </summary>
+    private void OnEditorUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not TextEditor editor)
+            return;
+
+        editor.Unloaded -= OnEditorUnloaded;
+
+        if (_textMateInstallations.TryGetValue(editor, out var installation))
+        {
+            installation.Dispose();
+            _textMateInstallations.Remove(editor);
         }
     }
 
+    /// <summary>
+    /// Creates and adds the diagnostic renderer to the given editor.
+    /// Called each time the active tab changes so each editor gets its own renderer
+    /// that references the current document (not a captured closure).
+    /// </summary>
+    private void RegisterDiagnosticRendererForEditor(Models.Editor.TextDocument? doc)
+    {
+        if (_diagnosticStore == null)
+            return;
+
+        if (_activeEditor == null)
+            return;
+
+        // Create a new renderer that uses a lambda to get the current document at draw time.
+        // This avoids the closure-capture bug where the renderer would point to the wrong file
+        // after tab switches.
+        _diagnosticRenderer = new EditorDiagnosticRenderer(
+            _diagnosticStore,
+            () => GetActiveDocumentUri(doc));
+
+        _activeEditor.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
+    }
+
+    /// <summary>
+    /// Gets the Absolute URI for the given document, matching the format used by
+    /// LSPManager.ToFileUri() so diagnostic lookups work correctly.
+    /// </summary>
     private static string? GetActiveDocumentUri(Models.Editor.TextDocument? doc)
     {
         if (doc == null)
             return null;
 
-        // Return the file path as a file:// URI.
         var fileName = doc.FilePath;
         if (string.IsNullOrEmpty(fileName))
             return null;
 
-        return new Uri(Path.GetFullPath(fileName), UriKind.Absolute).ToString();
-    }
-
-    private static DiagnosticStore? TryResolveDiagnosticStore()
-    {
-        try
-        {
-            if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var services = desktop.MainWindow?.DataContext?.GetType()
-                    .GetProperty("Services")?.GetValue(desktop.MainWindow?.DataContext) as IServiceProvider;
-                return services?.GetService(typeof(DiagnosticStore)) as DiagnosticStore;
-            }
-        }
-        catch
-        {
-            // Best-effort - return null if we can't resolve.
-        }
-
-        return null;
+        // Use .AbsoluteUri to match LSPManager's format (not .ToString() which produces
+        // different strings for paths with spaces).
+        return new Uri(Path.GetFullPath(fileName), UriKind.Absolute).AbsoluteUri;
     }
 
     private void OnTextChanged(object? sender, EventArgs e)

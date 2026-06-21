@@ -32,6 +32,12 @@ public partial class App : Application
             // folder is opened and is disposed with the DI container on app exit.
             _services.GetRequiredService<LSPManager>();
 
+// Phase 5 — Diagnostics rendering (M5: visible error indication)
+            // Publish the DiagnosticStore so EditorView can receive it via message.
+            // Also include the MessageBus so EditorView can subscribe to DiagnosticsUpdated.
+            var diagnosticStore = _services.GetRequiredService<DiagnosticStore>();
+            bus.Publish(new DiagnosticStoreReady(diagnosticStore, bus));
+
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
@@ -70,7 +76,7 @@ public partial class App : Application
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
         services.AddSingleton<DocumentManager>();
 
-// Phase 4 — LSP integration
+        // Phase 4 — LSP integration
         services.AddSingleton<Func<string, string?, LSPSession>>(provider =>
         {
             var bus = provider.GetRequiredService<IMessageBus>();
@@ -83,7 +89,7 @@ public partial class App : Application
         services.AddSingleton<DiagnosticStore>();
         services.AddSingleton<LSPManager>();
 
-        // Phase 2 — File Explorer & Project System (M1: services only; M3: FileExplorerViewModel needs DocumentManager)
+        // Phase 2 — File Explorer & Project System
         // IgnoreList has a public IEnumerable<string> constructor used by tests.
         // DI would prefer that constructor and pass an empty enumerable, so we
         // explicitly use the parameterless constructor that loads DefaultPatterns.

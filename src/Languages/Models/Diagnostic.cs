@@ -4,10 +4,20 @@ namespace Aero.Languages;
 
 /// <summary>
 /// A UI-friendly diagnostic record representing an LSP diagnostic message.
+/// Provides value equality for deduplication in DiagnosticStore.
 /// </summary>
-public sealed class Diagnostic
+public sealed record Diagnostic(
+    DiagnosticSeverity Severity,
+    string FileUri,
+    TextRange Range,
+    string Message,
+    string? Source = null,
+    string? Code = null)
 {
-    public Diagnostic(
+    /// <summary>
+    /// Factory method with null validation for API compatibility.
+    /// </summary>
+    public static Diagnostic Create(
         DiagnosticSeverity severity,
         string fileUri,
         TextRange range,
@@ -15,25 +25,14 @@ public sealed class Diagnostic
         string? source = null,
         string? code = null)
     {
-        Severity = severity;
-        FileUri = fileUri ?? throw new ArgumentNullException(nameof(fileUri));
-        Range = range ?? throw new ArgumentNullException(nameof(range));
-        Message = message ?? throw new ArgumentNullException(nameof(message));
-        Source = source;
-        Code = code;
+        return new Diagnostic(
+            severity,
+            fileUri ?? throw new ArgumentNullException(nameof(fileUri)),
+            range ?? throw new ArgumentNullException(nameof(range)),
+            message ?? throw new ArgumentNullException(nameof(message)),
+            source,
+            code);
     }
-
-    public DiagnosticSeverity Severity { get; }
-
-    public string FileUri { get; }
-
-    public TextRange Range { get; }
-
-    public string Message { get; }
-
-    public string? Source { get; }
-
-    public string? Code { get; }
 }
 
 /// <summary>
@@ -49,25 +48,10 @@ public enum DiagnosticSeverity
 
 /// <summary>
 /// A range in a text document identified by start and end line/character positions.
+/// Provides value equality for deduplication in DiagnosticStore.
 /// </summary>
-public sealed class TextRange
+public sealed record TextRange(int StartLine, int StartCharacter, int EndLine, int EndCharacter)
 {
-    public TextRange(int startLine, int startCharacter, int endLine, int endCharacter)
-    {
-        StartLine = startLine;
-        StartCharacter = startCharacter;
-        EndLine = endLine;
-        EndCharacter = endCharacter;
-    }
-
-    public int StartLine { get; }
-
-    public int StartCharacter { get; }
-
-    public int EndLine { get; }
-
-    public int EndCharacter { get; }
-
     public override string ToString() =>
         $"({StartLine},{StartCharacter})-({EndLine},{EndCharacter})";
 }

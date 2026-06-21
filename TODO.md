@@ -1,23 +1,13 @@
-# M3 Implementation Complete - TODO
+# TODO - Cleanup Phase
 
-## Phase 4 M3 Task List
+## Tasks
 
-### Round 8 Fixes (Completed)
-- [x] R8.1 - Make LSPManager session init async (non-blocking UI)
-- [x] R8.2 - Relax sync kind check to accept incremental (2)
+- [x] 1. Move M3_PLAN.md to docs/phases/phase-4/
+- [x] 2. Move M3_COMPLETION_REPORT.md to docs/phases/phase-4/
+- [x] 3. Convert Diagnostic to record for value equality
+- [x] 4. Convert TextRange to record for value equality
+- [x] 5. Update DiagnosticStore to use value-based equality
 
-### M3 Deliverables (Completed)
-- [x] Create Diagnostic.cs model in Models/
-- [x] Create DiagnosticStore.cs in Languages/
-- [x] Add DiagnosticsUpdated message to Messages.cs
-- [x] Integrate diagnostics handling into LSPManager
-- [x] Implement IBackgroundRenderer for editor rendering
-- [x] Wire renderer in EditorView.axaml.cs
-- [x] Register DiagnosticStore in DI
-- [x] Add DiagnosticStoreTests.cs
-- [x] Extend LSPManagerTests with diagnostics tests
+## In Progress
 
-### Build and Verify (COMPLETE)
-- [x] dotnet build src/aero.csproj clean (0 warnings)
-- [x] dotnet test tests green (3 consecutive runs): 276/276
-- [ ] Manual smoke test (not automated)
+1. Move stray M3 files to docs/phases/phase-4/

@@ -112,7 +112,7 @@ public sealed class DiagnosticStore
         _bus.Publish(new DiagnosticsUpdated(all));
     }
 
-    private static bool DiagnosticListsEqual(IReadOnlyList<Diagnostic>? left, IReadOnlyList<Diagnostic>? right)
+private static bool DiagnosticListsEqual(IReadOnlyList<Diagnostic>? left, IReadOnlyList<Diagnostic>? right)
     {
         if (left == right)
             return true;
@@ -122,7 +122,7 @@ public sealed class DiagnosticStore
 
         for (int i = 0; i < left.Count; i++)
         {
-            if (left[i] != right[i])
+            if (!left[i].Equals(right[i]))
                 return false;
         }
 

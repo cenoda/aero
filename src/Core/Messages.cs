@@ -82,6 +82,13 @@ public record FolderChanged(string Path);
 public record DiagnosticsUpdated(IReadOnlyList<Diagnostic> Diagnostics);
 
 /// <summary>
+/// DiagnosticStore is ready. Published by App after DI container is built
+/// so consumers (EditorView) can receive the store reference.
+/// Also carries the MessageBus so EditorView can subscribe to DiagnosticsUpdated.
+/// </summary>
+public record DiagnosticStoreReady(DiagnosticStore Store, IMessageBus Bus);
+
+/// <summary>
 /// A transient status message for the status bar or log. Published by services
 /// that need to surface non-fatal warnings without referencing the shell.
 /// </summary>
