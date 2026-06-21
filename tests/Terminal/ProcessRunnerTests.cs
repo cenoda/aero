@@ -41,17 +41,25 @@ public class ProcessRunnerTests
         var lines = new List<string>();
         using var cts = new CancellationTokenSource();
 
-        // Start a command that will run for a while, then cancel after 100ms
+        // Use a cross-platform long-running command.
+        // Linux/macOS: sleep 10; Windows: timeout /t 10 /nobreak
+        var (executable, arguments) = System.Runtime.InteropServices
+            .RuntimeInformation.IsOSPlatform(
+                System.Runtime.InteropServices.OSPlatform.Windows)
+            ? ("timeout", "/t 10 /nobreak")
+            : ("sleep", "10");
+
+        // Cancel after 100ms — the process should still be running
         cts.CancelAfter(100);
 
         var exitCode = await runner.RunAsync(
-            "sleep",
-            "10",
+            executable,
+            arguments,
             null,
             line => lines.Add(line),
             cts.Token);
 
-        // Should return -1 without throwing
+        // Should return -1 without throwing (cancelled before process exits)
         Assert.Equal(-1, exitCode);
     }
 

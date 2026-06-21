@@ -256,22 +256,21 @@ reset it to `false` at the start of each `RunCommand` invocation.
 
 ---
 
-### R2.2 Cancel test uses `sleep 10` — Linux/macOS only *(priority: low)*
+### R2.2 Cancel test uses `sleep 10` — Linux/macOS only *(priority: low)* **→ RESOLVED (2026-06-21)**
 
 **Description:** `ProcessRunnerTests.RunAsync_CancelLongRunningCommand_DoesNotThrow`
-uses `sleep 10` as the long-running command.  This command does not exist on
-Windows (`cmd` uses `timeout /t 10`).  The test will fail on Windows CI.
+used `sleep 10` as the long-running command.  This command does not exist on
+Windows (`cmd` uses `timeout /t 10`).  The test would fail on Windows CI.
 
-**Required fix:** Use a cross-platform long-running command.  Best option:
-`dotnet run --project __nonexistent__` (always available, always runs for a
-moment before failing).  Or use `RuntimeInformation.IsOSPlatform` to branch
-between `sleep` (Unix) and `timeout /t 10 /nobreak` (Windows).
+**Required fix:** Use a cross-platform long-running command.  Use
+`RuntimeInformation.IsOSPlatform` to branch between `sleep` (Unix) and
+`timeout /t 10 /nobreak` (Windows).
 
-**Note:** The fix in the M1 review changed `Assert.True(true)` to
-`Assert.Equal(-1, exitCode)` — the cancel test now has a real assertion.
-The Linux-only command is the remaining gap.
+**Status:** ✅ RESOLVED (2026-06-21) — replaced `"sleep" / "10"` with
+`RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ("timeout", "/t 10 /nobreak") : ("sleep", "10")`.
+301/301 tests pass.
 
-**Status:** Open (low priority; fix when running on Windows CI)
+**Commit:** See Phase 5 test coverage commit.
 
 ---
 
