@@ -17,6 +17,21 @@ Run external commands and stream their output in a panel.
 - Commands can be cancelled mid-run
 - Output is scrollable and copyable
 
+## Architecture (Abstraction-First)
+
+Phase 5 uses CliWrap for process execution. For abstraction-first design,
+see Phase 5.5 which adds `IProcessRunnerService` interface.
+
+```csharp
+// Phase 5.5 adds this interface:
+public interface IProcessRunnerService
+{
+    string Name { get; }
+    Task<ProcessResult> RunAsync(ProcessOptions options, CancellationToken ct);
+    IAsyncEnumerable<string> StreamOutputAsync(CancellationToken ct);
+}
+```
+
 ## Checklist
 
 - [x] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
