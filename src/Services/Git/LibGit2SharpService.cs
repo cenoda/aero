@@ -190,22 +190,67 @@ public sealed class LibGit2SharpService : IGitService
 
             var result = new List<GitBranchInfo>();
 
-            // Use repo.Refs to enumerate branches directly from the ref store,
-            // avoiding the repo.Branches enumerator which resolves remote tracking
-            // info and can hang in LibGit2Sharp 0.30 on repos with no upstream.
-            var headName = repo.Head?.CanonicalName;
-            foreach (var reference in repo.Refs.FromGlob("refs/heads/*"))
-            {
-                var friendlyName = reference.CanonicalName
-                    .Replace("refs/heads/", string.Empty);
-                var isCurrent = reference.CanonicalName == headName;
+            // Read branch refs directly from the filesystem (.git/refs/heads/ and packed-refs).
+            // This avoids LibGit2Sharp 0.30 bugs where repo.Branches hangs and
+            // repo.Refs.FromGlob returns empty on some Linux environments.
+            var headSha = repo.Head?.Tip?.Sha;
+            var refsDir = Path.Combine(_gitDir, "refs", "heads");
 
-                result.Add(new GitBranchInfo(
-                    friendlyName,
-                    reference.CanonicalName,
-                    isCurrent,
-                    IsRemote: false,
-                    UpstreamName: null));
+            // Loose refs
+            if (Directory.Exists(refsDir))
+            {
+                var files = Directory.GetFiles(refsDir);
+                foreach (var file in files)
+                {
+                    var friendlyName = Path.GetFileName(file);
+                    var sha = File.ReadAllText(file).Trim();
+                    var canonicalName = $"refs/heads/{friendlyName}";
+                    var isCurrent = string.Equals(sha, headSha, StringComparison.Ordinal);
+
+                    result.Add(new GitBranchInfo(
+                        friendlyName,
+                        canonicalName,
+                        isCurrent,
+                        IsRemote: false,
+                        UpstreamName: null));
+                }
+            }
+
+            // Packed refs (for repos with many branches)
+            var packedRefsPath = Path.Combine(_gitDir, "packed-refs");
+            if (File.Exists(packedRefsPath))
+            {
+                var packedContent = await File.ReadAllTextAsync(packedRefsPath, ct);
+                foreach (var line in packedContent.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (line.StartsWith('#'))
+                        continue;
+
+                    var parts = line.Split(' ', 2);
+                    if (parts.Length < 2)
+                        continue;
+
+                    var sha = parts[0];
+                    var refName = parts[1].Trim();
+
+                    if (!refName.StartsWith("refs/heads/"))
+                        continue;
+
+                    var friendlyName = refName["refs/heads/".Length..];
+
+                    // Skip if already found as a loose ref
+                    if (result.Any(b => string.Equals(b.Name, friendlyName, StringComparison.Ordinal)))
+                        continue;
+
+                    var isCurrent = string.Equals(sha, headSha, StringComparison.Ordinal);
+
+                    result.Add(new GitBranchInfo(
+                        friendlyName,
+                        refName,
+                        isCurrent,
+                        IsRemote: false,
+                        UpstreamName: null));
+                }
             }
 
             return result;

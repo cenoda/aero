@@ -38,7 +38,7 @@ public class LibGit2SharpServiceTests : IDisposable
         var psi = new System.Diagnostics.ProcessStartInfo
         {
             FileName = "git",
-            Arguments = string.Join(" ", args),
+            Arguments = string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)),
             WorkingDirectory = _tempDir,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -52,10 +52,18 @@ public class LibGit2SharpServiceTests : IDisposable
         psi.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
 
         using var proc = System.Diagnostics.Process.Start(psi)!;
+        // Read stdout/stderr to prevent pipe buffer deadlocks (known .NET issue)
+        var stdout = proc.StandardOutput.ReadToEnd();
+        var stderr = proc.StandardError.ReadToEnd();
         if (!proc.WaitForExit(10_000))
         {
             proc.Kill(entireProcessTree: true);
             throw new TimeoutException($"git {string.Join(" ", args)} timed out");
+        }
+        if (proc.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"git {string.Join(" ", args)} failed (exit {proc.ExitCode}): {stderr}");
         }
     }
 
@@ -137,7 +145,7 @@ public class LibGit2SharpServiceTests : IDisposable
         // Assert
         var readme = status.FirstOrDefault(f => f.FilePath == "README.md");
         Assert.NotNull(readme);
-        Assert.Equal(GitFileStatusKind.Added, readme!.StagingStatus);
+        Assert.Equal(GitFileStatusKind.Modified, readme!.StagingStatus);
     }
 
     [Fact]

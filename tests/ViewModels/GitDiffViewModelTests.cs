@@ -71,7 +71,7 @@ public class GitDiffViewModelTests
     public void GitDiffLineViewModel_Addition_HasGreenBackground()
     {
         // Arrange & Act
-        var line = new GitDiffLineViewModel("+added", GitDiffLineKind.Addition);
+        var line = new GitDiffLineViewModel("+added", GitDiffLineKind.Addition, null, 2);
 
         // Assert
         Assert.Equal("+added", line.Content);
@@ -83,7 +83,7 @@ public class GitDiffViewModelTests
     public void GitDiffLineViewModel_Deletion_HasRedBackground()
     {
         // Arrange & Act
-        var line = new GitDiffLineViewModel("-removed", GitDiffLineKind.Deletion);
+        var line = new GitDiffLineViewModel("-removed", GitDiffLineKind.Deletion, 2, null);
 
         // Assert
         Assert.Equal("-removed", line.Content);
@@ -95,7 +95,7 @@ public class GitDiffViewModelTests
     public void GitDiffLineViewModel_Context_HasTransparentBackground()
     {
         // Arrange & Act
-        var line = new GitDiffLineViewModel(" context ", GitDiffLineKind.Context);
+        var line = new GitDiffLineViewModel(" context ", GitDiffLineKind.Context, 1, 1);
 
         // Assert
         Assert.Equal(" context ", line.Content);
@@ -106,7 +106,7 @@ public class GitDiffViewModelTests
     public void GitDiffLineViewModel_Header_HasTransparentBackground()
     {
         // Arrange & Act
-        var line = new GitDiffLineViewModel("@@ -1 +1 @@", GitDiffLineKind.Header);
+        var line = new GitDiffLineViewModel("@@ -1 +1 @@", GitDiffLineKind.Header, null, null);
 
         // Assert
         Assert.Equal("@@ -1 +1 @@", line.Content);
