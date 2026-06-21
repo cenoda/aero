@@ -6,16 +6,20 @@
 
 Integrate build systems with the IDE using **abstraction-first** design for multi-language support.
 
+## Status
+
+✅ **Complete** (2026-06-21)
+
 ## Entry Condition
 
 - Phase 5 complete (Output panel, ProcessRunner)
 
 ## Exit Condition
 
-- Ctrl+Shift+B runs the appropriate build command and streams output
-- Build errors are parsed and populate the Problems panel
-- Clicking an error jumps to file and line in the editor
-- Build success/failure is visible in status bar
+- [x] Ctrl+Shift+B runs the appropriate build command and streams output
+- [x] Build errors are parsed and populate the Problems panel
+- [x] Clicking an error jumps to file and line in the editor
+- [x] Build success/failure is visible in status bar
 
 ## Architecture (Abstraction-First)
 

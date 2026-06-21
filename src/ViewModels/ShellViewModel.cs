@@ -513,9 +513,16 @@ public class ShellViewModel : ReactiveObject, IDisposable
                 }
             }
 
+            // Check for dotnet not found (exit code -1 with no meaningful output)
+            var hasDotnetNotFound = exitCode == -1 &&
+                (_outputViewModel.Lines.Count == 0 ||
+                 _outputViewModel.Lines.All(l => l.Contains("not found") || l.Contains("not recognized")));
+
             // Publish BuildFinished
             _bus.Publish(new BuildFinished(exitCode, ""));
-            StatusText = exitCode == 0 ? "Build succeeded" : "Build failed";
+            StatusText = hasDotnetNotFound
+                ? "Build failed: dotnet not found"
+                : exitCode == 0 ? "Build succeeded" : "Build failed";
 
             // Update DiagnosticStore with build errors
             if (exitCode != 0)

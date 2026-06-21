@@ -23,7 +23,7 @@ merge in `GetAllDiagnostics`. Update `LSPManager` to use `source:"lsp"`; build u
 `source:"build"`. Add a coexistence test. **Do not** introduce an `IDiagnosticStore` interface
 (no third writer yet — YAGNI). See plan §5.4.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (DiagnosticStore uses (source, uri) key, LSPManager passes "lsp", ShellViewModel passes "build") [M4]
 
 ---
 
@@ -101,7 +101,7 @@ emits `[Error: …]`, but the build flow must surface a clear status, not a sile
 **Required fix:** On exit `-1` with no parsed errors, set status `Build failed: dotnet not found (or
 crashed)`. Keep the `[Error: …]` line visible in the Output panel.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (ShellViewModel checks for exitCode==-1 with "not found" in output, sets status "Build failed: dotnet not found") [M5]
 
 ---
 
