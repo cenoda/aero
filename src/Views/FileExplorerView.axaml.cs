@@ -1,8 +1,8 @@
 using System.Reactive.Linq;
+using Aero.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Aero.ViewModels;
 
 namespace Aero.Views;
 

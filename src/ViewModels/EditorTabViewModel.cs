@@ -1,8 +1,8 @@
 using System;
-using ReactiveUI;
 using Aero.Models.Editor;
-using IMessageBus = Aero.Core.IMessageBus;
+using ReactiveUI;
 using DocMsg = Aero.Core;
+using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.ViewModels;
 

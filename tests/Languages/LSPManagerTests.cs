@@ -254,7 +254,7 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-[Fact]
+    [Fact]
     public void FactoryThrows_IsHandledGracefully_WithStatusMessage()
     {
         var bus = new StubMessageBus();
@@ -276,7 +276,7 @@ public class LSPManagerTests : IDisposable
         Assert.Contains("csharp-ls not found", status.Text);
     }
 
-[Fact]
+    [Fact]
     public void OpenDifferentFolder_DisposesPreviousSession()
     {
         SingleThread.Run(async () =>
@@ -314,7 +314,7 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-[Fact]
+    [Fact]
     public void PublishDiagnostics_ReceivedViaSession_LandsInStore()
     {
         SingleThread.Run(async () =>
@@ -352,8 +352,8 @@ public class LSPManagerTests : IDisposable
         });
     }
 
-private static (LSPManager Manager, StubMessageBus Bus, IDocumentManagementService DocumentManager, FakeSessionFactory Factory) CreateManager(
-        TimeSpan? debounce = null)
+    private static (LSPManager Manager, StubMessageBus Bus, IDocumentManagementService DocumentManager, FakeSessionFactory Factory) CreateManager(
+            TimeSpan? debounce = null)
     {
         var bus = new StubMessageBus();
         var languageDetection = new LanguageDetectionService();

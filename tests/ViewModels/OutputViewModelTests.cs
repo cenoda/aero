@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aero.Core;
 using Aero.Terminal;
-using Aero.ViewModels;
 using Aero.Tests.Stubs;
+using Aero.ViewModels;
 using Xunit;
 
 namespace Aero.Tests.ViewModels;

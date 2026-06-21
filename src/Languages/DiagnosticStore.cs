@@ -166,7 +166,7 @@ public sealed class DiagnosticStore
         _bus.Publish(new DiagnosticsUpdated(all));
     }
 
-private static bool DiagnosticListsEqual(IReadOnlyList<Diagnostic>? left, IReadOnlyList<Diagnostic>? right)
+    private static bool DiagnosticListsEqual(IReadOnlyList<Diagnostic>? left, IReadOnlyList<Diagnostic>? right)
     {
         if (left == right)
             return true;

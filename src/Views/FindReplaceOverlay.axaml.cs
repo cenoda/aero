@@ -1,8 +1,8 @@
 using System;
+using Aero.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Aero.ViewModels;
 
 namespace Aero.Views;
 

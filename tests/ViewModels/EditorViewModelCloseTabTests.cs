@@ -2,8 +2,8 @@ using System.Linq;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
-using Aero.ViewModels;
 using Aero.Tests.Stubs;
+using Aero.ViewModels;
 using Xunit;
 
 

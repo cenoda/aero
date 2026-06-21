@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
+using Aero.Core;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Aero.Core;
 
 namespace Aero.Views;
 

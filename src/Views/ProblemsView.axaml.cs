@@ -1,7 +1,7 @@
+using Aero.Languages;
+using Aero.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Aero.ViewModels;
-using Aero.Languages;
 
 namespace Aero.Views;
 

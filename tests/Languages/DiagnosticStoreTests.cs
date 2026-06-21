@@ -103,7 +103,7 @@ public class DiagnosticStoreTests
         // At least one update with empty diagnostics was raised
         var updated = bus.MessagesOf<DiagnosticsUpdated>().ToList();
         Assert.NotEmpty(updated);
-        
+
         // The last update should have empty diagnostics (after clear)
         var lastUpdate = updated.Last();
         Assert.Empty(lastUpdate.Diagnostics);

@@ -48,8 +48,8 @@ public sealed class LibGit2SharpService : IGitService
                 new RepositoryNotFoundException(gitDir));
         }
         catch (Exception ex) when (
-            ex is NotSupportedException or 
-            DllNotFoundException or 
+            ex is NotSupportedException or
+            DllNotFoundException or
             BadImageFormatException or
             TypeInitializationException)
         {

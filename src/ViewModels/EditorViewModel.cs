@@ -7,15 +7,15 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Models.Editor;
 using Aero.Services;
-using IMessageBus = Aero.Core.IMessageBus;
-using DocMsg = Aero.Core;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using DirtyCloseResponse = Aero.Core.DirtyCloseResponse;
+using DocMsg = Aero.Core;
+using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.ViewModels;
 

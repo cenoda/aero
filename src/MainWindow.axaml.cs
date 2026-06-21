@@ -1,8 +1,8 @@
 using System;
-using Avalonia.Controls;
 using Aero.Core;
 using Aero.ViewModels;
 using Aero.Views;
+using Avalonia.Controls;
 
 namespace Aero;
 
@@ -107,7 +107,7 @@ public partial class MainWindow : Window
         msg.OnResponse(result ?? DirtyCloseResponse.Cancel);
     }
 
-    #pragma warning disable VSTHRD100 // async void is required for MessageBus handlers
+#pragma warning disable VSTHRD100 // async void is required for MessageBus handlers
 
     private async void OnPromptNewItem(PromptNewItem msg)
     {
@@ -136,6 +136,6 @@ public partial class MainWindow : Window
         msg.OnResult(response ?? false);
     }
 
-    #pragma warning restore VSTHRD100
+#pragma warning restore VSTHRD100
 
 }

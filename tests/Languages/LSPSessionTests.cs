@@ -1,11 +1,11 @@
-using Aero.Languages;
-using Aero.Tests.Languages.Helpers;
-using Newtonsoft.Json.Linq;
-using StreamJsonRpc;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Aero.Languages;
+using Aero.Tests.Languages.Helpers;
+using Newtonsoft.Json.Linq;
+using StreamJsonRpc;
 using Xunit;
 
 namespace Aero.Tests.Languages;
@@ -102,7 +102,7 @@ public class LSPSessionTests
         Assert.True(await server.ExitReceived.Task.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
-[Fact]
+    [Fact]
     public async Task InitializeAsync_NonFullSync_FailsGracefully()
     {
         // R8.2: We now accept both full (1) and incremental (2) sync.

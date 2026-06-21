@@ -52,7 +52,7 @@ public sealed class GitServiceFactory : IDisposable
             _cachedWorkspacePath = null;
         }
 
-// Create new service (libgit2sharp implementation)
+        // Create new service (libgit2sharp implementation)
         // R1.2 + R1.4 fix: catch service unavailability and return null gracefully
         try
         {

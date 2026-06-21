@@ -4,12 +4,12 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Threading;
-using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Terminal;
+using Avalonia.Threading;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.ViewModels;

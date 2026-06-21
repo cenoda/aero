@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Threading;
 using Aero.Core;
 using Aero.Models.Editor;
 using Aero.Services;
+using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace Aero.Languages;

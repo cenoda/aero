@@ -1,3 +1,4 @@
+using System;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
@@ -9,7 +10,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Aero;
 
@@ -31,7 +31,7 @@ public partial class App : Application
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();
 
-// Eagerly resolve LSPManager so it subscribes to FolderOpened before any
+            // Eagerly resolve LSPManager so it subscribes to FolderOpened before any
             // folder is opened and is disposed with the DI container on app exit.
             _services.GetRequiredService<LSPManager>();
 
@@ -66,7 +66,7 @@ public partial class App : Application
         (_services as IDisposable)?.Dispose();
     }
 
-public static ServiceProvider BuildServices()
+    public static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
 
@@ -112,7 +112,7 @@ public static ServiceProvider BuildServices()
         // Phase 5 — Output panel (fake terminal)
         services.AddSingleton<IProcessRunner, ProcessRunner>();
 
-// Phase 6 — Build system
+        // Phase 6 — Build system
         services.AddSingleton<DotNetBuildService>();
         services.AddSingleton<BuildServiceFactory>();
 
