@@ -34,13 +34,9 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _diagnosticStore = diagnosticStore;
 
+        // Subscribe to DiagnosticsUpdated message from the bus (R2.7 - drop duplicate event subscription)
         _handler = OnDiagnosticsUpdated;
         _bus.Subscribe(_handler);
-
-        if (_diagnosticStore != null)
-        {
-            _diagnosticStore.DiagnosticsUpdated += OnDiagnosticStoreUpdated;
-        }
 
         NavigateCommand = ReactiveCommand.Create<Diagnostic>(NavigateToDiagnostic);
     }
@@ -114,14 +110,5 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
 
         if (_handler != null)
             _bus.Unsubscribe<DiagnosticsUpdated>(_handler);
-
-        if (_diagnosticStore != null)
-            _diagnosticStore.DiagnosticsUpdated -= OnDiagnosticStoreUpdated;
-    }
-
-    private void OnDiagnosticStoreUpdated(object? sender, DiagnosticsUpdatedEventArgs e)
-    {
-        // Forward DiagnosticStore events to the same handler as message bus
-        OnDiagnosticsUpdated(new DiagnosticsUpdated(e.Diagnostics));
     }
 }

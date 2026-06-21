@@ -453,8 +453,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
             var tab = ActiveTab;
             if (tab != null)
             {
-                // Set caret offset based on line/column (1-based)
-                var offset = tab.Document.GetOffset(line, column);
+                // GetOffset expects 1-based line/column, but TextRange is 0-based (R2.2)
+                var offset = tab.Document.GetOffset(line + 1, column + 1);
                 tab.Document.CaretOffset = offset;
             }
         }

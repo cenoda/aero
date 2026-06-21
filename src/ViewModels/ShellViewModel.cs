@@ -34,6 +34,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly BuildServiceFactory _buildServiceFactory;
     private readonly DiagnosticStore _diagnosticStore;
     private IBuildService? _buildService;
+    private CancellationTokenSource? _buildCts;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -477,6 +478,13 @@ public class ShellViewModel : ReactiveObject, IDisposable
             return;
         }
 
+        // Guard against concurrent builds (R2.5)
+        if (_buildCts != null)
+        {
+            StatusText = "Build already in progress";
+            return;
+        }
+
         // Show output panel
         IsBottomPanelVisible = true;
         ActiveBottomTabIndex = 1; // Output tab
@@ -489,56 +497,35 @@ public class ShellViewModel : ReactiveObject, IDisposable
         _bus.Publish(new BuildStarted(_workspacePath));
         StatusText = "Building...";
 
+        _buildCts = new CancellationTokenSource();
         try
         {
-            var cts = new CancellationTokenSource();
+            // Route through IBuildService.BuildAsync to get proper exit code and errors (R2.3)
+            var options = new BuildOptions(_workspacePath);
+            var result = await _buildService.BuildAsync(
+                options,
+                line => _outputViewModel.Lines.Add(line),
+                _buildCts.Token);
 
-            await _outputViewModel.RunExternalAsync(
-                "dotnet",
-                "build",
-                _workspacePath,
-                cts.Token);
+            // Publish BuildFinished with exit code from BuildResult
+            _bus.Publish(new BuildFinished(result.ExitCode, ""));
+            StatusText = result.Success ? "Build succeeded" : "Build failed";
 
-            // Get exit code from last line
-            var exitCode = 0;
-            var lastLine = _outputViewModel.Lines.Count > 0
-                ? _outputViewModel.Lines[_outputViewModel.Lines.Count - 1]
-                : "";
-            if (lastLine.Contains("exited with code"))
+            // Update DiagnosticStore with build errors/warnings (R2.6 - show warnings too)
+            if (result.Errors.Count > 0)
             {
-                var parts = lastLine.Split(' ');
-                if (parts.Length > 0 && int.TryParse(parts[^1].TrimEnd(']'), out var code))
-                {
-                    exitCode = code;
-                }
-            }
-
-            // Check for dotnet not found (exit code -1 with no meaningful output)
-            var hasDotnetNotFound = exitCode == -1 &&
-                (_outputViewModel.Lines.Count == 0 ||
-                 _outputViewModel.Lines.All(l => l.Contains("not found") || l.Contains("not recognized")));
-
-            // Publish BuildFinished
-            _bus.Publish(new BuildFinished(exitCode, ""));
-            StatusText = hasDotnetNotFound
-                ? "Build failed: dotnet not found"
-                : exitCode == 0 ? "Build succeeded" : "Build failed";
-
-            // Update DiagnosticStore with build errors
-            if (exitCode != 0)
-            {
-                var errors = _buildService.ParseErrors(_outputViewModel.Lines.ToList());
-                var errorsByFile = errors
+                var errorsByFile = result.Errors
                     .GroupBy(e => e.FilePath)
                     .ToDictionary(g => g.Key, g => g.ToList());
 
                 foreach (var kvp in errorsByFile)
                 {
                     var fileUri = kvp.Key;
+                    // Convert MSBuild's 1-based line/column to 0-based (R2.1)
                     var diags = kvp.Value.Select(e => new Diagnostic(
                         e.Severity == BuildSeverity.Error ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
                         fileUri,
-                        new TextRange(e.Line, e.Column, e.Line, e.Column),
+                        new TextRange(e.Line - 1, e.Column - 1, e.Line - 1, e.Column - 1),
                         e.Message,
                         "build",
                         e.Code)).ToList();
@@ -550,6 +537,12 @@ public class ShellViewModel : ReactiveObject, IDisposable
         {
             _bus.Publish(new BuildFinished(-1, "Cancelled"));
             StatusText = "Build cancelled";
+        }
+        finally
+        {
+            // Clean up CancellationTokenSource (R2.8)
+            _buildCts?.Dispose();
+            _buildCts = null;
         }
     }
 

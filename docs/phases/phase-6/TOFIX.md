@@ -138,3 +138,146 @@ output lives in the Output panel.
 - [ ] `manual_test/manual_test_phase6.sh` passes
 - [ ] `docs/roadmap/PHASES.md` Phase 6 items all `[x]`; `README.md` updated
 - [ ] `docs/phases/phase-6/TOFIX.md` has no open items before Phase 7 starts
+
+---
+
+## Round 2 — Post-Implementation Review (2026-06-21)
+
+Findings from reviewing the implemented Phase 6 against the plan and live code.
+Build is clean; **317/317 tests pass**. The items below are real and block closing the phase.
+
+### R2.1 Build diagnostics are 1-based but `Diagnostic.TextRange` is 0-based *(priority: critical, BLOCKER)*
+
+**Description:** `ShellViewModel.BuildAsync` maps parsed errors with
+`new TextRange(e.Line, e.Column, e.Line, e.Column)` using the **raw 1-based** MSBuild
+values. But the `Diagnostic.TextRange` contract is **0-based**:
+- `EditorDiagnosticRenderer` does `docLineNumber = diag.Range.StartLine + 1` ("LSP uses 0-based").
+- `Diagnostic.LocationText` does `Ln {StartLine + 1}, Col {StartCharacter + 1}`.
+- `LSPManager` writes 0-based ranges.
+
+Consequences: build errors display one line too high in the Problems panel (`Ln N+1`),
+the editor highlights the wrong line, and the two diagnostic sources are inconsistent.
+Plan §5.4 and R1.4 explicitly required `TextRange(Line-1, Column-1, …)`.
+
+**Required fix:** In the build→diagnostic mapping subtract 1:
+`new TextRange(e.Line - 1, e.Column - 1, e.Line - 1, e.Column - 1)` (guard against negatives).
+Add a test asserting a parsed `error CSxxxx` on line 5 yields `Range.StartLine == 4`.
+
+**Status:** ☐ Open
+
+### R2.2 Navigation uses the wrong line/column base → LSP jumps to the wrong line *(priority: high, BLOCKER)*
+
+**Description:** `ProblemsViewModel.NavigateToDiagnostic` publishes
+`NavigateToLocation(uri, Range.StartLine, Range.StartCharacter)` (0-based by contract).
+`EditorViewModel.OpenFileAndNavigateAsync` then calls `tab.Document.GetOffset(line, column)`
+with a comment claiming "1-based". `GetOffset` is 1-based (inverse of `GetLineColumn`), so a
+0-based range lands one line short (and line 0 is invalid). It only "works" today for build
+because build currently stores 1-based (see R2.1) — i.e. two bugs cancel for build and expose
+the bug for LSP.
+
+**Required fix:** Once R2.1 makes ranges 0-based for all sources, convert in navigation:
+`GetOffset(line + 1, column + 1)` with bounds clamping. Add a navigation test.
+
+**Status:** ☐ Open
+
+### R2.3 `IBuildService.BuildAsync` is bypassed in the real flow *(priority: high, BLOCKER)*
+
+**Description:** `ShellViewModel.BuildAsync` calls
+`_outputViewModel.RunExternalAsync("dotnet", "build", _workspacePath, …)` with a **hardcoded**
+executable/arguments, then only calls `_buildService.ParseErrors(...)`. `IBuildService.BuildAsync`,
+`BuildOptions`, `BuildResult`, `BuildArguments` (`/clp:NoSummary`, `--no-incremental`, `TargetPath`)
+are never invoked in production — the factory is used only as a yes/no "is there a build system"
+gate. This defeats the abstraction-first design (AGENTS.md §4) and the M1/M3 intent: the service
+is dead code outside unit tests.
+
+**Required fix:** Route the build through `_buildService.BuildAsync(options, onLine, ct)`, passing
+an `onLine` that appends to the Output panel; use the returned `BuildResult` for exit code +
+parsed errors. Add a `BuildCommand` test asserting it drives `IBuildService` (stub).
+
+**Status:** ☐ Open
+
+### R2.4 Exit code & errors are scraped from the capped `OutputViewModel.Lines` *(priority: high, BLOCKER — R1.3/R6.5)*
+
+**Description:** Because `RunExternalAsync` returns `Task` (no exit code), `BuildAsync` recovers
+the exit code by string-matching `"exited with code"` on the **last line** of
+`_outputViewModel.Lines`, and parses errors from `_outputViewModel.Lines.ToList()` — the
+10k-FIFO-capped UI collection. A verbose build (>10k lines) loses early diagnostics, and the
+exit-code scrape is fragile. This is exactly what R1.3/R6.5 warned against.
+
+**Required fix:** Take exit code and errors from `BuildResult` (the service captures its own buffer,
+per plan §5.6). Do not parse from `OutputViewModel.Lines`.
+
+**Status:** ☐ Open
+
+### R2.5 No single-active-build guard *(priority: medium — R6.6)*
+
+**Description:** `BuildCommand` does not check `_outputViewModel.IsRunning`. Triggering a build
+while a command (or build) is already running overwrites `OutputViewModel._cts`, so the in-flight
+operation's `finally` disposes the new CTS and flips `IsRunning` — a concurrency hazard.
+
+**Required fix:** No-op with a status message when `_outputViewModel.IsRunning` (or add a
+`canExecute` guard on `BuildCommand`).
+
+**Status:** ☐ Open
+
+### R2.6 Warnings on a successful build are dropped *(priority: medium)*
+
+**Description:** Error parsing/population is gated by `if (exitCode != 0)`. A build that succeeds
+with warnings (exit 0) never populates the Problems panel.
+
+**Required fix:** Always parse and publish diagnostics (errors and warnings) regardless of exit code.
+
+**Status:** ☐ Open
+
+### R2.7 `ProblemsViewModel` updates twice per change *(priority: low / cleanup)*
+
+**Description:** `ProblemsViewModel` subscribes to **both** the bus `DiagnosticsUpdated` message and
+the new `DiagnosticStore.DiagnosticsUpdated` event, and `DiagnosticStore.PublishDiagnosticsUpdated`
+fires both. The list rebuilds twice per change (idempotent but wasteful). The direct event was not
+in the plan (the panel was to stay on the bus path) — scope creep.
+
+**Required fix:** Pick one path. Simplest: drop the `DiagnosticStore.DiagnosticsUpdated` event +
+its subscription and keep the existing message-bus flow.
+
+**Status:** ☐ Open
+
+### R2.8 Build `CancellationTokenSource` leaked; no cancel path *(priority: low)*
+
+**Description:** `BuildAsync` creates `var cts = new CancellationTokenSource();` that is never
+disposed and never cancelled (no UI/keybinding). The `catch (OperationCanceledException)` is
+unreachable as written.
+
+**Required fix:** Dispose the CTS (`using`/`finally`), or wire a real cancel (e.g. reuse the Output
+panel Cancel). If cancel is out of scope for Phase 6, drop the dead CTS/catch and document it.
+
+**Status:** ☐ Open
+
+### R2.9 Manual test mutates the real source tree *(priority: low)*
+
+**Description:** `manual_test_phase6.sh` writes `src/TestCompileError.cs` and builds the real
+`src/aero.csproj` (temporarily breaking the app's own build) before deleting it. If the script is
+interrupted, a broken file is left in `src/`.
+
+**Required fix:** Build a throwaway temp project (like the planning probe in `/tmp`) instead of
+polluting `src/`.
+
+**Status:** ☐ Open
+
+### R2.10 PHASES.md marked complete prematurely *(priority: medium / process)*
+
+**Description:** All Phase 6 boxes in `docs/roadmap/PHASES.md` are `[x]`, but R2.1–R2.4 mean
+"populate Problems panel" and "click error → jump to file/line" are not correct end-to-end.
+
+**Required fix:** Leave Phase 6 items unchecked (or note in-progress) until R2.1–R2.4 are resolved
+and re-verified. Per `plan-rules` §5, gates must be verifiable.
+
+**Status:** ☐ Open
+
+### R2.11 Test coverage gap *(priority: medium)*
+
+**Description:** 317 tests pass but none caught R2.1 (off-by-one) or R2.3 (bypassed `BuildAsync`).
+
+**Required fix:** Add tests: build `ParsedError`→`Diagnostic` is 0-based; `BuildCommand` invokes
+`IBuildService.BuildAsync`; navigation lands on the correct line for a 0-based range.
+
+**Status:** ☐ Open
