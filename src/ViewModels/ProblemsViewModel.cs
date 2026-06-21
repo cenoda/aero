@@ -12,10 +12,11 @@ namespace Aero.ViewModels;
 /// ViewModel for the Problems panel, showing all current diagnostics
 /// in the workspace.
 /// </summary>
-public class ProblemsViewModel : ReactiveObject
+public class ProblemsViewModel : ReactiveObject, IDisposable
 {
     private readonly Aero.Core.IMessageBus _bus;
     private readonly Action<DiagnosticsUpdated>? _handler;
+    private bool _disposed;
 
     private ObservableCollection<Diagnostic> _diagnostics = new();
     private bool _isVisible;
@@ -58,5 +59,18 @@ public class ProblemsViewModel : ReactiveObject
     {
         Diagnostics = new ObservableCollection<Diagnostic>(
             diagnostics.OrderBy(d => d.FileUri).ThenBy(d => d.Range.StartLine));
+    }
+
+    /// <summary>
+    /// Dispose message bus subscription to prevent stale-handler leaks.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+
+        if (_handler != null)
+            _bus.Unsubscribe<DiagnosticsUpdated>(_handler);
     }
 }
