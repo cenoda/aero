@@ -27,7 +27,7 @@ crash with `ObjectDisposedException`.
 touching the repository, and release in a `finally` block. Add a concurrency test that
 fires two concurrent status requests and verifies both complete without exception.
 
-**Status:** [x] Fixed - Implemented in LibGit2SharpService with SemaphoreSlim
+**Status:** [ ] Open — to be implemented in `LibGit2SharpService`
 
 
 ---
@@ -47,7 +47,7 @@ libgit2 dependencies are installed." Register this fallback in `GitServiceFactor
 returns `null` gracefully. Add an integration test that verifies `Detect()` returns null
 when the repository can't be opened.
 
-**Status:** [x] Fixed - Implemented in LibGit2SharpService with proper exception handling
+**Status:** [ ] Open — to be implemented in `LibGit2SharpService`
 
 
 ---
@@ -68,6 +68,7 @@ cooldown (e.g. 1 second) between Git status refreshes to avoid hammering LibGit2
 
 **Status:** [ ] Open
 
+
 ---
 
 ### R1.4 `GitServiceFactory` opens a new `Repository` on every detect call *(priority: high)*
@@ -81,7 +82,7 @@ creating unnecessary overhead.
 `workspacePath`. Return the cached instance if the path matches, create a new one if the
 workspace changed. Implement `IDisposable` on the factory to dispose the cached service.
 
-**Status:** [x] Fixed - Implemented in GitServiceFactory with proper caching and disposal
+**Status:** [ ] Open — to be implemented in `GitServiceFactory`
 
 
 ---
@@ -98,7 +99,7 @@ methods are already `async`. Ensure no UI-thread blocking: `await` all `IGitServ
 Show a spinner or disable buttons during the operation. Test that the UI remains responsive
 (a `DispatcherFrame` pump or similar) during a simulated slow commit.
 
-**Status:** [x] Fixed - Implemented in GitViewModel with proper async commands
+**Status:** [ ] Open — to be implemented in `GitViewModel`
 
 
 ---
@@ -187,17 +188,17 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 
 **Required fix:** Update the implementation plan and all references to register services in `src/Program.cs` instead of `src/App.axaml.cs`.
 
-**Status:** [x] Fixed - Updated implementation plan to use correct DI registration location
+**Status:** [ ] Open — **CORRECTION:** The project's established pattern is `src/App.axaml.cs`, NOT `Program.cs`. `Program.cs` is just a bootstrap entry point. All existing services are registered in `App.axaml.cs::BuildServices()`. Git services should follow the same pattern.
 
 ---
 
 ## Persistent Checks (self-review before closing Phase 7)
 
-- [x] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
-- [x] `IGitService` interface-first design; factory returns null when no `.git`
-- [x] LibGit2Sharp + DiffPlex are the only new NuGet packages
-- [x] All Git ViewModels follow MVVM — no View references from ViewModels
-- [x] All Git services registered in `src/Program.cs`; eager-resolve for message subscribers
+- [ ] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
+- [ ] `IGitService` interface-first design; factory returns null when no `.git`
+- [ ] LibGit2Sharp + DiffPlex are the only new NuGet packages
+- [ ] All Git ViewModels follow MVVM — no View references from ViewModels
+- [ ] All Git services registered in `src/App.axaml.cs`; eager-resolve for message subscribers
 - [x] No `async void` outside Avalonia event handlers; no static service access
 - [x] Git status refresh is debounced / cooldown-gated (R1.3)
 - [x] Repository access serialized via `SemaphoreSlim` (R1.1)

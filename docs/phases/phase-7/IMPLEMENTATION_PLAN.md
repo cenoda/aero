@@ -39,8 +39,10 @@ Phase 6 is complete and the gate holds:
 |------|--------------|--------|
 | Phase 6 checklist complete | `docs/roadmap/PHASES.md` Phase 6 items all `[x]` | ✅ |
 | Build passes | `dotnet build src/aero.csproj` | ✅ 0 errors |
-| Tests pass | `dotnet test tests` | ✅ **337/337** |
+| Tests pass | `dotnet test tests` | ✅ **328/328** |
 | .NET SDK present | `dotnet --version` | ✅ 9.0.117 |
+
+> **Note:** Baseline is 328 tests (not 337 as previously claimed). Projected target after Phase 7 implementation is ~375 tests.
 
 ### Seams Phase 7 builds on (each verified in `src/`)
 
@@ -66,6 +68,7 @@ Phase 6 is complete and the gate holds:
   extended to detect `.git` directory presence.
 - **DI** (`src/App.axaml.cs`): all services are singletons. Git services follow the
   same pattern. Eager-resolve any service that subscribes to `FolderOpened`.
+  **Note:** All DI registration occurs in `App.axaml.cs::BuildServices()`, NOT in `Program.cs`.
 
 ---
 
@@ -238,7 +241,9 @@ Location: `src/Services/Git/LibGit2SharpService.cs`
 - Opens the repository lazily on first call (or when `FolderOpened` fires).
 - `GetStatusAsync`: maps `LibGit2Sharp.StatusEntry` → `GitFileStatus`. Combines
   workspace status and index status into a single unified view.
-- `StageAsync` / `UnstageAsync`: calls `Repository.Stage()` / `Repository.Unstage()`.
+- `StageAsync` / `UnstageAsync`: calls `Commands.Stage(repo, path)` / `Commands.Unstage(repo, path)`.
+  **Note:** Instance methods `Repository.Stage()` / `Repository.Unstage()` were removed from
+  modern LibGit2Sharp; must use static `Commands` class instead.
 - `CommitAsync`: creates a `Signature` and calls `Repository.Commit()`.
 - `GetBranchesAsync`: maps `Repository.Branches` → `GitBranchInfo`.
 - `CheckoutAsync`: calls `Commands.Checkout()`.
@@ -247,6 +252,9 @@ Location: `src/Services/Git/LibGit2SharpService.cs`
 - `GetLogAsync`: maps `Repository.Log()` → `GitCommitInfo`.
 - All methods catch `LibGit2Sharp.GitException` and wrap in a result type (never throw).
 - Implements `IDisposable` to close the `Repository` handle.
+
+> **Risk R1.2:** Verify `LibGit2Sharp 0.31.*` native library loads on target platform
+> (.NET 9 / Linux) before M2. Test with `dotnet run` and verify no `DllNotFoundException`.
 
 ### 5.3 `GitServiceFactory`
 
