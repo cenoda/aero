@@ -26,7 +26,9 @@ Run external commands and stream their output in a panel.
 
 ## Related Documents
 
-- `docs/LIBRARIES.md` — CliWrap
+- [`docs/phases/phase-5/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — full implementation plan
+- [`docs/phases/phase-5/TOFIX.md`](TOFIX.md) — pre-implementation risks and persistent checks
+- `docs/LIBRARIES.md` — CliWrap (Phase 5 only; Pty.Net/VtNetCore are Phase 9.5)
 - `docs/architecture/IDE_CORE.md` — Terminal subsystem
 - `docs/design/PANELS_AND_DOCKING.md` — Bottom panel layout
 
