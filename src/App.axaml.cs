@@ -60,7 +60,7 @@ public partial class App : Application
         (_services as IDisposable)?.Dispose();
     }
 
-    private static ServiceProvider BuildServices()
+private static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
 
@@ -69,8 +69,9 @@ public partial class App : Application
 
         // Services
         services.AddSingleton<ILanguageDetectionService, LanguageDetectionService>();
-        services.AddSingleton<IDocumentManagementService, DocumentManager>();
+        // Register the concrete type first, then have the interface resolve to the same instance.
         services.AddSingleton<DocumentManager>();
+        services.AddSingleton<IDocumentManagementService>(sp => sp.GetRequiredService<DocumentManager>());
 
         // Phase 4 — LSP integration
         services.AddSingleton<Func<string, string?, LSPSession>>(provider =>
@@ -87,7 +88,7 @@ public partial class App : Application
         // service that also needs a TimeSpan injected from DI).
         services.AddSingleton<LSPManager>(provider => new LSPManager(
             provider.GetRequiredService<IMessageBus>(),
-            provider.GetRequiredService<DocumentManager>(),
+            provider.GetRequiredService<IDocumentManagementService>(),
             provider.GetRequiredService<ILanguageDetectionService>(),
             provider.GetRequiredService<DiagnosticStore>(),
             provider.GetRequiredService<Func<string, string?, LSPSession>>(),
