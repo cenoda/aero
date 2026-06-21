@@ -31,10 +31,14 @@
             <ItemsControl ItemsSource="{Binding StagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <StackPanel Orientation="Horizontal" Margin="4,2">
-                    <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Green"/>
-                    <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
-                  </StackPanel>
+                  <Button Command="{Binding $parent[ItemsControl].((vm:GitViewModel)DataContext).DiffCommand}"
+                          CommandParameter="{Binding FilePath}"
+                          Background="Transparent" BorderThickness="0" Padding="4,2">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Green"/>
+                      <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                    </StackPanel>
+                  </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -52,10 +56,14 @@
             <ItemsControl ItemsSource="{Binding UnstagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <StackPanel Orientation="Horizontal" Margin="4,2">
-                    <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Orange"/>
-                    <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
-                  </StackPanel>
+                  <Button Command="{Binding $parent[ItemsControl].((vm:GitViewModel)DataContext).DiffCommand}"
+                          CommandParameter="{Binding FilePath}"
+                          Background="Transparent" BorderThickness="0" Padding="4,2">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Orange"/>
+                      <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                    </StackPanel>
+                  </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

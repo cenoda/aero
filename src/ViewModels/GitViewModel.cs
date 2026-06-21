@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -12,6 +13,7 @@ using Aero.Services.Git;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using IMessageBus = Aero.Core.IMessageBus;
+using DocMsg = Aero.Core;
 using GitFileStatus = Aero.Models.Git.GitFileStatus;
 using GitFileStatusKind = Aero.Models.Git.GitFileStatusKind;
 
@@ -59,6 +61,7 @@ public class GitViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<string, Unit> UnstageFileCommand { get; }
     public ReactiveCommand<Unit, Unit> CommitCommand { get; }
     public ReactiveCommand<string, Unit> CheckoutBranchCommand { get; }
+    public ReactiveCommand<string, Unit> DiffCommand { get; }
 
     public GitViewModel(IMessageBus bus, GitServiceFactory factory)
     {
@@ -73,6 +76,7 @@ public class GitViewModel : ReactiveObject, IDisposable
         UnstageFileCommand = ReactiveCommand.CreateFromTask<string>(UnstageFileAsync);
         CommitCommand = ReactiveCommand.CreateFromTask(CommitAsync);
         CheckoutBranchCommand = ReactiveCommand.CreateFromTask<string>(CheckoutBranchAsync);
+        DiffCommand = ReactiveCommand.Create<string>(PublishDiffRequested);
 
         // Subscribe to folder-opened messages
         _folderOpenedHandler = msg => _ = OnFolderOpenedAsync(msg.Path);
@@ -301,6 +305,22 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
             ErrorMessage = ex.Message;
             _bus.Publish(new StatusMessage(ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Publishes a GitDiffRequested message for the given file path.
+    /// </summary>
+    private void PublishDiffRequested(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath) || _workspacePath == null)
+            return;
+
+        // Construct full path from workspace + relative file path
+        var fullPath = Path.IsPathRooted(filePath)
+            ? filePath
+            : Path.Combine(_workspacePath, filePath);
+
+        _bus.Publish(new DocMsg.GitDiffRequested(fullPath));
     }
 
     /// <inheritdoc />

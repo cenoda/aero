@@ -11,6 +11,7 @@ using Aero.Core;
 using Aero.Languages;
 using Aero.Models.Editor;
 using Aero.Services;
+using Aero.Services.Git;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using DirtyCloseResponse = Aero.Core.DirtyCloseResponse;
@@ -44,6 +45,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private readonly DiagnosticStore _diagnosticStore;
     private readonly LSPManager? _lspManager;
     private readonly ObservableCollection<EditorTabViewModel> _tabs = new();
+    private readonly ObservableCollection<DiffTabViewModel> _diffTabs = new();
 
     // Stored handlers for unsubscribe
     private Action<DocMsg.DocumentOpened>? _documentOpenedHandler;
@@ -52,9 +54,12 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
     private Action<DocMsg.DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
     private Action<NavigateToLocation>? _navigateToLocationHandler;
+    private Action<DocMsg.GitDiffRequested>? _gitDiffRequestedHandler;
+    private readonly GitServiceFactory? _gitFactory;
     private bool _disposed;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
+    [Reactive] public DiffTabViewModel? ActiveDiffTab { get; set; }
     [Reactive] public string CursorPosition { get; set; } = "Ln 1, Col 1";
     [Reactive] public string Language { get; set; } = "Plain Text";
     [Reactive] public bool HasDocument { get; set; }
@@ -89,7 +94,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
         FindReplaceViewModel findReplace,
         ILanguageDetectionService languageDetection,
         DiagnosticStore diagnosticStore,
-        LSPManager? lspManager = null)
+        LSPManager? lspManager = null,
+        GitServiceFactory? gitFactory = null)
     {
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
@@ -97,6 +103,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
         _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
         _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
         _lspManager = lspManager;
+        _gitFactory = gitFactory;
 
         // Create commands
         CloseTabCommand = ReactiveCommand.Create<EditorTabViewModel>(CloseTab);
@@ -124,10 +131,17 @@ public class EditorViewModel : ReactiveObject, IDisposable
         // Subscribe to navigation requests from Problems panel
         _navigateToLocationHandler = msg => OnNavigateToLocation(msg);
         _bus.Subscribe(_navigateToLocationHandler);
+
+        // Subscribe to diff requests from Git panel
+        _gitDiffRequestedHandler = msg => _ = OnGitDiffRequestedAsync(msg.FilePath);
+        _bus.Subscribe(_gitDiffRequestedHandler);
     }
 
     /// <summary>All open tabs.</summary>
     public ObservableCollection<EditorTabViewModel> Tabs => _tabs;
+
+    /// <summary>All open diff tabs.</summary>
+    public ObservableCollection<DiffTabViewModel> DiffTabs => _diffTabs;
 
     /// <summary>Open a file.</summary>
     public async Task OpenFileAsync(string filePath)
@@ -443,6 +457,48 @@ public class EditorViewModel : ReactiveObject, IDisposable
         _ = OpenFileAndNavigateAsync(msg.FilePath, msg.Line, msg.Column);
     }
 
+    private async Task OnGitDiffRequestedAsync(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        // Check if diff tab for this file is already open
+        var existing = _diffTabs.FirstOrDefault(t => t.FilePath == filePath);
+        if (existing != null)
+        {
+            ActiveDiffTab = existing;
+            return;
+        }
+
+        // Get the Git service and fetch the diff
+        var git = _gitFactory?.Detect(Path.GetDirectoryName(filePath) ?? "");
+        if (git == null)
+        {
+            StatusText = "Diff unavailable: no Git repository";
+            return;
+        }
+
+        try
+        {
+            var diff = await git.GetFileDiffAsync(filePath, CancellationToken.None);
+            if (diff == null || diff.Hunks.Count == 0)
+            {
+                StatusText = "No changes to display";
+                return;
+            }
+
+            var diffVm = new GitDiffViewModel(diff);
+            var tab = new DiffTabViewModel(diffVm);
+            _diffTabs.Add(tab);
+            ActiveDiffTab = tab;
+            HasDocument = true;
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Diff failed: {ex.Message}";
+        }
+    }
+
     private async Task OpenFileAndNavigateAsync(string filePath, int line, int column)
     {
         try
@@ -493,6 +549,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<DocMsg.DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
         if (_navigateToLocationHandler != null)
             _bus.Unsubscribe<NavigateToLocation>(_navigateToLocationHandler);
+        if (_gitDiffRequestedHandler != null)
+            _bus.Unsubscribe<DocMsg.GitDiffRequested>(_gitDiffRequestedHandler);
     }
 
     /// <summary>
