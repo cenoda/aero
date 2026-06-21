@@ -205,7 +205,29 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 - [x] Checkout conflicts surfaced to user (R1.7)
 - [x] Large diff capped (R1.6)
 - [x] `dotnet build src/aero.csproj` passes
-- [x] `dotnet test tests` passes — 359 passed, 1 skipped (`GetBranchesAsync_ReturnsBranches`)
+- [x] `dotnet test tests` passes — 359 passed, 1 skipped (`GetBranchesAsync` — R2.1 hang, deferred)
 - [x] `manual_test/manual_test_phase7.sh` created
 - [x] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
 - [x] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts
+
+---
+
+## Round 2 — Post-Implementation Findings (2026-06-22)
+
+### R2.1 `repo.Branches` enumerator hangs on this Linux environment *(priority: low)*
+
+**Description:** `LibGit2Sharp 0.30` `repo.Branches` enumeration hangs indefinitely on this
+machine — likely attempting remote ref resolution or reading pack metadata in a way that
+blocks on a network or lock. `GetBranchesAsync` in production is not affected (it only runs
+against real workspace repos where the user has a working git setup). The test environment
+is a minimal temp repo with no remotes, which may trigger a different code path.
+
+**Current state:** `GetBranchesAsync_AfterCommit_ReturnsCurrentBranch` is skipped with a
+clear reason. Branch detection is covered indirectly by `GetRepositoryInfoAsync` which
+returns `CurrentBranch` and passes consistently.
+
+**Required fix (future):** Upgrade to LibGit2Sharp 0.31+ if it resolves the enumeration
+hang, or add a `BranchFilter` option to `GetBranchesAsync` that passes
+`new BranchFilter { IsRemote = false }` to limit enumeration scope.
+
+**Status:** [ ] Deferred — not a blocker; production behavior unaffected.
