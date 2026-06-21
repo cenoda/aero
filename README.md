@@ -134,7 +134,7 @@ The IDE is fully functional without agents. Agents are plugins.
 
 ## Development Status
 
-**Current phase: Phase 5 (Output Panel) — Complete**
+**Current phase: Phase 5.5 (Abstraction Pass) — Complete**
 
 | Phase | Status |
 |-------|--------|
@@ -144,8 +144,8 @@ The IDE is fully functional without agents. Agents are plugins.
 | 3 — Syntax Highlighting | ✅ Complete |
 | 4 — LSP Integration | ✅ Complete |
 | 5 — Output Panel | ✅ Complete |
-| 5.5 — Refactoring Pass | ⬜ In Progress |
-| 6 — Multi-language Build | ⬜ Planned |
+| 5.5 — Abstraction Pass | ✅ Complete |
+| 6 — Multi-language Build | ⬜ In Progress |
 | 7 — Git Integration | ⬜ Planned |
 | 8 — UI Polish | ⬜ Planned |
 | 9 — Advanced Features | ⬜ Planned |
