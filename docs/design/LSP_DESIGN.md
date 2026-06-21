@@ -1,5 +1,70 @@
 # Language Server Protocol (LSP) Design
 
+> **Note**: This document describes the LSP design. For abstraction-first principles, see `AGENTS.md` Section 4.
+
+## Abstraction-First (ILSPService)
+
+Aero uses abstraction-first design for multi-language support:
+
+```csharp
+public interface ILSPService
+{
+    // Language identification
+    string Language { get; }  // "csharp", "python", "rust", "typescript"
+    string Name { get; }    // "csharp-ls", "pylsp", "rust-analyzer"
+    
+    // Lifecycle
+    Task InitializeAsync(string workspaceRoot, CancellationToken ct);
+    Task ShutdownAsync(CancellationToken ct);
+    
+    // Document operations
+    Task OpenDocumentAsync(string filePath, string content, CancellationToken ct);
+    Task ChangeDocumentAsync(string filePath, string content, CancellationToken ct);
+    Task CloseDocumentAsync(string filePath, CancellationToken ct);
+    
+    // Language features
+    Task<IEnumerable<CompletionItem>> GetCompletionsAsync(string filePath, Position pos);
+    Task<IEnumerable<Diagnostic>> GetDiagnosticsAsync(string filePath);
+    Task<GotoResult?> GoToDefinitionAsync(string filePath, Position pos);
+    Task<RenameResult> RenameSymbolAsync(string filePath, Position pos, string newName);
+    Task<string?> GetHoverAsync(string filePath, Position pos);
+}
+
+public record Position(int Line, int Column);
+public record CompletionItem(string Label, string? InsertText, CompletionKind Kind);
+public record Diagnostic(Range Range, string Message, DiagnosticSeverity Severity);
+public record GotoResult(Uri Location, Range Range);
+public record RenameResult(WorkspaceEdit? DocumentChanges);
+```
+
+### Implementations
+
+```
+ILSPService (interface)
+    │
+    ├── CSharpLSPService    ← Phase 4: csharp-ls
+    ├── PythonLSPService   ← Future: pylsp
+    ├── RustLSPService     ← Future: rust-analyzer
+    └── TypeScriptService  ← Future: ts_ls
+```
+
+### Factory
+
+```csharp
+public class LSPServiceFactory
+{
+    public ILSPService? Detect(string workspacePath)
+    {
+        // Check for *.csproj → CSharpLSPService
+        // Check for *.py / pyproject.toml → PythonLSPService
+        // Check for Cargo.toml → RustLSPService
+        // Check for package.json → TypeScriptService
+    }
+}
+```
+
+This allows adding new languages without rewriting core logic.
+
 ## Architecture
 
 ```
