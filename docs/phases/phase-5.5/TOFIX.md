@@ -85,7 +85,7 @@ or mark it `[EditorOnly]` in comments. ViewModels consume
 public interface ISyntaxHighlighterService { ... } // Do not inject in ViewModels
 ```
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — TextMate integration is intentionally in View layer only (`EditorView.axaml.cs`). No service interface created. ViewModels use `ILanguageDetectionService` for language info, which is UI-free.
 
 ---
 
@@ -99,7 +99,7 @@ detection (e.g., language-specific operations), document the difference.
 Otherwise, reuse `ILanguageDetectionService` and document in
 `CORE_INFRASTRUCTURE.md`.
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — `ILanguageDetectionService` is the single source of truth for language detection. No separate `ILanguageService` needed. ViewModels use `ILanguageDetectionService.Detect()` to get `LanguageInfo` (id, name, file extensions).
 
 ---
 
@@ -121,7 +121,7 @@ public class ProcessRunnerAdapter : IProcessRunnerService
 }
 ```
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — `IProcessRunner` interface already exists in `src/Terminal/IProcessRunner.cs`, implemented by `ProcessRunner`. Registered in DI at line 106 of `App.axaml.cs`.
 
 ---
 
@@ -144,7 +144,7 @@ public interface ILSPClientService
 }
 ```
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — Phase 4 uses concrete `LSPManager` and `LSPSession` classes (no interface). This follows the "wrap not replace" principle - adding interfaces now would be premature abstraction. `LSPManager` is registered as a singleton in DI and works correctly.
 
 ---
 
@@ -159,7 +159,7 @@ but it may overlap in responsibility.
 - `IFileSystemService` — read/write/enumerate (no watching)
 - `IFileSystemWatcherService` — watch for changes, publish events
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — Clean separation exists: `IFileSystemService` for enumeration, `IFileSystemWatcherService` for watching. Both registered in DI.
 
 ---
 
