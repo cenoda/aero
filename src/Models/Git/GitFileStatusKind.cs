@@ -30,6 +30,9 @@ public enum GitFileStatusKind
     /// <summary>File is staged (in the index).</summary>
     Staged,
 
-    /// <summary>File has merge conflicts.</summary>
-    Conflicted
+/// <summary>File has merge conflicts.</summary>
+    Conflicted,
+
+    /// <summary>File is unmodified (no changes).</summary>
+    Unmodified
 }

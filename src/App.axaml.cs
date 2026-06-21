@@ -2,6 +2,7 @@ using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
 using Aero.Services.Build;
+using Aero.Services.Git;
 using Aero.Terminal;
 using Aero.ViewModels;
 using Avalonia;
@@ -30,9 +31,13 @@ public partial class App : Application
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();
 
-            // Eagerly resolve LSPManager so it subscribes to FolderOpened before any
+// Eagerly resolve LSPManager so it subscribes to FolderOpened before any
             // folder is opened and is disposed with the DI container on app exit.
             _services.GetRequiredService<LSPManager>();
+
+            // Eagerly resolve GitViewModel so it subscribes to FolderOpened before any
+            // folder is opened (Phase 7).
+            _services.GetRequiredService<GitViewModel>();
 
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
@@ -107,9 +112,12 @@ public static ServiceProvider BuildServices()
         // Phase 5 — Output panel (fake terminal)
         services.AddSingleton<IProcessRunner, ProcessRunner>();
 
-        // Phase 6 — Build system
+// Phase 6 — Build system
         services.AddSingleton<DotNetBuildService>();
         services.AddSingleton<BuildServiceFactory>();
+
+        // Phase 7 — Git integration
+        services.AddSingleton<GitServiceFactory>();
 
         // ViewModels
         services.AddSingleton<ShellViewModel>();
@@ -118,6 +126,7 @@ public static ServiceProvider BuildServices()
         services.AddSingleton<FileExplorerViewModel>();
         services.AddSingleton<ProblemsViewModel>();
         services.AddSingleton<OutputViewModel>();
+        services.AddSingleton<GitViewModel>();
 
         return services.BuildServiceProvider();
     }

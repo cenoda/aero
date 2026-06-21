@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup>
+  <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -43,7 +43,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.*" />
 
-<!-- Infrastructure -->
+    <!-- Infrastructure -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
     <PackageReference Include="CliWrap" Version="3.*" />
     <PackageReference Include="StreamJsonRpc" Version="2.*" />

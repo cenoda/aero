@@ -6,7 +6,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-<ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.*" />
     <PackageReference Include="StreamJsonRpc" Version="2.*" />
@@ -25,6 +25,10 @@
     <!-- ReactiveUI for EditorViewModel -->
     <PackageReference Include="ReactiveUI" Version="20.*" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.*" />
+
+    <!-- Git (Phase 7) -->
+    <PackageReference Include="LibGit2Sharp" Version="0.30.*" />
+    <PackageReference Include="DiffPlex" Version="1.7.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,7 +64,7 @@
     <Compile Include="../src/Languages/Models/LSPDiagnosticsEventArgs.cs" />
     <Compile Include="../src/Languages/Models/LSPLogMessageEventArgs.cs" />
     <Compile Include="../src/Languages/Models/LogMessageParams.cs" />
-<Compile Include="../src/Languages/Models/PublishDiagnosticsParams.cs" />
+    <Compile Include="../src/Languages/Models/PublishDiagnosticsParams.cs" />
     <Compile Include="../src/Languages/Models/ServerCapabilities.cs" />
     <Compile Include="../src/Languages/Models/Diagnostic.cs" />
     <Compile Include="../src/Languages/Models/CompletionItem.cs" />
@@ -73,6 +77,24 @@
     <Compile Include="../src/Services/Build/BuildModels.cs" />
     <Compile Include="../src/Services/Build/DotNetBuildService.cs" />
     <Compile Include="../src/Services/Build/BuildServiceFactory.cs" />
+
+    <!-- Git models (Phase 7) -->
+    <Compile Include="../src/Models/Git/GitFileStatusKind.cs" />
+    <Compile Include="../src/Models/Git/GitRepositoryInfo.cs" />
+    <Compile Include="../src/Models/Git/GitFileStatus.cs" />
+    <Compile Include="../src/Models/Git/GitBranchInfo.cs" />
+    <Compile Include="../src/Models/Git/GitCommitInfo.cs" />
+    <Compile Include="../src/Models/Git/GitCommitResult.cs" />
+    <Compile Include="../src/Models/Git/GitDiffLineKind.cs" />
+    <Compile Include="../src/Models/Git/GitDiffLine.cs" />
+    <Compile Include="../src/Models/Git/GitDiffHunk.cs" />
+    <Compile Include="../src/Models/Git/GitDiff.cs" />
+
+    <!-- Git services (Phase 7) -->
+    <Compile Include="../src/Services/Git/IGitService.cs" />
+    <Compile Include="../src/Services/Git/GitServiceFactory.cs" />
+    <Compile Include="../src/Services/Git/GitServiceUnavailableException.cs" />
+    <Compile Include="../src/Services/Git/LibGit2SharpService.cs" />
   </ItemGroup>
 
 </Project>

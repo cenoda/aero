@@ -52,10 +52,19 @@ public sealed class GitServiceFactory : IDisposable
             _cachedWorkspacePath = null;
         }
 
-        // Create new service (libgit2sharp implementation)
-        _cachedService = new LibGit2SharpService(gitDir, normalizedPath);
-        _cachedWorkspacePath = normalizedPath;
-        return _cachedService;
+// Create new service (libgit2sharp implementation)
+        // R1.2 + R1.4 fix: catch service unavailability and return null gracefully
+        try
+        {
+            _cachedService = new LibGit2SharpService(gitDir, normalizedPath);
+            _cachedWorkspacePath = normalizedPath;
+            return _cachedService;
+        }
+        catch (GitServiceUnavailableException)
+        {
+            // Repository couldn't be opened - not a valid git repo
+            return null;
+        }
     }
 
     /// <inheritdoc />

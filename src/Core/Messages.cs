@@ -118,3 +118,23 @@ public record PromptRename(
 public record ConfirmDelete(
     string Path,
     Action<bool> OnResult);
+
+// ---------------------------------------------------------------------------
+// Git messages (Phase 7)
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// Git status has changed (files staged/unstaged, branch, etc.).
+/// Published when a folder is opened or changed, after Git status refresh.
+/// </summary>
+public record GitStatusChanged(string WorkspacePath);
+
+/// <summary>
+/// The current branch changed (checkout, etc.).
+/// </summary>
+public record GitBranchChanged(string BranchName);
+
+/// <summary>
+/// Request diff view for a specific file.
+/// </summary>
+public record GitDiffRequested(string FilePath);

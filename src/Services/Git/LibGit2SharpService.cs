@@ -28,13 +28,32 @@ public sealed class LibGit2SharpService : IGitService
         _gitDir = gitDir ?? throw new ArgumentNullException(nameof(gitDir));
         _repositoryRoot = repositoryRoot ?? throw new ArgumentNullException(nameof(repositoryRoot));
 
-        // Open repository eagerly to catch failures early
+        // Try to open repository, but handle missing/invalid repo gracefully (R1.2, R1.4 fix)
         try
         {
             _repository = new Repository(gitDir);
         }
-        catch (Exception ex) when (ex is not InvalidOperationException)
+        catch (InvalidOperationException)
         {
+            // Path exists but isn't a valid git repository
+            throw new GitServiceUnavailableException(
+                "The path exists but is not a valid Git repository.",
+                new RepositoryNotFoundException(gitDir));
+        }
+        catch (RepositoryNotFoundException)
+        {
+            // Re-throw as our custom exception for consistent handling
+            throw new GitServiceUnavailableException(
+                "The path does not point at a valid Git repository.",
+                new RepositoryNotFoundException(gitDir));
+        }
+        catch (Exception ex) when (
+            ex is NotSupportedException or 
+            DllNotFoundException or 
+            BadImageFormatException or
+            TypeInitializationException)
+        {
+            // Native library issues (the original R1.2 case)
             throw new GitServiceUnavailableException(
                 "Git native library (libgit2) could not be loaded. Ensure libgit2 dependencies are installed.",
                 ex);
@@ -76,13 +95,15 @@ public sealed class LibGit2SharpService : IGitService
 
             foreach (var entry in statuses)
             {
-                var status = MapFileStatus(entry.State);
+                // Map index-side and workdir-side separately (Issue #2 fix)
+                var indexStatus = MapFileStatusToIndex(entry.State);
+                var workdirStatus = MapFileStatusToWorkdir(entry.State);
 
                 result.Add(new GitFileStatus(
                     entry.FilePath,
-                    null,
-                    status,
-                    status));
+                    null, // OldFilePath not available in 0.30
+                    indexStatus,
+                    workdirStatus));
             }
 
             return result;
@@ -197,7 +218,16 @@ public sealed class LibGit2SharpService : IGitService
             if (branch == null)
                 throw new InvalidOperationException($"Branch '{branchName}' not found.");
 
-            Commands.Checkout(repo, branch);
+            try
+            {
+                Commands.Checkout(repo, branch);
+            }
+            catch (Exception ex) when (ex.Message.Contains("conflict") || ex.Message.Contains("Your local changes"))
+            {
+                // R1.7: Handle checkout conflicts gracefully
+                throw new InvalidOperationException(
+                    "Cannot switch branch: you have uncommitted changes. Commit or stash first.", ex);
+            }
         }
         finally
         {
@@ -208,63 +238,73 @@ public sealed class LibGit2SharpService : IGitService
     /// <inheritdoc />
     public async Task<GitDiff> GetFileDiffAsync(string filePath, CancellationToken ct)
     {
-        // R1.6: Run diff computation off the semaphore and cap output at 10,000 lines
-        return await Task.Run(() =>
+        // Issue #1 fix: take semaphore inside Task.Run
+        return await Task.Run(async () =>
         {
-            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
-
-            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
-            var relativePath = Path.GetRelativePath(_repositoryRoot, absolutePath);
-
-            // Get patch comparing HEAD commit with working directory
-            var headTip = repo.Head.Tip;
-            var patch = repo.Diff.Compare<Patch>(headTip?.Tree, DiffTargets.WorkingDirectory);
-            var hunks = new List<GitDiffHunk>();
-
-            const int MaxLines = 10000;
-            int totalLines = 0;
-
-            foreach (var entry in patch)
+            await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+            try
             {
-                if (totalLines >= MaxLines)
-                    break;
+                ct.ThrowIfCancellationRequested();
+                var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
 
-                // Only include the requested file
-                if (!entry.Path.Equals(relativePath, StringComparison.Ordinal))
-                    continue;
+                var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(_repositoryRoot, filePath);
+                var relativePath = Path.GetRelativePath(_repositoryRoot, absolutePath);
 
-                var hunkLines = new List<GitDiffLine>();
-                var patchContent = entry.Patch;
+                // Get patch comparing HEAD commit with working directory
+                var headTip = repo.Head.Tip;
+                var patch = repo.Diff.Compare<Patch>(headTip?.Tree, DiffTargets.WorkingDirectory);
+                var hunks = new List<GitDiffHunk>();
 
-                if (!string.IsNullOrEmpty(patchContent))
+                // R1.6: Cap output at 10,000 lines
+                const int MaxLines = 10000;
+                int totalLines = 0;
+
+                foreach (var entry in patch)
                 {
-                    var lines = patchContent.Split('\n');
-                    foreach (var line in lines)
+                    if (totalLines >= MaxLines)
+                        break;
+
+                    // Only include the requested file
+                    if (!entry.Path.Equals(relativePath, StringComparison.Ordinal))
+                        continue;
+
+                    var hunkLines = new List<GitDiffLine>();
+                    var patchContent = entry.Patch;
+
+                    if (!string.IsNullOrEmpty(patchContent))
                     {
-                        if (totalLines >= MaxLines)
-                            break;
+                        var lines = patchContent.Split('\n');
+                        foreach (var line in lines)
+                        {
+                            if (totalLines >= MaxLines)
+                                break;
 
-                        if (string.IsNullOrEmpty(line)) 
-                            continue;
+                            if (string.IsNullOrEmpty(line))
+                                continue;
 
-                        var kind = GitDiffLineKind.Context;
-                        if (line.StartsWith("+"))
-                            kind = GitDiffLineKind.Addition;
-                        else if (line.StartsWith("-"))
-                            kind = GitDiffLineKind.Deletion;
-                        else if (line.StartsWith("@@"))
-                            kind = GitDiffLineKind.Header;
+                            var kind = GitDiffLineKind.Context;
+                            if (line.StartsWith("+"))
+                                kind = GitDiffLineKind.Addition;
+                            else if (line.StartsWith("-"))
+                                kind = GitDiffLineKind.Deletion;
+                            else if (line.StartsWith("@@"))
+                                kind = GitDiffLineKind.Header;
 
-                        hunkLines.Add(new GitDiffLine(kind, line, -1, -1));
-                        totalLines++;
+                            hunkLines.Add(new GitDiffLine(kind, line, -1, -1));
+                            totalLines++;
+                        }
                     }
+
+                    hunks.Add(new GitDiffHunk(0, 0, 0, 0, hunkLines));
+                    break; // Only first matching entry
                 }
 
-                hunks.Add(new GitDiffHunk(0, 0, 0, 0, hunkLines));
-                break; // Only first matching entry
+                return new GitDiff(relativePath, relativePath, hunks);
             }
-
-            return new GitDiff(relativePath, relativePath, hunks);
+            finally
+            {
+                _semaphore.Release();
+            }
         }, ct);
     }
 
@@ -319,17 +359,35 @@ public sealed class LibGit2SharpService : IGitService
         }
     }
 
-    private static GitFileStatusKind MapFileStatus(FileStatus status) => status switch
+    /// <summary>
+    /// Map FileStatus to index-side status (staging area).
+    /// </summary>
+    private static GitFileStatusKind MapFileStatusToIndex(FileStatus status)
     {
-        FileStatus.NewInIndex => GitFileStatusKind.Added,
-        FileStatus.ModifiedInIndex => GitFileStatusKind.Modified,
-        FileStatus.DeletedFromIndex => GitFileStatusKind.Deleted,
-        FileStatus.RenamedInIndex => GitFileStatusKind.Renamed,
-        FileStatus.NewInWorkdir => GitFileStatusKind.Untracked,
-        FileStatus.ModifiedInWorkdir => GitFileStatusKind.Modified,
-        FileStatus.RenamedInWorkdir => GitFileStatusKind.Renamed,
-        FileStatus.Ignored => GitFileStatusKind.Ignored,
-        FileStatus.Conflicted => GitFileStatusKind.Conflicted,
-        _ => GitFileStatusKind.Modified
-    };
+        if ((status & FileStatus.NewInIndex) != 0)
+            return GitFileStatusKind.Added;
+        if ((status & FileStatus.ModifiedInIndex) != 0)
+            return GitFileStatusKind.Modified;
+        if ((status & FileStatus.DeletedFromIndex) != 0)
+            return GitFileStatusKind.Deleted;
+        if ((status & FileStatus.RenamedInIndex) != 0)
+            return GitFileStatusKind.Renamed;
+        return GitFileStatusKind.Unmodified;
+    }
+
+    /// <summary>
+    /// Map FileStatus to workdir-side status.
+    /// </summary>
+    private static GitFileStatusKind MapFileStatusToWorkdir(FileStatus status)
+    {
+        if ((status & FileStatus.NewInWorkdir) != 0)
+            return GitFileStatusKind.Untracked;
+        if ((status & FileStatus.ModifiedInWorkdir) != 0)
+            return GitFileStatusKind.Modified;
+        if ((status & FileStatus.DeletedFromWorkdir) != 0)  // Issue #3 fix: added missing case
+            return GitFileStatusKind.Deleted;
+        if ((status & FileStatus.RenamedInWorkdir) != 0)
+            return GitFileStatusKind.Renamed;
+        return GitFileStatusKind.Unmodified;
+    }
 }
