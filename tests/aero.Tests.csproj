@@ -95,6 +95,11 @@
     <Compile Include="../src/Services/Git/GitServiceFactory.cs" />
     <Compile Include="../src/Services/Git/GitServiceUnavailableException.cs" />
     <Compile Include="../src/Services/Git/LibGit2SharpService.cs" />
+
+    <!-- Git ViewModels (Phase 7) -->
+    <Compile Include="../src/ViewModels/GitViewModel.cs" />
+    <Compile Include="../src/ViewModels/GitDiffViewModel.cs" />
+    <Compile Include="../src/ViewModels/DiffTabViewModel.cs" />
   </ItemGroup>
 
 </Project>
