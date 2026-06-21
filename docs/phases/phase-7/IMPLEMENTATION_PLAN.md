@@ -317,7 +317,7 @@ public record GitDiffRequested(string FilePath);
 - `CommitCommand`: validates message non-empty, calls `IGitService.CommitAsync()`,
   refreshes status on success.
 - `BranchName`: bound to status bar label.
-- `DiffCommand`: publishes `GitDiffRequested` when a file is double-clicked.
+- `DiffCommand`: publishes `GitDiffRequested` when a file is double-clicked. `EditorViewModel` consumes this and opens the diff tab.
 
 #### `GitFileViewModel`
 
@@ -441,8 +441,8 @@ Files created:
 - `src/ViewModels/GitDiffViewModel.cs`
 
 Files modified:
-- `src/ViewModels/GitViewModel.cs` — wire `GitDiffRequested` → open diff tab
-- `src/ViewModels/EditorViewModel.cs` — handle `GitDiffRequested` to open diff as a tab
+- `src/ViewModels/GitViewModel.cs` — `DiffCommand` publishes `GitDiffRequested` when a file is selected
+- `src/ViewModels/EditorViewModel.cs` — subscribe to `GitDiffRequested`, open diff as a new tab (owns all tab creation, consistent with existing `OpenFileAsync`/`EnsureTabForDocument` pattern)
 - `src/ViewModels/EditorTabViewModel.cs` — add `GitStatusIndicator`
 
 Tests:

@@ -184,11 +184,11 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 
 ### R1.11 DI Registration Location *(priority: high)*
 
-**Description:** The implementation plan mentions registering services in `src/App.axaml.cs`, but the project's established pattern is to register services in `Program.cs`.
+**Description:** An earlier version of this item incorrectly claimed `Program.cs` was the established DI registration location. The actual pattern (confirmed in live code) is `src/App.axaml.cs::BuildServices()`. `Program.cs` is a bootstrap entry point only.
 
-**Required fix:** Update the implementation plan and all references to register services in `src/Program.cs` instead of `src/App.axaml.cs`.
+**Required fix:** Ensure all Phase 7 Git services (`GitServiceFactory`, `GitViewModel`, `LibGit2SharpService`) are registered in `src/App.axaml.cs::BuildServices()`, matching the existing pattern. The implementation plan has been updated to reflect this.
 
-**Status:** [ ] Open — **CORRECTION:** The project's established pattern is `src/App.axaml.cs`, NOT `Program.cs`. `Program.cs` is just a bootstrap entry point. All existing services are registered in `App.axaml.cs::BuildServices()`. Git services should follow the same pattern.
+**Status:** [x] Resolved — implementation plan updated to `src/App.axaml.cs` (M3 and §2 DI note).
 
 ---
 
