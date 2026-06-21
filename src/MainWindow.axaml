@@ -25,6 +25,7 @@
         <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousTabCommand}"/>
         <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseFileCommand}"/>
         <KeyBinding Gesture="Ctrl+Space" Command="{Binding EditorViewModel.CompletionCommand}"/>
+        <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleOutputCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>

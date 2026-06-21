@@ -371,7 +371,7 @@ YAGNI.
 
 ---
 
-### M3 — Bottom Panel Tabs + Ctrl+`
+### M3 — Bottom Panel Tabs + Ctrl+` ✅ DONE
 
 **Deliverables:**
 

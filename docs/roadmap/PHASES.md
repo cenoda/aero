@@ -87,16 +87,16 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] **Problems panel** — list all diagnostics in workspace (M4)
 - [x] **Code completion** — Ctrl+Space triggers LSP completions (M5)
 
-## Phase 5: Output Panel (가짜 터미널)
+## Phase 5: Output Panel (가짜 터미널) ✅
 > ⚠️ 진짜 인터랙티브 터미널(PTY)은 Phase 9.5로 이동. OS마다 PTY 구현이 달라 난이도가 매우 높음.
 > 지금은 명령 실행 결과를 텍스트로 보여주는 Output Panel로 대체한다.
 > Implementation details: [`docs/phases/phase-5/IMPLEMENTATION_PLAN.md`](../phases/phase-5/IMPLEMENTATION_PLAN.md).
 
-- [ ] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
-- [ ] **Output panel** — stdout/stderr 실시간 스트리밍
-- [ ] Ctrl+` 로 패널 토글
-- [ ] 실행 중 취소 버튼 (CancellationToken)
-- [ ] Bottom panel refactored to host Problems + Output as sibling tabs
+- [x] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
+- [x] **Output panel** — stdout/stderr 실시간 스트리밍
+- [x] Ctrl+` 로 패널 토글
+- [x] 실행 중 취소 버튼 (CancellationToken)
+- [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
 ## Phase 6: Build & Output
 - [ ] **BuildService** — run `dotnet build` and capture output

@@ -109,7 +109,7 @@ The IDE is fully functional without agents. Agents are plugins.
 | 2 — File Explorer | ✅ Complete |
 | 3 — Syntax Highlighting | ✅ Complete |
 | 4 — LSP Integration | ✅ Complete |
-| 5 — Output Panel | ⬜ Planned |
+| 5 — Output Panel | ✅ Complete |
 | 6 — Build | ⬜ Planned |
 | 7 — Git | ⬜ Planned |
 | 8 — UI Polish | ⬜ Planned |
