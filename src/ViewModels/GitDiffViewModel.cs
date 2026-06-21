@@ -10,16 +10,27 @@ namespace Aero.ViewModels;
 /// </summary>
 public class GitDiffLineViewModel
 {
-    public GitDiffLineViewModel(string content, GitDiffLineKind kind)
+    public GitDiffLineViewModel(string content, GitDiffLineKind kind, int? oldLineNumber, int? newLineNumber)
     {
         Content = content;
         Kind = kind;
+        OldLineNumber = oldLineNumber;
+        NewLineNumber = newLineNumber;
+        Gutter = kind switch
+        {
+            GitDiffLineKind.Addition => "+",
+            GitDiffLineKind.Deletion => "-",
+            GitDiffLineKind.Header => "@@",
+            _ => " "
+        };
         LineBackground = kind switch
         {
             GitDiffLineKind.Addition => new SolidColorBrush(0x2000FF00), // Green with alpha
             GitDiffLineKind.Deletion => new SolidColorBrush(0x20FF0000), // Red with alpha
+            GitDiffLineKind.Header => new SolidColorBrush(0x200000FF), // Blue with alpha
             _ => Brushes.Transparent
         };
+        IsHeader = kind == GitDiffLineKind.Header;
     }
 
     /// <summary>The text content of the line.</summary>
@@ -30,6 +41,18 @@ public class GitDiffLineViewModel
 
     /// <summary>Background brush based on line kind.</summary>
     public IBrush LineBackground { get; }
+
+    /// <summary>Gutter character (+, -, or space).</summary>
+    public string Gutter { get; }
+
+    /// <summary>Old file line number (1-based), null if not applicable.</summary>
+    public int? OldLineNumber { get; }
+
+    /// <summary>New file line number (1-based), null if not applicable.</summary>
+    public int? NewLineNumber { get; }
+
+    /// <summary>Whether this is a hunk header line.</summary>
+    public bool IsHeader { get; }
 }
 
 /// <summary>
@@ -42,15 +65,36 @@ public class GitDiffViewModel
         FilePath = diff.FilePath;
         Title = $"diff: {System.IO.Path.GetFileName(diff.FilePath)}";
 
-        // Flatten all hunks into a single list of lines
+        // Flatten all hunks into a single list of lines with line numbers
         // R1.8: GitDiffLine has 1-based line numbers from LibGit2Sharp.
         // If clicking a diff line navigates to the editor, subtract 1 before passing to TextRange.
         var lines = new List<GitDiffLineViewModel>();
         foreach (var hunk in diff.Hunks)
         {
+            // Track line numbers within this hunk
+            int oldLine = hunk.OldStart;
+            int newLine = hunk.NewStart;
             foreach (var line in hunk.Lines)
             {
-                lines.Add(new GitDiffLineViewModel(line.Content, line.Kind));
+                int? oldNum = null;
+                int? newNum = null;
+                switch (line.Kind)
+                {
+                    case GitDiffLineKind.Context:
+                        oldNum = oldLine++;
+                        newNum = newLine++;
+                        break;
+                    case GitDiffLineKind.Deletion:
+                        oldNum = oldLine++;
+                        break;
+                    case GitDiffLineKind.Addition:
+                        newNum = newLine++;
+                        break;
+                    case GitDiffLineKind.Header:
+                        // Header lines don't have line numbers
+                        break;
+                }
+                lines.Add(new GitDiffLineViewModel(line.Content, line.Kind, oldNum, newNum));
             }
         }
         Lines = lines;

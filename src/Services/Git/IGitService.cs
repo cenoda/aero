@@ -59,4 +59,10 @@ public interface IGitService : IDisposable
     /// Gets the commit log (most recent commits).
     /// </summary>
     Task<IReadOnlyList<GitCommitInfo>> GetLogAsync(int count, CancellationToken ct);
+
+    /// <summary>
+    /// Gets git config values (e.g., "user.name", "user.email").
+    /// Returns null for each key if not found.
+    /// </summary>
+    Task<string[]> GetConfigAsync(string[] keys, CancellationToken ct);
 }

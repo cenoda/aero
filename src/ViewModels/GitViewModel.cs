@@ -44,6 +44,7 @@ public class GitViewModel : ReactiveObject, IDisposable
     [Reactive] public bool IsRefreshing { get; set; }
     [Reactive] public string StatusText { get; set; } = "No Git repository";
     [Reactive] public string? ErrorMessage { get; set; }
+    [Reactive] public GitBranchInfo? SelectedBranch { get; set; }
 
     /// <summary>Staged changes (ready to commit).</summary>
     public ObservableCollection<GitFileStatusViewModel> StagedChanges { get; } = new();
@@ -275,9 +276,11 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
         if (_gitService == null || string.IsNullOrWhiteSpace(CommitMessage))
             return;
 
-        // Current user as author (could be from settings)
-        var authorName = Environment.UserName;
-        var authorEmail = $"{authorName}@localhost";
+        // Get author from git config, fall back to system user if not configured
+        var configKeys = new[] { "user.name", "user.email" };
+        var configValues = await _gitService.GetConfigAsync(configKeys, CancellationToken.None);
+        var authorName = !string.IsNullOrEmpty(configValues[0]) ? configValues[0] : Environment.UserName;
+        var authorEmail = !string.IsNullOrEmpty(configValues[1]) ? configValues[1] : $"{Environment.UserName}@localhost";
 
         var result = await _gitService.CommitAsync(CommitMessage, authorName, authorEmail, CancellationToken.None);
 

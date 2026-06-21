@@ -143,10 +143,24 @@ public class LibGit2SharpServiceTests : IDisposable
     [Fact]
     public async Task GetBranchesAsync_AfterCommit_ReturnsCurrentBranch()
     {
-        // Branch detection is tested indirectly via GetRepositoryInfoAsync (CurrentBranch field).
-        // repo.Branches enumeration hangs in LibGit2Sharp 0.30 on this Linux environment,
-        // likely due to remote ref resolution. Deferred — see TOFIX R1.9.
-        await Task.CompletedTask;
+        // Arrange: create a real git repo with one commit
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        // Act
+        using var sut = CreateService();
+        var branches = await sut.GetBranchesAsync(CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(branches);
+        Assert.NotEmpty(branches);
+        var currentBranch = branches.FirstOrDefault(b => b.IsCurrent);
+        Assert.NotNull(currentBranch);
+        Assert.Equal("master", currentBranch.Name);
     }
 
     [Fact]

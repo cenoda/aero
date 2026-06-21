@@ -351,6 +351,29 @@ public sealed class LibGit2SharpService : IGitService
     }
 
     /// <inheritdoc />
+    public async Task<string[]> GetConfigAsync(string[] keys, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            var result = new string[keys.Length];
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var configValue = repo.Config.Get<string>(keys[i]);
+                result[i] = configValue?.Value ?? string.Empty;
+            }
+            return result;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed)

@@ -3,6 +3,7 @@
              xmlns:d="https://github.com/avaloniaui/avaloniaui"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Aero.ViewModels"
+             xmlns:git="using:Aero.Models.Git"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="400"
              x:Class="Aero.Views.GitPanelView"
              x:DataType="vm:GitViewModel">
@@ -25,20 +26,29 @@
       <Border Grid.Column="0" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
-            <TextBlock Text="Staged" FontWeight="SemiBold" FontSize="11"/>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Staged" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center"/>
+              <Button Grid.Column="1" Content="Unstage All" Command="{Binding UnstageAllCommand}"
+                      FontSize="10" Padding="4,2" Margin="4,0,0,0"/>
+            </Grid>
           </Border>
           <ScrollViewer Grid.Row="1">
             <ItemsControl ItemsSource="{Binding StagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <Button Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
-                          CommandParameter="{Binding FilePath}"
-                          Background="Transparent" BorderThickness="0" Padding="4,2">
-                    <StackPanel Orientation="Horizontal">
-                      <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Green"/>
-                      <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
-                    </StackPanel>
-                  </Button>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Grid.Column="0" Command="{Binding $parent[UserControl].DataContext.UnstageFileCommand}"
+                            CommandParameter="{Binding FilePath}"
+                            Content="←" FontSize="10" Padding="4,2" Margin="2,0"/>
+                    <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
+                            CommandParameter="{Binding FilePath}"
+                            Background="Transparent" BorderThickness="0" Padding="4,2">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Green"/>
+                        <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                      </StackPanel>
+                    </Button>
+                  </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -50,20 +60,29 @@
       <Border Grid.Column="1" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
-            <TextBlock Text="Unstaged" FontWeight="SemiBold" FontSize="11"/>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Unstaged" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center"/>
+              <Button Grid.Column="1" Content="Stage All" Command="{Binding StageAllCommand}"
+                      FontSize="10" Padding="4,2" Margin="4,0,0,0"/>
+            </Grid>
           </Border>
           <ScrollViewer Grid.Row="1">
             <ItemsControl ItemsSource="{Binding UnstagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <Button Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
-                          CommandParameter="{Binding FilePath}"
-                          Background="Transparent" BorderThickness="0" Padding="4,2">
-                    <StackPanel Orientation="Horizontal">
-                      <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Orange"/>
-                      <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
-                    </StackPanel>
-                  </Button>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Grid.Column="0" Command="{Binding $parent[UserControl].DataContext.StageFileCommand}"
+                            CommandParameter="{Binding FilePath}"
+                            Content="→" FontSize="10" Padding="4,2" Margin="2,0"/>
+                    <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
+                            CommandParameter="{Binding FilePath}"
+                            Background="Transparent" BorderThickness="0" Padding="4,2">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding StatusIcon}" Width="16" Foreground="Orange"/>
+                        <TextBlock Text="{Binding DisplayPath}" FontSize="12"/>
+                      </StackPanel>
+                    </Button>
+                  </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -84,6 +103,22 @@
           <Button Grid.Column="0" Content="Commit" Command="{Binding CommitCommand}"
                   HorizontalAlignment="Stretch" Margin="0,0,4,0"/>
           <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshCommand}"/>
+        </Grid>
+        <!-- Branch Checkout -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
+          <TextBlock Grid.Column="0" Text="Branch:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <ComboBox Grid.Column="1" x:Name="BranchSelector"
+                  ItemsSource="{Binding Branches}"
+                  HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="git:GitBranchInfo">
+                <TextBlock Text="{Binding Name}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="2" Content="Checkout" Command="{Binding CheckoutBranchCommand}"
+                  CommandParameter="{Binding #BranchSelector.SelectedItem.Name}"
+                  Margin="8,0,0,0" Padding="8,4"/>
         </Grid>
       </StackPanel>
     </Border>
