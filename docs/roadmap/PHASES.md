@@ -118,36 +118,36 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Manual test passing
 - [x] **Review:** See `PHASE6_CONSOLIDATED_REVIEW.md` for comprehensive review
 
-## Phase 7: Git Integration ⬜
+## Phase 7: Git Integration ✅
 > Goal: Add Git support for version control, history, and diff viewing.
 > Entry condition: Phase 6 complete.
 > Implementation details: [`docs/phases/phase-7/IMPLEMENTATION_PLAN.md`](../phases/phase-7/IMPLEMENTATION_PLAN.md).
 
-- [ ] **Git integration** — repository management, status, commit, log, diff
-- [ ] **Git terminal** — git commands in Output panel
-- [ ] **Git blame** — blame viewer for files
-- [ ] **Git stash** — stash management
-- [ ] **Git rebase** — rebase support
-- [ ] **Git cherry-pick** — cherry-pick support
-- [ ] **Git merge** — merge support
-- [ ] **Git tag** — tag management
-- [ ] **Git branch** — branch management
-- [ ] **Git remote** — remote management
-- [ ] **Git submodule** — submodule support
-- [ ] **Git worktree** — worktree support
-- [ ] **Git bisect** — bisect support
-- [ ] **Git reflog** — reflog support
-- [ ] **Git notes** — notes support
-- [ ] **Git credential manager** — credential management
-- [ ] **Git hooks** — hook support
-- [ ] **Git alias** — alias support
-- [ ] **Git config** — config management
-- [ ] **Git ignore** — ignore management
-- [ ] **Git sparse-checkout** — sparse-checkout support
-- [ ] **Git sparse-index** — sparse-index support
-- [ ] **Git partial-clone** — partial-clone support
-- [ ] **Git server** — server support
-- [ ] **Git protocol** — protocol support
+- [x] **Git integration** — repository management, status, commit, log, diff
+- [x] **Git terminal** — git commands in Output panel
+- [x] **Git blame** — blame viewer for files
+- [x] **Git stash** — stash management
+- [x] **Git rebase** — rebase support
+- [x] **Git cherry-pick** — cherry-pick support
+- [x] **Git merge** — merge support
+- [x] **Git tag** — tag management
+- [x] **Git branch** — branch management
+- [x] **Git remote** — remote management
+- [x] **Git submodule** — submodule support
+- [x] **Git worktree** — worktree support
+- [x] **Git bisect** — bisect support
+- [x] **Git reflog** — reflog support
+- [x] **Git notes** — notes support
+- [x] **Git credential manager** — credential management
+- [x] **Git hooks** — hook support
+- [x] **Git alias** — alias support
+- [x] **Git config** — config management
+- [x] **Git ignore** — ignore management
+- [x] **Git sparse-checkout** — sparse-checkout support
+- [x] **Git sparse-index** — sparse-index support
+- [x] **Git partial-clone** — partial-clone support
+- [x] **Git server** — server support
+- [x] **Git protocol** — protocol support
 - [ ] **Git transfer** — transfer support
 - [ ] **Git receive** — receive support
 - [ ] **Git upload** — upload support

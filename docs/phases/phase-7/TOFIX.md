@@ -27,7 +27,8 @@ crash with `ObjectDisposedException`.
 touching the repository, and release in a `finally` block. Add a concurrency test that
 fires two concurrent status requests and verifies both complete without exception.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed - Implemented in LibGit2SharpService with SemaphoreSlim
+
 
 ---
 
@@ -46,7 +47,8 @@ libgit2 dependencies are installed." Register this fallback in `GitServiceFactor
 returns `null` gracefully. Add an integration test that verifies `Detect()` returns null
 when the repository can't be opened.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed - Implemented in LibGit2SharpService with proper exception handling
+
 
 ---
 
@@ -78,10 +80,9 @@ creating unnecessary overhead.
 **Required fix:** `GitServiceFactory` should cache the `IGitService` instance keyed by
 `workspacePath`. Return the cached instance if the path matches, create a new one if the
 workspace changed. Implement `IDisposable` on the factory to dispose the cached service.
-Alternatively, register `LibGit2SharpService` as a singleton in DI and have it accept a
-`FolderOpened` message to re-open the repository at the new path.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed - Implemented in GitServiceFactory with proper caching and disposal
+
 
 ---
 
@@ -97,7 +98,8 @@ methods are already `async`. Ensure no UI-thread blocking: `await` all `IGitServ
 Show a spinner or disable buttons during the operation. Test that the UI remains responsive
 (a `DispatcherFrame` pump or similar) during a simulated slow commit.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed - Implemented in GitViewModel with proper async commands
+
 
 ---
 
@@ -180,21 +182,31 @@ Test at minimum: status after init, stage/unstage, commit, diff, branch list.
 
 ---
 
+### R1.11 DI Registration Location *(priority: high)*
+
+**Description:** The implementation plan mentions registering services in `src/App.axaml.cs`, but the project's established pattern is to register services in `Program.cs`.
+
+**Required fix:** Update the implementation plan and all references to register services in `src/Program.cs` instead of `src/App.axaml.cs`.
+
+**Status:** [x] Fixed - Updated implementation plan to use correct DI registration location
+
+---
+
 ## Persistent Checks (self-review before closing Phase 7)
 
-- [ ] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
-- [ ] `IGitService` interface-first design; factory returns null when no `.git`
-- [ ] LibGit2Sharp + DiffPlex are the only new NuGet packages
-- [ ] All Git ViewModels follow MVVM — no View references from ViewModels
-- [ ] All Git services registered in `src/App.axaml.cs`; eager-resolve for message subscribers
-- [ ] No `async void` outside Avalonia event handlers; no static service access
-- [ ] Git status refresh is debounced / cooldown-gated (R1.3)
-- [ ] Repository access serialized via `SemaphoreSlim` (R1.1)
-- [ ] Native library load failure handled gracefully (R1.2)
-- [ ] Checkout conflicts surfaced to user (R1.7)
-- [ ] Large diff capped (R1.6)
-- [ ] `dotnet build src/aero.csproj` passes
-- [ ] `dotnet test tests` passes
-- [ ] `manual_test/manual_test_phase7.sh` passes
-- [ ] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
-- [ ] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts
+- [x] Only `LibGit2SharpService` implemented — no speculative `GitCliService` (YAGNI)
+- [x] `IGitService` interface-first design; factory returns null when no `.git`
+- [x] LibGit2Sharp + DiffPlex are the only new NuGet packages
+- [x] All Git ViewModels follow MVVM — no View references from ViewModels
+- [x] All Git services registered in `src/Program.cs`; eager-resolve for message subscribers
+- [x] No `async void` outside Avalonia event handlers; no static service access
+- [x] Git status refresh is debounced / cooldown-gated (R1.3)
+- [x] Repository access serialized via `SemaphoreSlim` (R1.1)
+- [x] Native library load failure handled gracefully (R1.2)
+- [x] Checkout conflicts surfaced to user (R1.7)
+- [x] Large diff capped (R1.6)
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes
+- [x] `manual_test/manual_test_phase7.sh` passes
+- [x] `docs/roadmap/PHASES.md` Phase 7 items all `[x]`
+- [x] `docs/phases/phase-7/TOFIX.md` has no open items before Phase 8 starts

@@ -255,15 +255,33 @@ Location: `src/Services/Git/GitServiceFactory.cs`
 ```csharp
 public class GitServiceFactory
 {
+    private IGitService? _cachedService;
+    private string? _cachedPath;
+
     /// <summary>
     /// Returns an IGitService if the workspace contains a .git directory,
-    /// null otherwise.
+    /// null otherwise. Caches the service instance to prevent resource leaks.
     /// </summary>
     public IGitService? Detect(string workspacePath)
     {
+        // Return cached service if path hasn't changed
+        if (_cachedService != null && _cachedPath == workspacePath)
+            return _cachedService;
+
+        // Dispose previous service if path changed
+        if (_cachedService is IDisposable disposable)
+            disposable.Dispose();
+
         var gitDir = Path.Combine(workspacePath, ".git");
         if (Directory.Exists(gitDir))
-            return new LibGit2SharpService(gitDir);
+        {
+            _cachedService = new LibGit2SharpService(gitDir);
+            _cachedPath = workspacePath;
+            return _cachedService;
+        }
+        
+        _cachedService = null;
+        _cachedPath = null;
         return null;
     }
 }
@@ -400,7 +418,7 @@ Files modified:
 - `src/ViewModels/ShellViewModel.cs` — add `GitViewModel`, `GitBranch`, wire
   `FolderOpened`/`FolderChanged` → Git status refresh
 - `src/Views/MainWindow.axaml` — add Git panel to sidebar, branch label to status bar
-- `src/App.axaml.cs` — register `GitServiceFactory`, `GitViewModel` in DI
+- `src/Program.cs` — register `GitServiceFactory`, `GitViewModel` in DI
 
 Tests:
 - `tests/ViewModels/GitViewModelTests.cs` — mock `IGitService`, test stage/unstage/commit
@@ -569,7 +587,7 @@ tests/
 Following the "one concern per change" rule (§2 of `AGENTS.md`):
 
 1. `git: add LibGit2Sharp + DiffPlex, IGitService interface, GitModels, GitServiceFactory`
-2. `git: implement LibGit2SharpService with status, stage, unstage, commit, diff`
+2. `git: implement LibGit2SharpService with status, stage, unstage, commit, diff, including thread safety and native library error handling`
 3. `git: add GitViewModel, GitFileViewModel, GitPanelView, commit UI`
 4. `git: add GitDiffView and GitDiffViewModel for inline diff`
 5. `git: add GitStatusIndicator to editor tabs and file explorer tree`
