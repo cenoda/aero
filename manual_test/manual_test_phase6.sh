@@ -40,9 +40,20 @@ echo "[3/5] Testing Ctrl+Shift+B..."
 
 echo "[4/5] Injecting compile error..."
 
-# Create a test file with an error
-TEST_FILE="/home/cenoda/aero/src/TestCompileError.cs"
-cat > "$TEST_FILE" << 'EOF'
+# Build a throwaway temp project (R2.9: do not mutate src/)
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
+cat > "$TMPDIR/BadProject.csproj" << 'EOF'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+</Project>
+EOF
+
+cat > "$TMPDIR/Program.cs" << 'EOF'
 namespace TestCompileError
 {
     public class BadCode
@@ -58,20 +69,19 @@ EOF
 
 # Try to build and capture errors
 echo "Building with error..."
-dotnet build src/aero.csproj 2>&1 || true
+dotnet build "$TMPDIR/BadProject.csproj" 2>&1 || true
 
 # Check if error was parsed
 echo "[5/5] Verifying error appears in Problems..."
 
 # The error should be in the output
-if dotnet build src/aero.csproj 2>&1 | grep -q "error CS1002"; then
+if dotnet build "$TMPDIR/BadProject.csproj" 2>&1 | grep -q "error CS1002"; then
     echo "PASS: Build error detected"
 else
     echo "FAIL: Error not detected"
 fi
 
-# Clean up test file
-rm -f "$TEST_FILE"
+# Cleanup handled by trap
 
 # Kill the app
 kill $APP_PID 2>/dev/null || true

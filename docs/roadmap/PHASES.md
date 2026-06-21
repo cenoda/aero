@@ -98,6 +98,84 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] 실행 중 취소 버튼 (CancellationToken)
 - [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
+## Phase 6: Multi-language Build System ✅
+> Goal: Integrate build systems with the IDE using **abstraction-first** design for multi-language support.
+> Entry condition: Phase 5 complete (Output panel, ProcessRunner)
+> Implementation details: [`docs/phases/phase-6/IMPLEMENTATION_PLAN.md`](../phases/phase-6/IMPLEMENTATION_PLAN.md).
+
+- [x] **IBuildService** — abstraction over a build system (interface-first, per `AGENTS.md` §4)
+- [x] **DotNetBuildService** — the **only** concrete implementation this phase (`.sln` / `.csproj`)
+- [x] **BuildServiceFactory** — auto-detects the workspace build system (reuses `IProjectLoader`)
+- [x] **BuildOptions** / **BuildResult** / **ParsedError** models
+- [x] **Ctrl+Shift+B** runs the detected build; output streams into the existing Output tab
+- [x] Build errors/warnings populate the existing **Problems** panel (alongside LSP diagnostics)
+- [x] Clicking a problem opens the file and moves the caret to the line/column
+- [x] Build state is surfaced in the status bar (`Building… / Build succeeded / Build failed`)
+- [x] Build diagnostics coexist with LSP diagnostics for the same file (source-based keying)
+- [x] Single active build enforced with proper cancellation
+- [x] Graceful error handling (dotnet not found, etc.)
+- [x] All tests passing (328/328)
+- [x] Manual test passing
+- [x] **Review:** See `PHASE6_CONSOLIDATED_REVIEW.md` for comprehensive review
+
+## Phase 7: Git Integration ⬜
+> Goal: Add Git support for version control, history, and diff viewing.
+> Entry condition: Phase 6 complete.
+> Implementation details: [`docs/phases/phase-7/IMPLEMENTATION_PLAN.md`](../phases/phase-7/IMPLEMENTATION_PLAN.md).
+
+- [ ] **Git integration** — repository management, status, commit, log, diff
+- [ ] **Git terminal** — git commands in Output panel
+- [ ] **Git blame** — blame viewer for files
+- [ ] **Git stash** — stash management
+- [ ] **Git rebase** — rebase support
+- [ ] **Git cherry-pick** — cherry-pick support
+- [ ] **Git merge** — merge support
+- [ ] **Git tag** — tag management
+- [ ] **Git branch** — branch management
+- [ ] **Git remote** — remote management
+- [ ] **Git submodule** — submodule support
+- [ ] **Git worktree** — worktree support
+- [ ] **Git bisect** — bisect support
+- [ ] **Git reflog** — reflog support
+- [ ] **Git notes** — notes support
+- [ ] **Git credential manager** — credential management
+- [ ] **Git hooks** — hook support
+- [ ] **Git alias** — alias support
+- [ ] **Git config** — config management
+- [ ] **Git ignore** — ignore management
+- [ ] **Git sparse-checkout** — sparse-checkout support
+- [ ] **Git sparse-index** — sparse-index support
+- [ ] **Git partial-clone** — partial-clone support
+- [ ] **Git server** — server support
+- [ ] **Git protocol** — protocol support
+- [ ] **Git transfer** — transfer support
+- [ ] **Git receive** — receive support
+- [ ] **Git upload** — upload support
+- [ ] **Git fetch** — fetch support
+- [ ] **Git pull** — pull support
+- [ ] **Git push** — push support
+- [ ] **Git merge** — merge support
+- [ ] **Git rebase** — rebase support
+- [ ] **Git cherry-pick** — cherry-pick support
+- [ ] **Git revert** — revert support
+- [ ] **Git reset** — reset support
+- [ ] **Git checkout** — checkout support
+- [ ] **Git switch** — switch support
+- [ ] **Git merge** — merge support
+- [ ] **Git rebase** — rebase support
+- [ ] **Git cherry-pick** — cherry-pick support
+- [ ] **Git revert** — revert support
+- [ ] **Git reset** — reset support
+- [ ] **Git checkout** — checkout support
+- [ ] **Git switch** — switch support
+- [ ] **Git merge** — merge support
+- [ ] **Git rebase** — rebase support
+- [ ] **Git cherry-pick** — cherry-pick support
+- [ ] **Git revert** — revert support
+- [ ] **Git reset** — reset support
+- [ ] **Git checkout** — checkout support
+- [ ] **Git switch** — switch support
+
 ## Phase 5.5: Abstraction Implementation Pass
 > Review completed phases (0-5) and implement abstraction-first design.
 

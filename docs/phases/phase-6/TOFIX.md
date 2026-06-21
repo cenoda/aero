@@ -1,7 +1,7 @@
 # Phase 6 — To Fix
 
-> **Status:** Active — pre-implementation risks recorded.
-> Resolve all open items before declaring Phase 6 complete.
+> **Status:** ✅ Complete — all blocking items resolved.
+> Remaining items are documented known limitations, not blockers.
 >
 > Persistent code-quality checklist for Phase 6 (Build & Output).
 > Add findings during/after each implementation/review round; mark `[x]` when fixed
@@ -75,7 +75,7 @@ translated severity words and the parser silently finds nothing.
 document English-locale output as a Phase 6 limitation. Re-evaluate (forcing invariant culture) only
 if it bites in practice — do not gold-plate now.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed — English-locale MSBuild output is a documented Phase 6 limitation. The parser works with the standard `error`/`warning` keywords. Non-English locales will need explicit `DOTNET_CLI_UI_LANGUAGE=en` or a future regex improvement anchored on the `CSxxxx` code shape.
 
 ---
 
@@ -89,7 +89,7 @@ yet, so the jump silently no-ops.
 at `Loaded` priority after `OpenFileAsync` completes (mirror the existing resubscribe pattern).
 Accept best-effort behavior on rapid re-clicks and document it. See plan §5.7 / risk R6.4.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed — `OpenFileAndNavigateAsync` calls `GetOffset(line + 1, column + 1)` after `OpenFileAsync`. The `EditorView` rebinds at `Loaded` priority so the active editor is available by the time the navigate runs. Best-effort on rapid clicks is acceptable for Phase 6.
 
 ---
 
@@ -113,31 +113,31 @@ log here duplicates what already streamed to the Output panel and bloats the mes
 **Required fix:** Publish `BuildFinished` with an empty or short summary string; the authoritative
 output lives in the Output panel.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed — `ShellViewModel.BuildAsync` publishes `BuildFinished(result.ExitCode, "")` with empty output string. The authoritative output lives in the Output panel; no duplication.
 
 ---
 
 ## Persistent Checks (self-review before closing Phase 6)
 
-- [ ] Only `DotNetBuildService` implemented — no speculative Npm/Cargo/Make services (YAGNI)
-- [ ] `DotNetBuildService` uses injected `IProcessRunner` — no direct `Process`/`CliWrap`
-- [ ] No new NuGet packages added (build uses existing CliWrap via IProcessRunner)
-- [ ] `IBuildService` drops README's redundant `StreamOutputAsync` (deviation recorded in plan §4)
-- [ ] Build & LSP diagnostics coexist for the same file (R1.1) with a test
-- [ ] `ClearSource("build")` runs before each build so stale errors don't accumulate
-- [ ] Error parsing uses the captured buffer, not `OutputViewModel.Lines` (R1.3)
-- [ ] Parser tested against the real verified MSBuild format (R1.4)
-- [ ] Single active build enforced via `IsRunning` (R6.6)
-- [ ] `Ctrl+Shift+B` builds; output streams into the Output tab
-- [ ] Click problem → opens file at line/col (best-effort, R1.6)
-- [ ] Status bar shows Building…/succeeded/failed
-- [ ] No `async void` outside Avalonia event handlers; no static service access
-- [ ] All new services registered in `src/App.axaml.cs`; eager-resolve only if a message subscriber
-- [ ] `dotnet build src/aero.csproj` passes
-- [ ] `dotnet test tests` passes (302 existing + new)
-- [ ] `manual_test/manual_test_phase6.sh` passes
-- [ ] `docs/roadmap/PHASES.md` Phase 6 items all `[x]`; `README.md` updated
-- [ ] `docs/phases/phase-6/TOFIX.md` has no open items before Phase 7 starts
+- [x] Only `DotNetBuildService` implemented — no speculative Npm/Cargo/Make services (YAGNI)
+- [x] `DotNetBuildService` uses injected `IProcessRunner` — no direct `Process`/`CliWrap`
+- [x] No new NuGet packages added (build uses existing CliWrap via IProcessRunner)
+- [x] `IBuildService` drops README's redundant `StreamOutputAsync` (deviation recorded in plan §4)
+- [x] Build & LSP diagnostics coexist for the same file (R1.1) with test (`BuildDiagnosticMappingTests.BuildAndLspDiagnostics_Coexist_ForSameFile`)
+- [x] `ClearSource("build")` runs before each build so stale errors don't accumulate (test: `ClearSource_StaleBuildErrors_DontAccumulate_AcrossBuilds`)
+- [x] Error parsing uses the captured buffer, not `OutputViewModel.Lines` (R1.3)
+- [x] Parser tested against the real verified MSBuild format (R1.4)
+- [x] Single active build enforced via `_buildCts != null` guard (R2.5)
+- [x] `Ctrl+Shift+B` builds; output streams into the Output tab
+- [x] Click problem → opens file at line/col (best-effort, R1.6)
+- [x] Status bar shows Building…/succeeded/failed
+- [x] No `async void` outside Avalonia event handlers; no static service access
+- [x] All new services registered in `src/App.axaml.cs`; eager-resolve only if a message subscriber
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes (**328/328**)
+- [x] `manual_test/manual_test_phase6.sh` passes (uses temp project, not src/)
+- [x] `docs/roadmap/PHASES.md` Phase 6 items all `[x]`; `README.md` updated
+- [x] `docs/phases/phase-6/TOFIX.md` has no open items before Phase 7 starts
 
 ---
 
@@ -274,7 +274,7 @@ interrupted, a broken file is left in `src/`.
 **Required fix:** Build a throwaway temp project (like the planning probe in `/tmp`) instead of
 polluting `src/`.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (2026-06-21) — `manual_test_phase6.sh` now creates a throwaway temp project in `$(mktemp -d)` with a `trap` for cleanup. Never mutates `src/`.
 
 ### R2.10 PHASES.md marked complete prematurely *(priority: medium / process)*
 
@@ -284,7 +284,7 @@ polluting `src/`.
 **Required fix:** Leave Phase 6 items unchecked (or note in-progress) until R2.1–R2.4 are resolved
 and re-verified. Per `plan-rules` §5, gates must be verifiable.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (2026-06-21) — All R2.1–R2.4 fixes verified. Build clean, 328/328 tests pass. PHASES.md items are accurate.
 
 ### R2.11 Test coverage gap *(priority: medium)*
 
@@ -293,7 +293,8 @@ and re-verified. Per `plan-rules` §5, gates must be verifiable.
 **Required fix:** Add tests: build `ParsedError`→`Diagnostic` is 0-based; `BuildCommand` invokes
 `IBuildService.BuildAsync`; navigation lands on the correct line for a 0-based range.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (2026-06-21) — Added `BuildDiagnosticMappingTests.cs` with 11 tests covering:
+0-based mapping contract, coexistence, ClearSource, stale-error cleanup, and full pipeline.
 
 ---
 
@@ -333,7 +334,7 @@ build-vs-build.
 **Required fix:** Either set `OutputViewModel` running-state for the build duration (so Run/Cancel
 reflect it) or document the interleave as a known limitation.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (2026-06-21) — Known limitation documented. Build and command-bar runs use separate CTSes and can interleave output. Build-vs-build is guarded. Full running-state integration deferred to a future phase if needed.
 
 ### R2.14 Dead code left by R2.7 *(priority: low / cleanup)*
 
@@ -342,12 +343,23 @@ reflect it) or document the interleave as a known limitation.
 
 **Required fix:** Remove the unused event and field (or wire the field if a direct path is wanted).
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (2026-06-21) — Removed `DiagnosticStore.DiagnosticsUpdated` event, `DiagnosticsUpdatedEventArgs` class, and `ProblemsViewModel._diagnosticStore` field. Both files compile clean.
 
-### Still open from Round 2 (not addressed in this fix batch)
+---
 
-- **R2.9** — manual test mutates the real `src/` tree.
-- **R2.10** — PHASES.md Phase 6 boxes all `[x]` though the phase isn't closeable (R2.12 blocks).
-- **R2.11** — test coverage gap: still 317 tests, none added for the off-by-one (R2.1), the
-  `IBuildService.BuildAsync` routing (R2.3), or navigation. These tests would have caught R2.1 and
-  would guard against future drift.
+### Round 4 — Final Close-Out (2026-06-21)
+
+All items resolved. Build clean, **328/328 tests pass**.
+
+#### Summary of changes made in this review:
+1. **R2.14** — Removed dead code: `DiagnosticStore.DiagnosticsUpdated` event, `DiagnosticsUpdatedEventArgs`, `ProblemsViewModel._diagnosticStore` field, and redundant 2-arg constructor.
+2. **R2.11** — Added `BuildDiagnosticMappingTests.cs` (11 tests): 0-based mapping contract, coexistence, ClearSource, stale-error cleanup, full pipeline.
+3. **R2.9** — Rewrote `manual_test_phase6.sh` to use a throwaway temp project instead of mutating `src/`.
+4. **R1.5/R1.6/R1.8/R2.10** — Closed with documented rationale (known limitations).
+
+#### Known limitations (documented, not blockers):
+- **R1.5**: Localized MSBuild output requires `DOTNET_CLI_UI_LANGUAGE=en` or future regex improvement.
+- **R1.6**: Navigation is best-effort on rapid tab switches (acceptable for Phase 6).
+- **R2.13**: Build and command-bar runs can interleave output (separate CTSes). Full running-state integration deferred.
+
+**Phase 6 is ready for closure.**

@@ -7,19 +7,6 @@ using Aero.Core;
 namespace Aero.Languages;
 
 /// <summary>
-/// Event args for DiagnosticsUpdated events from DiagnosticStore.
-/// </summary>
-public sealed class DiagnosticsUpdatedEventArgs : EventArgs
-{
-    public IReadOnlyList<Diagnostic> Diagnostics { get; }
-
-    public DiagnosticsUpdatedEventArgs(IReadOnlyList<Diagnostic> diagnostics)
-    {
-        Diagnostics = diagnostics;
-    }
-}
-
-/// <summary>
 /// Stores the latest diagnostics per (source, file URI) and publishes DiagnosticsUpdated
 /// messages when the set changes. Supports multiple sources (e.g., LSP, build).
 /// </summary>
@@ -29,11 +16,6 @@ public sealed class DiagnosticStore
     private readonly object _lock = new();
     private ImmutableDictionary<(string Source, string Uri), IReadOnlyList<Diagnostic>> _diagnosticsByFile =
         ImmutableDictionary<(string, string), IReadOnlyList<Diagnostic>>.Empty;
-
-    /// <summary>
-    /// Event published when diagnostics change (for direct subscription without message bus).
-    /// </summary>
-    public event EventHandler<DiagnosticsUpdatedEventArgs>? DiagnosticsUpdated;
 
     public DiagnosticStore(IMessageBus bus)
     {
@@ -162,7 +144,6 @@ public sealed class DiagnosticStore
         }
 
         _bus.Publish(new DiagnosticsUpdated(all));
-        DiagnosticsUpdated?.Invoke(this, new DiagnosticsUpdatedEventArgs(all));
     }
 
 private static bool DiagnosticListsEqual(IReadOnlyList<Diagnostic>? left, IReadOnlyList<Diagnostic>? right)

@@ -145,7 +145,7 @@ The IDE is fully functional without agents. Agents are plugins.
 | 4 — LSP Integration | ✅ Complete |
 | 5 — Output Panel | ✅ Complete |
 | 5.5 — Abstraction Pass | ✅ Complete |
-| 6 — Multi-language Build | ⬜ In Progress |
+| 6 — Multi-language Build | ✅ Complete |
 | 7 — Git Integration | ⬜ Planned |
 | 8 — UI Polish | ⬜ Planned |
 | 9 — Advanced Features | ⬜ Planned |
