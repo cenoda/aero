@@ -33,10 +33,17 @@
             <ListBox ItemsSource="{Binding Diagnostics}"
                     IsVisible="{Binding Diagnostics.Count}"
                     Background="Transparent"
-                    BorderThickness="0">
+                    BorderThickness="0"
+                    x:Name="DiagnosticsList">
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="lang:Diagnostic">
                         <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
                             <!-- Severity icon -->
                             <TextBlock Grid.Column="0"
                                        Text="{Binding SeverityIcon}"

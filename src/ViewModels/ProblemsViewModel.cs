@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Input;
 using Aero.Core;
 using Aero.Languages;
 using ReactiveUI;
@@ -15,18 +16,33 @@ namespace Aero.ViewModels;
 public class ProblemsViewModel : ReactiveObject, IDisposable
 {
     private readonly Aero.Core.IMessageBus _bus;
+    private readonly DiagnosticStore? _diagnosticStore;
     private readonly Action<DiagnosticsUpdated>? _handler;
     private bool _disposed;
 
     private ObservableCollection<Diagnostic> _diagnostics = new();
     private bool _isVisible;
+    private ICommand? _navigateCommand;
 
     public ProblemsViewModel(Aero.Core.IMessageBus bus)
+        : this(bus, null)
+    {
+    }
+
+    public ProblemsViewModel(Aero.Core.IMessageBus bus, DiagnosticStore? diagnosticStore)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _diagnosticStore = diagnosticStore;
 
         _handler = OnDiagnosticsUpdated;
         _bus.Subscribe(_handler);
+
+        if (_diagnosticStore != null)
+        {
+            _diagnosticStore.DiagnosticsUpdated += OnDiagnosticStoreUpdated;
+        }
+
+        NavigateCommand = ReactiveCommand.Create<Diagnostic>(NavigateToDiagnostic);
     }
 
     public ObservableCollection<Diagnostic> Diagnostics
@@ -39,6 +55,18 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
     {
         get => _isVisible;
         set => this.RaiseAndSetIfChanged(ref _isVisible, value);
+    }
+
+    public ICommand NavigateCommand
+    {
+        get => _navigateCommand ?? throw new InvalidOperationException("NavigateCommand not initialized");
+        private set => this.RaiseAndSetIfChanged(ref _navigateCommand, value);
+    }
+
+    private void NavigateToDiagnostic(Diagnostic diagnostic)
+    {
+        // Publish NavigateToLocation message to open the file and navigate to the line
+        _bus.Publish(new NavigateToLocation(diagnostic.FileUri, diagnostic.Range.StartLine, diagnostic.Range.StartCharacter));
     }
 
     private void OnDiagnosticsUpdated(DiagnosticsUpdated message)
@@ -86,5 +114,14 @@ public class ProblemsViewModel : ReactiveObject, IDisposable
 
         if (_handler != null)
             _bus.Unsubscribe<DiagnosticsUpdated>(_handler);
+
+        if (_diagnosticStore != null)
+            _diagnosticStore.DiagnosticsUpdated -= OnDiagnosticStoreUpdated;
+    }
+
+    private void OnDiagnosticStoreUpdated(object? sender, DiagnosticsUpdatedEventArgs e)
+    {
+        // Forward DiagnosticStore events to the same handler as message bus
+        OnDiagnosticsUpdated(new DiagnosticsUpdated(e.Diagnostics));
     }
 }

@@ -28,11 +28,11 @@ public class DiagnosticStoreTests
         };
 
         // Set first diagnostics
-        store.SetDiagnostics(uri, diagnostics1);
+        store.SetDiagnostics("lsp", uri, diagnostics1);
         Assert.Single(store.GetDiagnostics(uri));
 
         // Replace with second diagnostics - should NOT accumulate
-        store.SetDiagnostics(uri, diagnostics2);
+        store.SetDiagnostics("lsp", uri, diagnostics2);
         Assert.Single(store.GetDiagnostics(uri));
         Assert.Equal("error 2", store.GetDiagnostics(uri)[0].Message);
     }
@@ -46,12 +46,12 @@ public class DiagnosticStoreTests
         var uri1 = "file:///a.cs";
         var uri2 = "file:///b.cs";
 
-        store.SetDiagnostics(uri1, new List<Diagnostic>
+        store.SetDiagnostics("lsp", uri1, new List<Diagnostic>
         {
             new Diagnostic(DiagnosticSeverity.Error, uri1, new TextRange(0, 0, 0, 5), "a-error")
         });
 
-        store.SetDiagnostics(uri2, new List<Diagnostic>
+        store.SetDiagnostics("lsp", uri2, new List<Diagnostic>
         {
             new Diagnostic(DiagnosticSeverity.Warning, uri2, new TextRange(1, 0, 1, 5), "b-warning")
         });
@@ -76,7 +76,7 @@ public class DiagnosticStoreTests
             new Diagnostic(DiagnosticSeverity.Error, uri, new TextRange(0, 0, 0, 5), "error")
         };
 
-        store.SetDiagnostics(uri, diagnostics);
+        store.SetDiagnostics("lsp", uri, diagnostics);
 
         // At least one DiagnosticsUpdated should have been raised
         var updated = bus.MessagesOf<DiagnosticsUpdated>().ToList();
@@ -97,8 +97,8 @@ public class DiagnosticStoreTests
         };
 
         // First set, then clear - both should publish DiagnosticsUpdated messages
-        store.SetDiagnostics(uri, diagnostics);
-        store.ClearDiagnostics(uri);
+        store.SetDiagnostics("lsp", uri, diagnostics);
+        store.ClearDiagnostics("lsp", uri);
 
         // At least one update with empty diagnostics was raised
         var updated = bus.MessagesOf<DiagnosticsUpdated>().ToList();
@@ -121,10 +121,10 @@ public class DiagnosticStoreTests
             new Diagnostic(DiagnosticSeverity.Error, uri, new TextRange(0, 0, 0, 5), "error")
         };
 
-        store.SetDiagnostics(uri, diagnostics);
+        store.SetDiagnostics("lsp", uri, diagnostics);
         Assert.NotEmpty(store.GetDiagnostics(uri));
 
-        store.ClearDiagnostics(uri);
+        store.ClearDiagnostics("lsp", uri);
         Assert.Empty(store.GetDiagnostics(uri));
     }
 
@@ -140,11 +140,11 @@ public class DiagnosticStoreTests
             new Diagnostic(DiagnosticSeverity.Error, uri, new TextRange(0, 0, 0, 5), "error")
         };
 
-        store.SetDiagnostics(uri, diagnostics);
+        store.SetDiagnostics("lsp", uri, diagnostics);
         Assert.NotEmpty(store.GetDiagnostics(uri));
 
         // Set empty list should remove the file
-        store.SetDiagnostics(uri, new List<Diagnostic>());
+        store.SetDiagnostics("lsp", uri, new List<Diagnostic>());
         var result = store.GetDiagnostics(uri);
         Assert.Empty(result);
     }

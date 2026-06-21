@@ -111,14 +111,14 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## Phase 6: Build & Output (Abstraction-First)
 > Multi-language build system support. Interface-first design for extensibility.
 
-- [ ] **IBuildService interface** — abstraction with BuildCommand, ProjectFilePattern
-- [ ] **BuildOptions / BuildResult models** — configuration and output
-- [ ] **DotNetBuildService** — implements IBuildService for .NET
-- [ ] **BuildServiceFactory** — auto-detect project type and create service
-- [ ] **Output panel** — stream stdout/stderr (reuses Phase 5)
-- [ ] Parse build error format → populate Problems panel
-- [ ] Ctrl+Shift+B to build
-- [ ] Click error in Problems → jump to file/line
+- [x] **IBuildService interface** — abstraction with BuildCommand, ProjectFilePattern
+- [x] **BuildOptions / BuildResult models** — configuration and output
+- [x] **DotNetBuildService** — implements IBuildService for .NET
+- [x] **BuildServiceFactory** — auto-detect project type and create service
+- [x] **Output panel** — stream stdout/stderr (reuses Phase 5)
+- [x] Parse build error format → populate Problems panel
+- [x] Ctrl+Shift+B to build
+- [x] Click error in Problems → jump to file/line
 
 ## Phase 7: Git Integration
 - [ ] **GitRepository** — wrap git CLI or libgit2sharp

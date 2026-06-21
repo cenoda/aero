@@ -50,6 +50,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
     private Action<DocMsg.DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
+    private Action<NavigateToLocation>? _navigateToLocationHandler;
     private bool _disposed;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
@@ -118,6 +119,10 @@ public class EditorViewModel : ReactiveObject, IDisposable
         _bus.Subscribe(_activeDocumentChangedHandler);
         _bus.Subscribe(_documentSavedHandler);
         _bus.Subscribe(_diagnosticsUpdatedHandler);
+
+        // Subscribe to navigation requests from Problems panel
+        _navigateToLocationHandler = msg => OnNavigateToLocation(msg);
+        _bus.Subscribe(_navigateToLocationHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -431,6 +436,35 @@ public class EditorViewModel : ReactiveObject, IDisposable
         }
     }
 
+    private void OnNavigateToLocation(NavigateToLocation msg)
+    {
+        // Open the file and navigate to the specified line/column
+        _ = OpenFileAndNavigateAsync(msg.FilePath, msg.Line, msg.Column);
+    }
+
+    private async Task OpenFileAndNavigateAsync(string filePath, int line, int column)
+    {
+        try
+        {
+            // Open the file (will switch to existing tab or create new one)
+            await OpenFileAsync(filePath);
+
+            // Navigate to the line/column in the active tab
+            var tab = ActiveTab;
+            if (tab != null)
+            {
+                // Set caret offset based on line/column (1-based)
+                var offset = tab.Document.GetOffset(line, column);
+                tab.Document.CaretOffset = offset;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log but don't throw — navigation failures shouldn't crash the app
+            System.Diagnostics.Debug.WriteLine($"Navigation failed: {ex.Message}");
+        }
+    }
+
     /// <summary>Dispose message bus subscriptions to prevent stale-handler leaks.</summary>
     public void Dispose()
     {
@@ -448,6 +482,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
         if (_diagnosticsUpdatedHandler != null)
             _bus.Unsubscribe<DocMsg.DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
+        if (_navigateToLocationHandler != null)
+            _bus.Unsubscribe<NavigateToLocation>(_navigateToLocationHandler);
     }
 
     /// <summary>

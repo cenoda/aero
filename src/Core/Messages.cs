@@ -57,6 +57,9 @@ public record BuildStarted(string Project);
 /// <summary>A build finished with an exit code and captured output.</summary>
 public record BuildFinished(int ExitCode, string Output);
 
+/// <summary>Navigate to a location in a file (from Problems panel click).</summary>
+public record NavigateToLocation(string FilePath, int Line, int Column);
+
 // ---------------------------------------------------------------------------
 // UI messages
 // ---------------------------------------------------------------------------

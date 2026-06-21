@@ -182,4 +182,11 @@ public class TextDocument
         var line = _document.GetLineByOffset(offset);
         return (line.LineNumber, offset - line.Offset + 1);
     }
+
+    /// <summary>Get offset from line and column (1-based).</summary>
+    public int GetOffset(int line, int column)
+    {
+        var docLine = _document.GetLineByNumber(line);
+        return docLine.Offset + column - 1;
+    }
 }

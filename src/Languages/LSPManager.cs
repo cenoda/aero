@@ -402,7 +402,7 @@ public sealed class LSPManager : IDisposable
         // Clear diagnostics for the closed file.
         if (!string.IsNullOrEmpty(uri))
         {
-            _diagnosticStore.ClearDiagnostics(uri);
+            _diagnosticStore.ClearDiagnostics("lsp", uri);
         }
     }
 
@@ -467,7 +467,7 @@ public sealed class LSPManager : IDisposable
             }
         }
 
-        _diagnosticStore.SetDiagnostics(uri, diagnostics);
+        _diagnosticStore.SetDiagnostics("lsp", uri, diagnostics);
     }
 
     /// <summary>

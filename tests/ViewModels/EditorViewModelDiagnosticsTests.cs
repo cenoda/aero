@@ -48,7 +48,7 @@ public class EditorViewModelDiagnosticsTests
 
         // DiagnosticStore.SetDiagnostics publishes DiagnosticsUpdated on the bus,
         // which the VM relays as DiagnosticsChanged.
-        store.SetDiagnostics("file:///test.cs", new List<Diagnostic>
+        store.SetDiagnostics("lsp", "file:///test.cs", new List<Diagnostic>
         {
             new Diagnostic(
                 DiagnosticSeverity.Error,
@@ -69,11 +69,11 @@ public class EditorViewModelDiagnosticsTests
         var raisedCount = 0;
         vm.DiagnosticsChanged += () => raisedCount++;
 
-        store.SetDiagnostics("file:///a.cs", new List<Diagnostic>
+        store.SetDiagnostics("lsp", "file:///a.cs", new List<Diagnostic>
         {
             new Diagnostic(DiagnosticSeverity.Warning, "file:///a.cs", new TextRange(0, 0, 0, 1), "warn")
         });
-        store.SetDiagnostics("file:///b.cs", new List<Diagnostic>
+        store.SetDiagnostics("lsp", "file:///b.cs", new List<Diagnostic>
         {
             new Diagnostic(DiagnosticSeverity.Error, "file:///b.cs", new TextRange(1, 0, 1, 1), "err")
         });
@@ -115,11 +115,11 @@ public class EditorViewModelDiagnosticsTests
                 Code: "CS0001")
         };
 
-        store.SetDiagnostics("file:///test.cs", diags);
+        store.SetDiagnostics("lsp", "file:///test.cs", diags);
         Assert.Equal(1, raisedCount);
 
         // Setting the identical list again — DiagnosticStore short-circuits, no publish
-        store.SetDiagnostics("file:///test.cs", diags);
+        store.SetDiagnostics("lsp", "file:///test.cs", diags);
         Assert.Equal(1, raisedCount);
     }
 }

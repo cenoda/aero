@@ -14,6 +14,7 @@ using Aero.Core;
 using Aero.Models.Editor;
 using Aero.Services;
 using Aero.Services.Build;
+using Aero.Languages;
 using IMessageBus = Aero.Core.IMessageBus;
 
 namespace Aero.ViewModels;
@@ -31,6 +32,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly ProblemsViewModel _problemsViewModel;
     private readonly OutputViewModel _outputViewModel;
     private readonly BuildServiceFactory _buildServiceFactory;
+    private readonly DiagnosticStore _diagnosticStore;
+    private IBuildService? _buildService;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -80,7 +83,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
         FileExplorerViewModel fileExplorerViewModel,
         ProblemsViewModel problemsViewModel,
         OutputViewModel outputViewModel,
-        BuildServiceFactory buildServiceFactory)
+        BuildServiceFactory buildServiceFactory,
+        DiagnosticStore diagnosticStore)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
@@ -89,6 +93,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         _problemsViewModel = problemsViewModel ?? throw new ArgumentNullException(nameof(problemsViewModel));
         _outputViewModel = outputViewModel ?? throw new ArgumentNullException(nameof(outputViewModel));
         _buildServiceFactory = buildServiceFactory ?? throw new ArgumentNullException(nameof(buildServiceFactory));
+        _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -465,8 +470,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
             return;
         }
 
-        var buildService = _buildServiceFactory.Detect(_workspacePath);
-        if (buildService == null)
+        _buildService = _buildServiceFactory.Detect(_workspacePath);
+        if (_buildService == null)
         {
             StatusText = "No supported build system";
             return;
@@ -476,8 +481,9 @@ public class ShellViewModel : ReactiveObject, IDisposable
         IsBottomPanelVisible = true;
         ActiveBottomTabIndex = 1; // Output tab
 
-        // Clear previous output
+        // Clear previous output and build diagnostics
         _outputViewModel.Lines.Clear();
+        _diagnosticStore.ClearSource("build");
 
         // Publish BuildStarted
         _bus.Publish(new BuildStarted(_workspacePath));
@@ -510,6 +516,28 @@ public class ShellViewModel : ReactiveObject, IDisposable
             // Publish BuildFinished
             _bus.Publish(new BuildFinished(exitCode, ""));
             StatusText = exitCode == 0 ? "Build succeeded" : "Build failed";
+
+            // Update DiagnosticStore with build errors
+            if (exitCode != 0)
+            {
+                var errors = _buildService.ParseErrors(_outputViewModel.Lines.ToList());
+                var errorsByFile = errors
+                    .GroupBy(e => e.FilePath)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var kvp in errorsByFile)
+                {
+                    var fileUri = kvp.Key;
+                    var diags = kvp.Value.Select(e => new Diagnostic(
+                        e.Severity == BuildSeverity.Error ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+                        fileUri,
+                        new TextRange(e.Line, e.Column, e.Line, e.Column),
+                        e.Message,
+                        "build",
+                        e.Code)).ToList();
+                    _diagnosticStore.SetDiagnostics("build", fileUri, diags);
+                }
+            }
         }
         catch (OperationCanceledException)
         {
