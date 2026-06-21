@@ -1,6 +1,7 @@
 using System;
 using Aero.Models.Editor;
 using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using DocMsg = Aero.Core;
 using IMessageBus = Aero.Core.IMessageBus;
 
@@ -17,6 +18,12 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
     private string _languageId;
     private Action<DocMsg.DocumentModified>? _modificationHandler;
     private Action<DocMsg.DocumentSaved>? _savedHandler;
+
+    /// <summary>
+    /// Git status glyph shown in the tab header (e.g. "M" for modified, "A" for added).
+    /// Set by EditorViewModel when GitStatusChanged fires.
+    /// </summary>
+    [Reactive] public string GitStatusGlyph { get; set; } = "";
 
     public EditorTabViewModel(TextDocument document, IMessageBus bus, string languageId)
     {

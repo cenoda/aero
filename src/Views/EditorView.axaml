@@ -16,6 +16,10 @@
             <TabControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:EditorTabViewModel">
                     <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding GitStatusGlyph}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Foreground="#4CAF50"/>
                         <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
                         <Button Content="×"
                                 Command="{Binding #EditorTabControl.DataContext.CloseTabCommand}"

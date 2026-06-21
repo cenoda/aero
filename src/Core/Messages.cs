@@ -144,3 +144,9 @@ public record GitBranchChanged(string BranchName);
 /// Request diff view for a specific file.
 /// </summary>
 public record GitDiffRequested(string FilePath);
+
+/// <summary>
+/// A Git repository was detected (or closed). Published by GitViewModel when a folder
+/// is opened or changed. Subscribers use this to sync their HasGitRepository state.
+/// </summary>
+public record GitRepositoryChanged(string WorkspacePath, bool HasRepository);

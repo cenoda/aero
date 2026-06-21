@@ -55,6 +55,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
     private Action<NavigateToLocation>? _navigateToLocationHandler;
     private Action<DocMsg.GitDiffRequested>? _gitDiffRequestedHandler;
+    private Action<GitStatusChanged>? _gitStatusChangedHandler;
+    private Action<GitRepositoryChanged>? _gitRepositoryChangedHandler;
     private readonly GitServiceFactory? _gitFactory;
     private bool _disposed;
 
@@ -67,6 +69,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     [Reactive] public string StatusText { get; set; } = "";
     [Reactive] public bool IsCompletionVisible { get; set; }
     [Reactive] public string CompletionText { get; set; } = "";
+    [Reactive] public bool HasGitRepository { get; set; }
 
     /// <summary>
     /// Raised when a find/replace action should be executed against the active TextEditor.
@@ -135,6 +138,14 @@ public class EditorViewModel : ReactiveObject, IDisposable
         // Subscribe to diff requests from Git panel
         _gitDiffRequestedHandler = msg => _ = OnGitDiffRequestedAsync(msg.FilePath);
         _bus.Subscribe(_gitDiffRequestedHandler);
+
+        // Subscribe to Git status changes for modified-file indicators
+        _gitStatusChangedHandler = msg => OnGitStatusChanged(msg);
+        _bus.Subscribe(_gitStatusChangedHandler);
+
+        // Subscribe to repository detection to sync HasGitRepository state
+        _gitRepositoryChangedHandler = msg => OnGitRepositoryChanged(msg);
+        _bus.Subscribe(_gitRepositoryChangedHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -499,6 +510,66 @@ public class EditorViewModel : ReactiveObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Handle GitStatusChanged: update GitStatusGlyph on all tabs.
+    /// Match by file path, preferring staged over unstaged.
+    /// </summary>
+    private void OnGitStatusChanged(GitStatusChanged msg)
+    {
+        // Build lookup sets for staged and unstaged files
+        var stagedPaths = msg.StagedFiles
+            .Select(f => Path.Combine(msg.WorkspacePath, f.FilePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var unstagedPaths = msg.UnstagedFiles
+            .Select(f => Path.Combine(msg.WorkspacePath, f.FilePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Update glyph for each tab
+        foreach (var tab in _tabs)
+        {
+            var filePath = tab.FilePath;
+            if (string.IsNullOrEmpty(filePath))
+            {
+                tab.GitStatusGlyph = "";
+                continue;
+            }
+
+            // Normalize for comparison
+            var normalizedPath = Path.GetFullPath(filePath);
+
+            // Prefer staged over unstaged
+            if (stagedPaths.Contains(normalizedPath))
+            {
+                tab.GitStatusGlyph = "A"; // Added (staged)
+            }
+            else if (unstagedPaths.Contains(normalizedPath))
+            {
+                tab.GitStatusGlyph = "M"; // Modified
+            }
+            else
+            {
+                tab.GitStatusGlyph = "";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle GitRepositoryChanged: sync HasGitRepository and clear glyphs when repo closes.
+    /// </summary>
+    private void OnGitRepositoryChanged(GitRepositoryChanged msg)
+    {
+        HasGitRepository = msg.HasRepository;
+
+        // Clear all glyphs when repository is closed
+        if (!msg.HasRepository)
+        {
+            foreach (var tab in _tabs)
+            {
+                tab.GitStatusGlyph = "";
+            }
+        }
+    }
+
     private async Task OpenFileAndNavigateAsync(string filePath, int line, int column)
     {
         try
@@ -551,6 +622,10 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<NavigateToLocation>(_navigateToLocationHandler);
         if (_gitDiffRequestedHandler != null)
             _bus.Unsubscribe<DocMsg.GitDiffRequested>(_gitDiffRequestedHandler);
+        if (_gitStatusChangedHandler != null)
+            _bus.Unsubscribe<GitStatusChanged>(_gitStatusChangedHandler);
+        if (_gitRepositoryChangedHandler != null)
+            _bus.Unsubscribe<GitRepositoryChanged>(_gitRepositoryChangedHandler);
     }
 
     /// <summary>

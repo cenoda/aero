@@ -101,11 +101,17 @@ public class GitViewModel : ReactiveObject, IDisposable
             CurrentBranch = "(no branch)";
             IsDirty = false;
             StatusText = "No Git repository";
+
+            // Publish repository detection so other VMs can sync their state
+            _bus.Publish(new GitRepositoryChanged(path, false));
             return;
         }
 
         HasGitRepository = true;
         await RefreshStatusInternalAsync();
+
+        // Publish repository detection so other VMs can sync their state
+        _bus.Publish(new GitRepositoryChanged(_workspacePath!, true));
     }
 
     /// <summary>

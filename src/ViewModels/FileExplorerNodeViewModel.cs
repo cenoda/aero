@@ -36,6 +36,12 @@ public class FileExplorerNodeViewModel : ReactiveObject
         IconKind = iconKind ?? throw new System.ArgumentNullException(nameof(iconKind));
     }
 
+    /// <summary>
+    /// Git status glyph shown next to the file name (e.g. "M" for modified, "A" for added).
+    /// Set by FileExplorerViewModel when GitStatusChanged fires.
+    /// </summary>
+    [Reactive] public string GitStatusGlyph { get; set; } = "";
+
     /// <summary>The file or directory name without any parent path.</summary>
     public string Name { get; }
 

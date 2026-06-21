@@ -3,11 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Aero.Core;
+using Aero.Models.Git;
 using Aero.Models.Project;
 using Aero.Services;
 using ReactiveUI;
@@ -33,6 +35,8 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     // Stored handlers for unsubscribe in Dispose()
     private Action<FolderOpened>? _folderOpenedHandler;
     private Action<FolderChanged>? _folderChangedHandler;
+    private Action<GitStatusChanged>? _gitStatusChangedHandler;
+    private Action<GitRepositoryChanged>? _gitRepositoryChangedHandler;
 
     // Cancellation source for the in-flight root load (null when idle).
     private CancellationTokenSource? _loadCts;
@@ -54,6 +58,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     [Reactive] public string? ErrorMessage { get; set; }
     [Reactive] public FileExplorerNodeViewModel? SelectedNode { get; set; }
     [Reactive] public string StatusText { get; set; } = "No folder open";
+    [Reactive] public bool HasGitRepository { get; set; }
 
     /// <summary>Top-level tree nodes. Empty until <see cref="LoadFolderAsync"/> runs.</summary>
     public ObservableCollection<FileExplorerNodeViewModel> RootNodes { get; } = new();
@@ -110,6 +115,14 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         // Subscribe to debounced filesystem changes and refresh the tree.
         _folderChangedHandler = msg => _ = OnFolderChangedAsync(msg);
         _bus.Subscribe(_folderChangedHandler);
+
+        // Subscribe to Git status changes for modified-file indicators
+        _gitStatusChangedHandler = msg => OnGitStatusChanged(msg);
+        _bus.Subscribe(_gitStatusChangedHandler);
+
+        // Subscribe to repository detection to sync HasGitRepository state
+        _gitRepositoryChangedHandler = msg => OnGitRepositoryChanged(msg);
+        _bus.Subscribe(_gitRepositoryChangedHandler);
     }
 
     /// <summary>
@@ -422,6 +435,10 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
         if (_folderChangedHandler != null)
             _bus.Unsubscribe<FolderChanged>(_folderChangedHandler);
+        if (_gitStatusChangedHandler != null)
+            _bus.Unsubscribe<GitStatusChanged>(_gitStatusChangedHandler);
+        if (_gitRepositoryChangedHandler != null)
+            _bus.Unsubscribe<GitRepositoryChanged>(_gitRepositoryChangedHandler);
 
         // Stop watching. The watcher is a DI singleton; the container disposes
         // it on app exit, so the VM only needs to release its own subscription.
@@ -459,6 +476,102 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         {
             System.Diagnostics.Debug.WriteLine(
                 $"[FileExplorerViewModel] FolderChanged refresh failed: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Handle GitStatusChanged: update GitStatusGlyph on all nodes.
+    /// Walks the tree recursively, matching FullPath against staged/unstaged files.
+    /// </summary>
+    private void OnGitStatusChanged(GitStatusChanged msg)
+    {
+        if (!HasGitRepository)
+            return;
+
+        // Build lookup sets for staged and unstaged files
+        var stagedPaths = msg.StagedFiles
+            .Select(f => Path.Combine(msg.WorkspacePath, f.FilePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var unstagedPaths = msg.UnstagedFiles
+            .Select(f => Path.Combine(msg.WorkspacePath, f.FilePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Update glyphs on root nodes
+        UpdateGitGlyphsRecursive(RootNodes, stagedPaths, unstagedPaths);
+    }
+
+    /// <summary>
+    /// Recursively update GitStatusGlyph on a collection of nodes.
+    /// </summary>
+    private void UpdateGitGlyphsRecursive(
+        IEnumerable<FileExplorerNodeViewModel> nodes,
+        HashSet<string> stagedPaths,
+        HashSet<string> unstagedPaths)
+    {
+        foreach (var node in nodes)
+        {
+            // Skip placeholder
+            if (node.IsPlaceholder)
+                continue;
+
+            var fullPath = node.FullPath;
+            if (!string.IsNullOrEmpty(fullPath))
+            {
+                // Normalize for comparison
+                var normalizedPath = Path.GetFullPath(fullPath);
+
+                if (stagedPaths.Contains(normalizedPath))
+                {
+                    node.GitStatusGlyph = "A";
+                }
+                else if (unstagedPaths.Contains(normalizedPath))
+                {
+                    node.GitStatusGlyph = "M";
+                }
+                else
+                {
+                    node.GitStatusGlyph = "";
+                }
+            }
+
+            // Recurse into children if loaded
+            if (node.AreChildrenLoaded && node.Children.Count > 0)
+            {
+                UpdateGitGlyphsRecursive(node.Children, stagedPaths, unstagedPaths);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle GitRepositoryChanged: sync HasGitRepository and clear glyphs when repo closes.
+    /// </summary>
+    private void OnGitRepositoryChanged(GitRepositoryChanged msg)
+    {
+        HasGitRepository = msg.HasRepository;
+
+        // Clear all glyphs when repository is closed
+        if (!msg.HasRepository)
+        {
+            ClearGitGlyphsRecursive(RootNodes);
+        }
+    }
+
+    /// <summary>
+    /// Recursively clear GitStatusGlyph on a collection of nodes.
+    /// </summary>
+    private void ClearGitGlyphsRecursive(IEnumerable<FileExplorerNodeViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.IsPlaceholder)
+                continue;
+
+            node.GitStatusGlyph = "";
+
+            if (node.AreChildrenLoaded && node.Children.Count > 0)
+            {
+                ClearGitGlyphsRecursive(node.Children);
+            }
         }
     }
 
