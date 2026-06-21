@@ -67,8 +67,11 @@
     <Compile Include="../src/Languages/DiagnosticStore.cs" />
     <Compile Include="../src/Terminal/IProcessRunner.cs" />
     <Compile Include="../src/Terminal/ProcessRunner.cs" />
-<Compile Include="../src/ViewModels/OutputViewModel.cs" />
+    <Compile Include="../src/ViewModels/OutputViewModel.cs" />
     <Compile Include="../src/Core/MessageBus.cs" />
+    <Compile Include="../src/Services/Build/IBuildService.cs" />
+    <Compile Include="../src/Services/Build/BuildModels.cs" />
+    <Compile Include="../src/Services/Build/DotNetBuildService.cs" />
   </ItemGroup>
 
 </Project>
