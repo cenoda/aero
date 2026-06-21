@@ -66,7 +66,7 @@ singleton pattern already provides one implicit "factory" — the DI container.
 needed (e.g., `ProcessRunnerServiceFactory` for command type detection).
 Document the decision in each case.
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — Verified all services use direct DI registration. No factories added.
 
 ---
 
@@ -179,7 +179,14 @@ services.AddSingleton<IProcessRunnerService, ProcessRunnerAdapter>();
 // ... etc.
 ```
 
-**Status:** Open
+**Status:** ✅ Resolved (2026-06-21) — Verified all interfaces registered in App.axaml.cs:
+- IDocumentManagementService ✅
+- IFileSystemService ✅
+- IFileSystemWatcherService ✅
+- IProjectLoader ✅
+- ILanguageDetectionService ✅
+- ILSPService ✅
+- IProcessRunner ✅
 
 ---
 
