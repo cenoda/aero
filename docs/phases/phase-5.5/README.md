@@ -1,10 +1,10 @@
 # Phase 5.5: Abstraction Implementation Pass
 
-> Implement abstraction-first design for completed phases. No new features — only adding interfaces and factories.
+> Review completed phases (0-5) and implement abstraction-first design. No new features.
 
 ## Goal
 
-Apply abstraction-first design to Phase 5 (Output Panel) and prepare for Phase 6+.
+Apply abstraction-first design to all completed phases (0-5), ensuring the architecture supports multi-language IDE vision.
 
 ## Entry Condition
 
@@ -12,42 +12,68 @@ Apply abstraction-first design to Phase 5 (Output Panel) and prepare for Phase 6
 
 ## Exit Condition
 
-- IProcessRunnerService interface exists
-- ProcessRunnerServiceFactory for auto-detection
-- Ready for Phase 6 (Build)
+- All services follow interface-first pattern
+- Factory classes exist for auto-detection
+- Ready for Phase 6 (Build System)
 
-## Architecture
+## Scope: Phase 0-5 Review
 
-### Interface
+### Phase 0: Foundation
+- [ ] Verify DI container uses interfaces
+- [ ] Check service registration follows patterns
+
+### Phase 1: Editor
+- [ ] Review DocumentManager for abstraction opportunities
+- [ ] Verify TextBuffer abstraction (AvaloniaEdit)
+
+### Phase 2: File Explorer
+- [ ] Review IFileSystemService interface
+- [ ] Check IProjectLoader abstraction
+
+### Phase 3: Syntax Highlighting
+- [ ] Add ISyntaxHighlighterService interface
+- [ ] Add LanguageDetectionService factory
+
+### Phase 4: LSP Integration
+- [ ] Review ILSPService interface (already abstracted)
+- [ ] Verify LSPManager uses interface
+
+### Phase 5: Output Panel
+- [ ] Add IProcessRunnerService interface
+- [ ] Add ProcessRunnerServiceFactory
+
+## Architecture Templates
+
+### Interface Template
 
 ```csharp
-public interface IProcessRunnerService
+public interface I{Feature}Service
 {
-    string Name { get; }  // "dotnet", "npm", "git", etc.
-    Task<ProcessResult> RunAsync(ProcessOptions options, CancellationToken ct);
-    IAsyncEnumerable<string> StreamOutputAsync(CancellationToken ct);
+    string Name { get; }
+    Task<{Feature}Result> ExecuteAsync({Feature}Options options, CancellationToken ct);
 }
-
-public record ProcessOptions(
-    string Command,
-    string WorkingDirectory,
-    IEnumerable<string>? Arguments = null
-);
-
-public record ProcessResult(
-    bool Success,
-    int ExitCode,
-    string Output,
-    string Error
-);
 ```
 
-### Factory
+### Factory Template
 
 ```csharp
-public class ProcessRunnerServiceFactory
+public class {Feature}ServiceFactory
 {
-    public IProcessRunnerService? Detect(string command)
+    public I{Feature}Service? Detect(string workspacePath)
+    {
+        // Auto-detect project type and return appropriate service
+    }
+}
+```
+
+## Checklist
+
+- [ ] **Phase 0** — Verify DI and service registration
+- [ ] **Phase 1** — Review DocumentManager
+- [ ] **Phase 2** — Review IFileSystemService, IProjectLoader
+- [ ] **Phase 3** — Add ISyntaxHighlighterService
+- [ ] **Phase 4** — Verify ILSPService
+- [ ] **Phase 5** — Add IProcessRunnerService
     {
         // Check for dotnet, npm, git, etc.
     }
