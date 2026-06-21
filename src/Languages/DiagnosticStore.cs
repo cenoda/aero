@@ -14,8 +14,28 @@ public sealed class DiagnosticStore
 {
     private readonly IMessageBus _bus;
     private readonly object _lock = new();
+
+    /// <summary>
+    /// Case-insensitive comparer for (Source, Uri) keys so that file paths like
+    /// "/test.cs" and "/Test.cs" resolve to the same entry on case-insensitive
+    /// file systems (C3).
+    /// </summary>
+    private sealed class SourceUriComparer : IEqualityComparer<(string Source, string Uri)>
+    {
+        public static readonly SourceUriComparer Instance = new();
+
+        public bool Equals((string Source, string Uri) x, (string Source, string Uri) y) =>
+            string.Equals(x.Source, y.Source, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.Uri, y.Uri, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((string Source, string Uri) obj) =>
+            HashCode.Combine(
+                obj.Source?.ToUpperInvariant(),
+                obj.Uri?.ToUpperInvariant());
+    }
+
     private ImmutableDictionary<(string Source, string Uri), IReadOnlyList<Diagnostic>> _diagnosticsByFile =
-        ImmutableDictionary<(string, string), IReadOnlyList<Diagnostic>>.Empty;
+        ImmutableDictionary<(string, string), IReadOnlyList<Diagnostic>>.Empty.WithComparers(SourceUriComparer.Instance);
 
     public DiagnosticStore(IMessageBus bus)
     {
@@ -88,7 +108,7 @@ public sealed class DiagnosticStore
         lock (_lock)
         {
             var keysToRemove = _diagnosticsByFile.Keys
-                .Where(k => k.Source == source)
+                .Where(k => string.Equals(k.Source, source, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             foreach (var key in keysToRemove)
@@ -111,7 +131,7 @@ public sealed class DiagnosticStore
         lock (_lock)
         {
             return _diagnosticsByFile
-                .Where(kvp => kvp.Key.Uri == fileUri)
+                .Where(kvp => string.Equals(kvp.Key.Uri, fileUri, StringComparison.OrdinalIgnoreCase))
                 .SelectMany(kvp => kvp.Value)
                 .ToList();
         }

@@ -229,4 +229,124 @@ public class DotNetBuildServiceTests
 
         Assert.True(result.Duration >= TimeSpan.Zero);
     }
+
+    // -------------------------------------------------------------------
+    // C1: Non-English locale tests
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void ParseErrors_NonEnglishErrorWord_German()
+    {
+        var runner = new StubProcessRunner(1, Array.Empty<string>());
+        var service = new DotNetBuildService(runner);
+
+        // German MSBuild: "Fehler" instead of "error"
+        var lines = new List<string>
+        {
+            "/abs/path/Program.cs(5,17): Fehler CS0029: Cannot implicitly convert type 'string' to 'int' [/abs/path/probe.csproj]"
+        };
+
+        var errors = service.ParseErrors(lines);
+
+        Assert.Single(errors);
+        Assert.Equal("/abs/path/Program.cs", errors[0].FilePath);
+        Assert.Equal(5, errors[0].Line);
+        Assert.Equal(17, errors[0].Column);
+        Assert.Equal("CS0029", errors[0].Code);
+        Assert.Equal(BuildSeverity.Error, errors[0].Severity);
+    }
+
+    [Fact]
+    public void ParseErrors_NonEnglishWarningWord_French()
+    {
+        var runner = new StubProcessRunner(0, Array.Empty<string>());
+        var service = new DotNetBuildService(runner);
+
+        // French MSBuild: "avertissement" is the real French word but dotnet CLI
+        // actually still uses English "warning" in most locales.  This test
+        // verifies an *unrecognized* severity word still produces a Warning
+        // diagnostic rather than being silently dropped.
+        var lines = new List<string>
+        {
+            "/abs/path/File.cs(7,13): avertissement CS0168: variable declared but never used [project]"
+        };
+
+        var errors = service.ParseErrors(lines);
+
+        Assert.Single(errors);
+        Assert.Equal(BuildSeverity.Warning, errors[0].Severity);
+    }
+
+    [Fact]
+    public void ParseErrors_UnknownSeverityWord_StillCapturedAsWarning()
+    {
+        var runner = new StubProcessRunner(0, Array.Empty<string>());
+        var service = new DotNetBuildService(runner);
+
+        // Any unknown severity word should produce a Warning (not be dropped)
+        var lines = new List<string>
+        {
+            "/abs/path/X.cs(1,1): WOOPS CS9999: Some message [proj.csproj]"
+        };
+
+        var errors = service.ParseErrors(lines);
+
+        Assert.Single(errors);
+        Assert.Equal(BuildSeverity.Warning, errors[0].Severity);
+        Assert.Equal("CS9999", errors[0].Code);
+    }
+
+    // -------------------------------------------------------------------
+    // L4: Empty / null file path in diagnostics
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void ParseErrors_EmptyFilePath_StillParsed()
+    {
+        var runner = new StubProcessRunner(1, Array.Empty<string>());
+        var service = new DotNetBuildService(runner);
+
+        // Edge case: MSBuild can emit lines where the file path is empty
+        // (e.g. for project-level errors).  The regex allows an empty file
+        // group because (?<file>.+?) requires at least one char — if the
+        // path is truly empty the line won't match, which is the correct
+        // behavior (project-level errors are not navigable).
+        var lines = new List<string>
+        {
+            "(1,1): error CS1002: semicolon expected [proj.csproj]"
+        };
+
+        var errors = service.ParseErrors(lines);
+
+        // With the current regex (.+?) needs at least one char, so an
+        // empty path that starts with '(' won't match.  This is acceptable.
+        Assert.Empty(errors);
+    }
+
+    // -------------------------------------------------------------------
+    // M2: Concurrent build guard
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void ParseErrors_ErrorMessagePrefix_ParsedCorrectly()
+    {
+        // Verify the standard English error line still works after regex changes
+        var runner = new StubProcessRunner(1, Array.Empty<string>());
+        var service = new DotNetBuildService(runner);
+
+        var lines = new List<string>
+        {
+            "/src/Main.cs(10,5): error CS0117: 'MyClass' does not contain a definition for 'DoStuff' [/src/proj.csproj]"
+        };
+
+        var errors = service.ParseErrors(lines);
+
+        Assert.Single(errors);
+        Assert.Equal("/src/Main.cs", errors[0].FilePath);
+        Assert.Equal(10, errors[0].Line);
+        Assert.Equal(5, errors[0].Column);
+        Assert.Equal("CS0117", errors[0].Code);
+        Assert.Equal(BuildSeverity.Error, errors[0].Severity);
+        Assert.Contains("MyClass", errors[0].Message);
+    }
 }

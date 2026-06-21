@@ -148,4 +148,91 @@ public class DiagnosticStoreTests
         var result = store.GetDiagnostics(uri);
         Assert.Empty(result);
     }
+
+    // -------------------------------------------------------------------
+    // C3: Case-insensitive file path matching
+    // -------------------------------------------------------------------
+
+    [Fact]
+    public void SetDiagnostics_CaseInsensitiveFilePath_Deduplicates()
+    {
+        // C3: On case-insensitive file systems (Windows), /test.cs and /Test.cs
+        // should resolve to the same key.
+        var bus = new StubMessageBus();
+        var store = new DiagnosticStore(bus);
+
+        var diags1 = new List<Diagnostic>
+        {
+            new Diagnostic(DiagnosticSeverity.Error, "/test.cs", new TextRange(0, 0, 0, 5), "error 1")
+        };
+        var diags2 = new List<Diagnostic>
+        {
+            new Diagnostic(DiagnosticSeverity.Error, "/Test.cs", new TextRange(1, 0, 1, 5), "error 2")
+        };
+
+        store.SetDiagnostics("build", "/test.cs", diags1);
+        store.SetDiagnostics("build", "/Test.cs", diags2);
+
+        // Both paths should resolve to the same key — the second set replaces the first.
+        var result = store.GetDiagnostics("/test.cs");
+        Assert.Single(result);
+        Assert.Equal("error 2", result[0].Message);
+    }
+
+    [Fact]
+    public void GetDiagnostics_CaseInsensitiveLookup()
+    {
+        var bus = new StubMessageBus();
+        var store = new DiagnosticStore(bus);
+
+        var diags = new List<Diagnostic>
+        {
+            new Diagnostic(DiagnosticSeverity.Warning, "/Foo/Bar.cs", new TextRange(0, 0, 0, 5), "warning")
+        };
+
+        store.SetDiagnostics("lsp", "/Foo/Bar.cs", diags);
+
+        // Look up with different case — should still find the diagnostics
+        var result = store.GetDiagnostics("/foo/bar.cs");
+        Assert.Single(result);
+        Assert.Equal("warning", result[0].Message);
+    }
+
+    [Fact]
+    public void ClearDiagnostics_CaseInsensitivePath()
+    {
+        var bus = new StubMessageBus();
+        var store = new DiagnosticStore(bus);
+
+        var diags = new List<Diagnostic>
+        {
+            new Diagnostic(DiagnosticSeverity.Error, "/My/File.cs", new TextRange(0, 0, 0, 5), "error")
+        };
+
+        store.SetDiagnostics("lsp", "/My/File.cs", diags);
+        Assert.NotEmpty(store.GetDiagnostics("/MY/FILE.CS"));
+
+        // Clear with different case — should find and remove the same entry
+        store.ClearDiagnostics("lsp", "/my/file.cs");
+        Assert.Empty(store.GetDiagnostics("/My/File.cs"));
+    }
+
+    [Fact]
+    public void ClearSource_CaseInsensitiveSource()
+    {
+        var bus = new StubMessageBus();
+        var store = new DiagnosticStore(bus);
+
+        var diags = new List<Diagnostic>
+        {
+            new Diagnostic(DiagnosticSeverity.Error, "/test.cs", new TextRange(0, 0, 0, 5), "error")
+        };
+
+        store.SetDiagnostics("LSP", "/test.cs", diags);
+        Assert.NotEmpty(store.GetDiagnostics("/test.cs"));
+
+        // Clear with different case source name
+        store.ClearSource("lsp");
+        Assert.Empty(store.GetDiagnostics("/test.cs"));
+    }
 }

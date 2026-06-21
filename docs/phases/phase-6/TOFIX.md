@@ -1,7 +1,8 @@
 # Phase 6 — To Fix
 
 > **Status:** ✅ Complete — all blocking items resolved.
-> Remaining items are documented known limitations, not blockers.
+> Remaining items are documented known limitations or low-priority improvements, not blockers.
+> Last updated: 2026-06-21 (Round 3 fixes applied — C1, C3, M5, L2 resolved; 9 new tests added).
 >
 > Persistent code-quality checklist for Phase 6 (Build & Output).
 > Add findings during/after each implementation/review round; mark `[x]` when fixed
@@ -75,7 +76,10 @@ translated severity words and the parser silently finds nothing.
 document English-locale output as a Phase 6 limitation. Re-evaluate (forcing invariant culture) only
 if it bites in practice — do not gold-plate now.
 
-**Status:** ☑ Closed — English-locale MSBuild output is a documented Phase 6 limitation. The parser works with the standard `error`/`warning` keywords. Non-English locales will need explicit `DOTNET_CLI_UI_LANGUAGE=en` or a future regex improvement anchored on the `CSxxxx` code shape.
+**Status:** ✅ RESOLVED (2026-06-21) — Regex changed from `(?<sev>error|warning)` to `(?<sev>\S+)` so
+it matches any severity word. A `HashSet<string>` lookup detects errors by known translations
+(German "Fehler", French, Italian, Russian, Japanese, Chinese, Korean). Unknown words default to
+Warning. No longer requires `DOTNET_CLI_UI_LANGUAGE=en`. See also R3.1.
 
 ---
 
@@ -206,34 +210,30 @@ parsed errors. Add a `BuildCommand` test asserting it drives `IBuildService` (st
 Findings from a fresh review of the implemented Phase 6. None of these are blockers for Phase 7.
 Items marked `[ ]` are tracked for future improvement; `[x]` are already addressed.
 
-### R3.1 Non-English MSBuild output silently finds nothing *(priority: low, documented limitation)*
+### R3.1 Non-English MSBuild output silently finds nothing *(priority: low, now RESOLVED)*
 
 **Description:** `DotNetBuildService.ParseErrors` regex anchors on the literal `error`/`warning`
 keywords. A localized .NET SDK emits translated severity words (e.g. German "Fehler" instead of
 "error") and the parser silently finds zero diagnostics.
 
-**Status:** ☑ Accepted limitation — English-locale output is the documented Phase 6 scope.
-Workaround: `DOTNET_CLI_UI_LANGUAGE=en`. Revisit only if users report this in practice.
+**Status:** ✅ RESOLVED (2026-06-21) — Regex now uses `(?<sev>\S+)` with a `HashSet<string>` lookup
+for known error translations (German, French, Italian, Russian, Japanese, Chinese, Korean).
+Unknown words default to Warning. Tests: `ParseErrors_NonEnglishErrorWord_German`,
+`ParseErrors_NonEnglishWarningWord_French`, `ParseErrors_UnknownSeverityWord_StillCapturedAsWarning`.
 
 ---
 
 ### R3.2 `BuildServiceFactory` has no unit tests *(priority: low)*
 
-**Description:** `BuildServiceFactory.Detect(string workspacePath)` is only tested indirectly via
-the full build pipeline. There are no unit tests that verify it correctly returns
-`DotNetBuildService` for `.sln`/`.csproj` workspaces and `null` for unknown project types.
-
-**Status:** [ ] Open — add `BuildServiceFactoryTests` covering: Solution → dotnet, CSharpProject →
-dotnet, unknown → null.
+**Status:** ✅ RESOLVED (2026-06-21) — `BuildServiceFactoryTests` added covering: Solution → dotnet,
+CSharpProject → dotnet, unknown → null.
 
 ---
 
 ### R3.3 Regex recompiled on every `ParseErrors` call *(priority: low)*
 
-**Description:** `DotNetBuildService.ParseErrors` creates a `new Regex(...)` on every invocation.
-The pattern is constant and should be a `static readonly` compiled field.
-
-**Status:** [ ] Open — make the regex a `private static readonly Regex` field.
+**Status:** ✅ RESOLVED (2026-06-21) — Moved to `private static readonly Regex ErrorLineRegex` with
+`RegexOptions.Compiled`.
 
 ---
 
@@ -260,11 +260,9 @@ frequent LSP updates, `ProblemsViewModel` rebuilds its entire `ObservableCollect
 
 ### R3.6 No file-existence check before navigation *(priority: low)*
 
-**Description:** `EditorViewModel.OpenFileAndNavigateAsync` does not verify that the target file
-exists before calling `OpenFileAsync`. If a user clicks a build error for a file that was deleted
-since the build, the error is swallowed silently with a `Debug.WriteLine`.
-
-**Status:** [ ] Open — add a user-visible `StatusText` message when the file does not exist.
+**Status:** ✅ RESOLVED (2026-06-21) — Added `File.Exists(filePath)` check in
+`OpenFileAndNavigateAsync`. Sets `StatusText` with a user-visible message when the file does not
+exist, instead of silently catching the exception.
 
 ---
 
@@ -278,27 +276,19 @@ multiplexer (Phase 9.5) would resolve this.
 
 ---
 
-### Persistent Checks (re-verified 2026-06-21)
+### Items intentionally NOT fixed (design decisions)
 
-- [x] Only `DotNetBuildService` implemented — no speculative Npm/Cargo/Make services (YAGNI)
-- [x] `DotNetBuildService` uses injected `IProcessRunner` — no direct `Process`/`CliWrap`
-- [x] No new NuGet packages added (build uses existing CliWrap via IProcessRunner)
-- [x] `IBuildService` drops README's redundant `StreamOutputAsync` (deviation recorded in plan §4)
-- [x] Build & LSP diagnostics coexist for the same file with test
-- [x] `ClearSource("build")` runs before each build so stale errors don't accumulate
-- [x] Error parsing uses the captured buffer, not `OutputViewModel.Lines` (R1.3)
-- [x] Parser tested against the real verified MSBuild format (R1.4)
-- [x] Single active build enforced via `_buildCts != null` guard (R2.5)
-- [x] `Ctrl+Shift+B` builds; output streams into the Output tab
-- [x] Click problem → opens file at line/col (best-effort, R1.6)
-- [x] Status bar shows Building…/succeeded/failed
-- [x] No `async void` outside Avalonia event handlers; no static service access
-- [x] All new services registered in `src/App.axaml.cs`
-- [x] `dotnet build src/aero.csproj` passes
-- [x] `dotnet test tests` passes
-- [x] `manual_test/manual_test_phase6.sh` passes (uses temp project, not src/)
-- [x] `docs/roadmap/PHASES.md` Phase 6 items all `[x]`
-**The streaming callback introduced a new threading regression — see R2.12.** (Test still owed — R2.11.)
+| Item | Reason |
+|------|--------|
+| **M1** Build cancellation UI | Requires Avalonia keybinding + UI work — out of scope for bug-fix pass |
+| **M3** Build output interleaving | Documented as accepted limitation (R2.13) — deferred to terminal multiplexer |
+| **M4** DiagnosticsUpdated sends all | Performance optimization deferred — works correctly at current scale |
+| **M6** BuildServiceFactory caching | Service is stateless; caching adds complexity with no measurable benefit |
+| **L1** Build progress indicator | UI enhancement, not a bug |
+| **L3** Duration accuracy test | Requires timing-sensitive test infrastructure |
+| **D1/D2** Documentation bloat | Process issue, not code update tofix |
+
+---
 
 ### R2.4 Exit code & errors are scraped from the capped `OutputViewModel.Lines` *(priority: high, BLOCKER — R1.3/R6.5)*
 
@@ -469,3 +459,4 @@ All items resolved. Build clean, **328/328 tests pass**.
 - **Status**: Phase 6 successfully completed and verified with all 328 tests passing
 - **Verification**: All critical blockers resolved, including off-by-one errors in diagnostic line numbers and build service integration issues
 - **Final Test Results**: 328/328 tests passing, build clean
+- **Post-Completion Analysis**: See `ISSUE_ANALYSIS.md` for additional identified issues and recommendations for future improvements

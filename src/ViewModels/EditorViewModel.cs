@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -446,6 +447,14 @@ public class EditorViewModel : ReactiveObject, IDisposable
     {
         try
         {
+            // M5: Verify file exists before attempting to open (avoids silent
+            // FileNotFoundException swallowed by the catch block).
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            {
+                StatusText = $"Navigation failed: file not found — {filePath}";
+                return;
+            }
+
             // Open the file (will switch to existing tab or create new one)
             await OpenFileAsync(filePath);
 
@@ -461,7 +470,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
         catch (Exception ex)
         {
             // Log but don't throw — navigation failures shouldn't crash the app
-            System.Diagnostics.Debug.WriteLine($"Navigation failed: {ex.Message}");
+            StatusText = $"Navigation failed: {ex.Message}";
         }
     }
 
