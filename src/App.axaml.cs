@@ -60,7 +60,7 @@ public partial class App : Application
         (_services as IDisposable)?.Dispose();
     }
 
-private static ServiceProvider BuildServices()
+public static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
 
