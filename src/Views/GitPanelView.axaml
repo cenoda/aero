@@ -31,7 +31,7 @@
             <ItemsControl ItemsSource="{Binding StagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <Button Command="{Binding $parent[ItemsControl].((vm:GitViewModel)DataContext).DiffCommand}"
+                  <Button Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
                           CommandParameter="{Binding FilePath}"
                           Background="Transparent" BorderThickness="0" Padding="4,2">
                     <StackPanel Orientation="Horizontal">
@@ -56,7 +56,7 @@
             <ItemsControl ItemsSource="{Binding UnstagedChanges}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GitFileStatusViewModel">
-                  <Button Command="{Binding $parent[ItemsControl].((vm:GitViewModel)DataContext).DiffCommand}"
+                  <Button Command="{Binding $parent[UserControl].DataContext.DiffCommand}"
                           CommandParameter="{Binding FilePath}"
                           Background="Transparent" BorderThickness="0" Padding="4,2">
                     <StackPanel Orientation="Horizontal">

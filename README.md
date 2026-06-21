@@ -90,6 +90,7 @@ This pattern applies to all features: syntax highlighting, LSP, Git, etc.
 
 ## Quick Start
 
+
 ### Prerequisites
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - **C# LSP server** (for diagnostics and completions — Phase 4 feature):
