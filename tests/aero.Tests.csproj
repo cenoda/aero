@@ -18,6 +18,9 @@
     <!-- AvaloniaEdit needed for TextDocument -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.*" />
 
+    <!-- CliWrap for ProcessRunner -->
+    <PackageReference Include="CliWrap" Version="3.*" />
+
     <!-- ReactiveUI for EditorViewModel -->
     <PackageReference Include="ReactiveUI" Version="20.*" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.*" />
@@ -60,6 +63,8 @@
     <Compile Include="../src/Languages/Models/Diagnostic.cs" />
     <Compile Include="../src/Languages/Models/CompletionItem.cs" />
     <Compile Include="../src/Languages/DiagnosticStore.cs" />
+    <Compile Include="../src/Terminal/IProcessRunner.cs" />
+    <Compile Include="../src/Terminal/ProcessRunner.cs" />
   </ItemGroup>
 
 </Project>

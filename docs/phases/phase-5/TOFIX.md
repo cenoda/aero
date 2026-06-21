@@ -56,6 +56,8 @@ private void AppendLine(string line)
 `GetUiDispatcher` must return `null` in headless unit tests (no Avalonia app)
 so tests can run without a dispatcher.
 
+**Milestone:** M2 — see `IMPLEMENTATION_PLAN.md §6 M2`.
+
 **Status:** Open
 
 ---
@@ -111,6 +113,8 @@ exit code `-1`.
 `try/catch (Exception ex)` block inside `ProcessRunner.RunAsync`.
 Only re-throw `OperationCanceledException` (to preserve cancel semantics).
 All other exceptions are converted to error lines + return -1.
+
+**Milestone:** M1 — see `IMPLEMENTATION_PLAN.md §6 M1`.
 
 **Status:** Open
 
@@ -181,6 +185,38 @@ distinguish between:
 
 ---
 
+### R1.10 Exit-code synthetic line must always be appended *(priority: low)*
+
+**Description:** `IMPLEMENTATION_PLAN.md §5.1` specifies that `OutputViewModel`
+appends `"[Process exited with code N]"` after `RunAsync` completes and
+`"[Cancelled]"` on cancellation.  These are currently prose-only; they have
+two untested edge cases:
+
+1. **Startup-error path (R1.5):** when `ProcessRunner.RunAsync` catches a
+   startup exception and returns `-1`, `OutputViewModel` must still append
+   `"[Process exited with code -1]"` — not `"[Cancelled]"` — so the user
+   sees a definitive terminal state rather than silence.
+
+2. **Format stability:** the exact strings are not pinned as constants.  If
+   Phase 6 (Build) reuses `ProcessRunner`, inconsistent format strings across
+   callers will make output hard to parse.
+
+**Required fix:** Define format constants in `OutputViewModel`:
+
+```csharp
+private const string ExitLineFmt = "[Process exited with code {0}]";
+private const string CancelledLine = "[Cancelled]";
+```
+
+Ensure the exit-code line is appended in all three terminal states — success,
+cancel, and startup error — and add a unit-test assertion for each path.
+
+**Milestone:** M2 — see `IMPLEMENTATION_PLAN.md §6 M2`.
+
+**Status:** Open
+
+---
+
 ## Persistent Checks
 
 Use these as the self-review checklist before closing Phase 5:
@@ -191,6 +227,8 @@ Use these as the self-review checklist before closing Phase 5:
 - [ ] All `Lines` mutations are on the UI thread (guarded dispatcher pattern)
 - [ ] `ProcessRunner.RunAsync` does not throw for bad binary names — returns `-1`
 - [ ] `OperationCanceledException` from cancel is not surfaced to the UI as a crash
+- [ ] Exit-code synthetic line appended in all three terminal states: success, cancel, startup error (R1.10)
+- [ ] `ExitLineFmt` / `CancelledLine` are defined as constants, not ad-hoc strings (R1.10)
 - [ ] `CancellationTokenSource` is disposed after use
 - [ ] Problems panel (Phase 4) is unbroken after tab-control refactor
 - [ ] `ToggleProblemsCommand` and `ToggleOutputCommand` have consistent toggle semantics
