@@ -198,6 +198,106 @@ parsed errors. Add a `BuildCommand` test asserting it drives `IBuildService` (st
 
 **Status:** ✅ RESOLVED (2026-06-21) — `BuildAsync` now calls
 `_buildService.BuildAsync(options, onLine, ct)` and uses `result.ExitCode`/`result.Success`/`result.Errors`.
+
+---
+
+## Round 3 — Independent Review (2026-06-21)
+
+Findings from a fresh review of the implemented Phase 6. None of these are blockers for Phase 7.
+Items marked `[ ]` are tracked for future improvement; `[x]` are already addressed.
+
+### R3.1 Non-English MSBuild output silently finds nothing *(priority: low, documented limitation)*
+
+**Description:** `DotNetBuildService.ParseErrors` regex anchors on the literal `error`/`warning`
+keywords. A localized .NET SDK emits translated severity words (e.g. German "Fehler" instead of
+"error") and the parser silently finds zero diagnostics.
+
+**Status:** ☑ Accepted limitation — English-locale output is the documented Phase 6 scope.
+Workaround: `DOTNET_CLI_UI_LANGUAGE=en`. Revisit only if users report this in practice.
+
+---
+
+### R3.2 `BuildServiceFactory` has no unit tests *(priority: low)*
+
+**Description:** `BuildServiceFactory.Detect(string workspacePath)` is only tested indirectly via
+the full build pipeline. There are no unit tests that verify it correctly returns
+`DotNetBuildService` for `.sln`/`.csproj` workspaces and `null` for unknown project types.
+
+**Status:** [ ] Open — add `BuildServiceFactoryTests` covering: Solution → dotnet, CSharpProject →
+dotnet, unknown → null.
+
+---
+
+### R3.3 Regex recompiled on every `ParseErrors` call *(priority: low)*
+
+**Description:** `DotNetBuildService.ParseErrors` creates a `new Regex(...)` on every invocation.
+The pattern is constant and should be a `static readonly` compiled field.
+
+**Status:** [ ] Open — make the regex a `private static readonly Regex` field.
+
+---
+
+### R3.4 No test for concurrent-build guard *(priority: low)*
+
+**Description:** The `_buildCts != null` guard (R2.5) prevents concurrent builds and returns
+`"Build already in progress"`, but there is no unit test verifying this behavior.
+
+**Status:** [ ] Open — add a test that triggers `BuildAsync` twice and verifies the second call
+is rejected.
+
+---
+
+### R3.5 `DiagnosticsUpdated` sends the full diagnostic set on every change *(priority: low)*
+
+**Description:** `DiagnosticStore.PublishDiagnosticsUpdated()` publishes *all* diagnostics across
+all files and sources on every `SetDiagnostics`/`ClearDiagnostics` call. On a large workspace with
+frequent LSP updates, `ProblemsViewModel` rebuilds its entire `ObservableCollection` each time.
+
+**Status:** [ ] Accepted for Phase 6 — acceptable at current scale. Consider incremental updates
+(diff-based) if performance becomes an issue.
+
+---
+
+### R3.6 No file-existence check before navigation *(priority: low)*
+
+**Description:** `EditorViewModel.OpenFileAndNavigateAsync` does not verify that the target file
+exists before calling `OpenFileAsync`. If a user clicks a build error for a file that was deleted
+since the build, the error is swallowed silently with a `Debug.WriteLine`.
+
+**Status:** [ ] Open — add a user-visible `StatusText` message when the file does not exist.
+
+---
+
+### R3.7 Build and command-bar output can interleave in Output panel *(priority: low, documented)*
+
+**Description:** R2.13 documents that a user can type a command in the Output bar while a build is
+running. Both write to the same `OutputViewModel.Lines` collection, producing interleaved output.
+
+**Status:** [ ] Accepted limitation — mirrors the VS Code "single terminal" model. A future terminal
+multiplexer (Phase 9.5) would resolve this.
+
+---
+
+### Persistent Checks (re-verified 2026-06-21)
+
+- [x] Only `DotNetBuildService` implemented — no speculative Npm/Cargo/Make services (YAGNI)
+- [x] `DotNetBuildService` uses injected `IProcessRunner` — no direct `Process`/`CliWrap`
+- [x] No new NuGet packages added (build uses existing CliWrap via IProcessRunner)
+- [x] `IBuildService` drops README's redundant `StreamOutputAsync` (deviation recorded in plan §4)
+- [x] Build & LSP diagnostics coexist for the same file with test
+- [x] `ClearSource("build")` runs before each build so stale errors don't accumulate
+- [x] Error parsing uses the captured buffer, not `OutputViewModel.Lines` (R1.3)
+- [x] Parser tested against the real verified MSBuild format (R1.4)
+- [x] Single active build enforced via `_buildCts != null` guard (R2.5)
+- [x] `Ctrl+Shift+B` builds; output streams into the Output tab
+- [x] Click problem → opens file at line/col (best-effort, R1.6)
+- [x] Status bar shows Building…/succeeded/failed
+- [x] No `async void` outside Avalonia event handlers; no static service access
+- [x] All new services registered in `src/App.axaml.cs`
+- [x] `dotnet build src/aero.csproj` passes
+- [x] `dotnet test tests` passes
+- [x] `manual_test/manual_test_phase6.sh` passes (uses temp project, not src/)
+- [x] `docs/roadmap/PHASES.md` Phase 6 items all `[x]`
 **The streaming callback introduced a new threading regression — see R2.12.** (Test still owed — R2.11.)
 
 ### R2.4 Exit code & errors are scraped from the capped `OutputViewModel.Lines` *(priority: high, BLOCKER — R1.3/R6.5)*
@@ -363,3 +463,9 @@ All items resolved. Build clean, **328/328 tests pass**.
 - **R2.13**: Build and command-bar runs can interleave output (separate CTSes). Full running-state integration deferred.
 
 **Phase 6 is ready for closure.**
+
+---
+##### Modification Date: 2026-06-21
+- **Status**: Phase 6 successfully completed and verified with all 328 tests passing
+- **Verification**: All critical blockers resolved, including off-by-one errors in diagnostic line numbers and build service integration issues
+- **Final Test Results**: 328/328 tests passing, build clean
