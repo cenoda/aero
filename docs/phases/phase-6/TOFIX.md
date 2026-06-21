@@ -48,7 +48,7 @@ trimmed `Lines` collection would miss early diagnostics on a verbose build.
 **Required fix:** Parse from the coordinator's own captured buffer (the `onLine` callback both
 appends to the panel *and* buffers for parsing), never from `OutputViewModel.Lines`. See plan §5.6.
 
-**Status:** ☐ Open
+**Status:** ☑ Closed (M1 tests verify — captured via `onLine` callback, not `OutputViewModel.Lines`) [2847722]
 
 ---
 
