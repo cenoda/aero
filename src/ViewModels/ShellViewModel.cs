@@ -27,6 +27,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly EditorViewModel _editorViewModel;
     private readonly FileExplorerViewModel _fileExplorerViewModel;
     private readonly ProblemsViewModel _problemsViewModel;
+    private readonly OutputViewModel _outputViewModel;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -38,13 +39,14 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
     [Reactive] public bool IsFileExplorerVisible { get; set; } = true;
-    [Reactive] public bool IsTerminalVisible { get; set; }
+    [Reactive] public int ActiveBottomTabIndex { get; set; }
     [Reactive] public bool IsBottomPanelVisible { get; set; }
 
     // ViewModels
     public EditorViewModel EditorViewModel => _editorViewModel;
     public FileExplorerViewModel FileExplorerViewModel => _fileExplorerViewModel;
     public ProblemsViewModel ProblemsViewModel => _problemsViewModel;
+    public OutputViewModel OutputViewModel => _outputViewModel;
 
     // Commands
     public ReactiveCommand<Unit, Unit> NewFileCommand { get; }
@@ -59,8 +61,9 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> FindCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleFileExplorerCommand { get; }
-    public ReactiveCommand<Unit, Unit> ToggleTerminalCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleOutputCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleProblemsCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleBottomPanelCommand { get; }
     public ReactiveCommand<Unit, Unit> NextTabCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
@@ -70,13 +73,15 @@ public class ShellViewModel : ReactiveObject, IDisposable
         DocumentManager documentManager,
         EditorViewModel editorViewModel,
         FileExplorerViewModel fileExplorerViewModel,
-        ProblemsViewModel problemsViewModel)
+        ProblemsViewModel problemsViewModel,
+        OutputViewModel outputViewModel)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _editorViewModel = editorViewModel ?? throw new ArgumentNullException(nameof(editorViewModel));
         _fileExplorerViewModel = fileExplorerViewModel ?? throw new ArgumentNullException(nameof(fileExplorerViewModel));
         _problemsViewModel = problemsViewModel ?? throw new ArgumentNullException(nameof(problemsViewModel));
+        _outputViewModel = outputViewModel ?? throw new ArgumentNullException(nameof(outputViewModel));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -91,8 +96,9 @@ public class ShellViewModel : ReactiveObject, IDisposable
         FindCommand = ReactiveCommand.Create(Find);
         ReplaceCommand = ReactiveCommand.Create(Replace);
         ToggleFileExplorerCommand = ReactiveCommand.Create(ToggleFileExplorer);
-        ToggleTerminalCommand = ReactiveCommand.Create(ToggleTerminal);
+        ToggleOutputCommand = ReactiveCommand.Create(ToggleOutput);
         ToggleProblemsCommand = ReactiveCommand.Create(ToggleProblems);
+        ToggleBottomPanelCommand = ReactiveCommand.Create(ToggleBottomPanel);
         NextTabCommand = ReactiveCommand.Create(NextTab);
         PreviousTabCommand = ReactiveCommand.Create(PreviousTab);
         AboutCommand = ReactiveCommand.Create(About);
@@ -420,12 +426,21 @@ public class ShellViewModel : ReactiveObject, IDisposable
         IsFileExplorerVisible = !IsFileExplorerVisible;
     }
 
-    private void ToggleTerminal()
+    private void ToggleOutput()
     {
-        IsTerminalVisible = !IsTerminalVisible;
+        // Show bottom panel and switch to Output tab (index 1)
+        IsBottomPanelVisible = true;
+        ActiveBottomTabIndex = 1;
     }
 
     private void ToggleProblems()
+    {
+        // Show bottom panel and switch to Problems tab (index 0)
+        IsBottomPanelVisible = true;
+        ActiveBottomTabIndex = 0;
+    }
+
+    private void ToggleBottomPanel()
     {
         IsBottomPanelVisible = !IsBottomPanelVisible;
     }
@@ -495,5 +510,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<ActiveDocumentChanged>(_activeDocumentChangedHandler);
         if (_documentSavedHandler != null)
             _bus.Unsubscribe<DocumentSaved>(_documentSavedHandler);
+
+        _outputViewModel.Dispose();
     }
 }

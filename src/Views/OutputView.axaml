@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="https://github.com/avaloniaui/avaloniaui"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Aero.ViewModels"
+             x:Class="Aero.Views.OutputView"
+             x:DataType="vm:OutputViewModel">
+
+    <Border Background="#1E1E1E"
+            BorderBrush="#3C3C3C"
+            BorderThickness="0,1,0,0">
+        <DockPanel>
+            <!-- Header toolbar -->
+            <Border DockPanel.Dock="Top"
+                    Background="#2D2D30"
+                    Padding="8,4">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <!-- Command input -->
+                    <TextBox Grid.Column="0"
+                            Text="{Binding CommandText}"
+                            Watermark="Enter command (e.g., dotnet build)"
+                            IsEnabled="{Binding !IsRunning}"
+                            FontFamily="Consolas,Menlo,monospace"
+                            Margin="0,0,8,0"/>
+
+                    <!-- Run button -->
+                    <Button Grid.Column="1"
+                           Content="Run"
+                           Command="{Binding RunCommand}"
+                           IsEnabled="{Binding !IsRunning}"
+                           Margin="0,0,4,0"
+                           Padding="12,4"/>
+
+                    <!-- Cancel button -->
+                    <Button Grid.Column="2"
+                           Content="Cancel"
+                           Command="{Binding CancelCommand}"
+                           IsEnabled="{Binding IsRunning}"
+                           Margin="0,0,4,0"
+                           Padding="12,4"/>
+
+                    <!-- Clear button -->
+                    <Button Grid.Column="3"
+                           Content="Clear"
+                           Command="{Binding ClearCommand}"
+                           Padding="12,4"/>
+                </Grid>
+            </Border>
+
+            <!-- Output area -->
+            <ScrollViewer x:Name="OutputScrollViewer">
+                <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                    FontFamily="Consolas,Menlo,monospace"
+                                    FontSize="12"
+                                    Foreground="#D4D4D4"
+                                    Margin="8,1"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

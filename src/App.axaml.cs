@@ -1,6 +1,7 @@
 using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
+using Aero.Terminal;
 using Aero.ViewModels;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -100,12 +101,16 @@ public partial class App : Application
         services.AddSingleton<IProjectLoader, ProjectLoader>();
         services.AddSingleton<IFileSystemWatcherService, FileSystemWatcherService>();
 
+        // Phase 5 — Output panel (fake terminal)
+        services.AddSingleton<IProcessRunner, ProcessRunner>();
+
         // ViewModels
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<EditorViewModel>();
         services.AddSingleton<FindReplaceViewModel>();
         services.AddSingleton<FileExplorerViewModel>();
         services.AddSingleton<ProblemsViewModel>();
+        services.AddSingleton<OutputViewModel>();
 
         return services.BuildServiceProvider();
     }

@@ -162,8 +162,11 @@ code.  `OutputViewModel` appends a synthetic line such as
 `"\n[Process exited with code 0]"` after the task completes.
 
 **Cancellation:** Passing a cancelled `CancellationToken` causes CliWrap to
-kill the child process.  `OperationCanceledException` is caught by
-`OutputViewModel`; a `"[Cancelled]"` line is appended.
+kill the child process.  `OperationCanceledException` is caught *inside
+`ProcessRunner`* and returns -1 (see TOFIX R2.1).  `OutputViewModel` detects
+cancellation via its own `_wasCancelled` flag (set in `CancelCommand` before
+`_cts.Cancel()`) and appends `CancelledLine` when the flag is set, or
+`string.Format(ExitLineFmt, exitCode)` otherwise.
 
 ### 5.2 OutputViewModel
 
@@ -206,6 +209,13 @@ This mirrors the `LSPManager` pattern.
 
 **Disposal:** `OutputViewModel` implements `IDisposable`.  The `_cts` is
 cancelled and disposed; the message bus subscription is unsubscribed.
+
+**Terminal-state lines:** OutputViewModel tracks whether the user pressed Cancel
+by maintaining a `_wasCancelled` flag (per TOFIX R2.1).  After the process
+completes, this flag determines whether to emit `[Cancelled]` or
+`[Process exited with code N]`.  The flag is reset to `false` at the
+start of each `RunCommand` invocation and set to `true` in `Cancel()`
+before calling `_cts.Cancel()`.
 
 ### 5.3 OutputView
 
@@ -333,7 +343,7 @@ YAGNI.
 
 ---
 
-### M2 — OutputViewModel + OutputView
+### M2 — OutputViewModel + OutputView ✅ DONE
 
 **Deliverables:**
 

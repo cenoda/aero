@@ -116,7 +116,10 @@ All other exceptions are converted to error lines + return -1.
 
 **Milestone:** M1 — see `IMPLEMENTATION_PLAN.md §6 M1`.
 
-**Status:** Open
+**Status:** ✅ RESOLVED (2026-06-21) — `ProcessRunner.RunAsyncInternal` wraps
+`ExecuteAsync` in `try/catch`; `OperationCanceledException` is caught and returns
+-1; all other exceptions call `onLine($"[Error: {ex.Message}]")` and return -1.
+284/284 tests pass.
 
 ---
 
@@ -214,6 +217,61 @@ cancel, and startup error — and add a unit-test assertion for each path.
 **Milestone:** M2 — see `IMPLEMENTATION_PLAN.md §6 M2`.
 
 **Status:** Open
+
+---
+
+## Round 2 — M1 Post-Implementation Review (2026-06-21)
+
+Findings from reviewing the generated M1 files against the plan and codebase.
+
+### R2.1 `OperationCanceledException` is swallowed — `OutputViewModel` must track cancel state itself *(priority: high, BLOCKER for M2)* **→ RESOLVED (M2 complete)**
+
+**Description:** `IMPLEMENTATION_PLAN.md §5.1` stated "OutputViewModel catches
+`OperationCanceledException`", implying `ProcessRunner` re-throws it.  The
+implementation instead catches it and returns -1 (same as the startup-error
+path).  This means `OutputViewModel` cannot distinguish cancellation from a
+startup error by the return value alone — both return -1.
+
+**Impact on M2:** `OutputViewModel` must track whether the user pressed Cancel
+by maintaining its own `bool _wasCancelled` flag.  The terminal-state logic
+in `RunCommandAsync` must be:
+
+```csharp
+if (_wasCancelled)
+    AppendLine(CancelledLine);
+else
+    AppendLine(string.Format(ExitLineFmt, exitCode));
+```
+
+Set `_wasCancelled = true` in `CancelCommand` before calling `_cts.Cancel()`;
+reset it to `false` at the start of each `RunCommand` invocation.
+
+**Required fix:** Implement the `_wasCancelled` flag pattern in
+`OutputViewModel` (M2).  Also update `IMPLEMENTATION_PLAN.md §5.2` to replace
+"OutputViewModel catches OperationCanceledException" with the flag approach.
+
+**Status:** Open (fix at M2 start)
+
+**Resolution:** Implemented `_wasCancelled` flag in OutputViewModel as specified. The flag is set to `false` at the start of each `RunAsync`, set to `true` in `Cancel()` before calling `_cts.Cancel()`, and checked in the terminal-state logic to emit either `[Cancelled]` or `[Process exited with code N]`. IMPLEMENTATION_PLAN.md §5.2 and §5.3 updated with the flag approach.
+
+---
+
+### R2.2 Cancel test uses `sleep 10` — Linux/macOS only *(priority: low)*
+
+**Description:** `ProcessRunnerTests.RunAsync_CancelLongRunningCommand_DoesNotThrow`
+uses `sleep 10` as the long-running command.  This command does not exist on
+Windows (`cmd` uses `timeout /t 10`).  The test will fail on Windows CI.
+
+**Required fix:** Use a cross-platform long-running command.  Best option:
+`dotnet run --project __nonexistent__` (always available, always runs for a
+moment before failing).  Or use `RuntimeInformation.IsOSPlatform` to branch
+between `sleep` (Unix) and `timeout /t 10 /nobreak` (Windows).
+
+**Note:** The fix in the M1 review changed `Assert.True(true)` to
+`Assert.Equal(-1, exitCode)` — the cancel test now has a real assertion.
+The Linux-only command is the remaining gap.
+
+**Status:** Open (low priority; fix when running on Windows CI)
 
 ---
 

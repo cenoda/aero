@@ -51,8 +51,8 @@ public class ProcessRunnerTests
             line => lines.Add(line),
             cts.Token);
 
-        // Should return without throwing
-        Assert.True(true);
+        // Should return -1 without throwing
+        Assert.Equal(-1, exitCode);
     }
 
     // -------------------------------------------------------------------

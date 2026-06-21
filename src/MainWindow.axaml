@@ -51,8 +51,9 @@
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="Toggle _File Explorer" Command="{Binding ToggleFileExplorerCommand}"/>
-                <MenuItem Header="Toggle _Terminal" Command="{Binding ToggleTerminalCommand}"/>
+                <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
+                <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
@@ -102,14 +103,21 @@
                               ResizeBehavior="PreviousAndNext"
                               IsVisible="{Binding IsBottomPanelVisible}"/>
 
+                <!-- Bottom panel with TabControl (Problems + Output tabs) -->
                 <!-- Wrap in a Grid so IsVisible binds against ShellViewModel (parent DataContext),
-                     not ProblemsViewModel (child DataContext override). -->
-                <Grid Grid.Row="2"
-                      IsVisible="{Binding IsBottomPanelVisible}"
-                      MinHeight="100"
-                      MaxHeight="300">
-                    <views:ProblemsView DataContext="{Binding ProblemsViewModel}"/>
-                </Grid>
+                     not child ViewModels. Use TabControl for Problems/Output tabs. -->
+                <TabControl Grid.Row="2"
+                          SelectedIndex="{Binding ActiveBottomTabIndex}"
+                          IsVisible="{Binding IsBottomPanelVisible}"
+                          MinHeight="100"
+                          MaxHeight="300">
+                    <TabItem Header="Problems">
+                        <views:ProblemsView DataContext="{Binding ProblemsViewModel}"/>
+                    </TabItem>
+                    <TabItem Header="Output">
+                        <views:OutputView DataContext="{Binding OutputViewModel}"/>
+                    </TabItem>
+                </TabControl>
 
                 <!-- Status bar -->
                 <Border Grid.Row="3"
