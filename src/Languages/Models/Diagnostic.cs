@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace Aero.Languages;
 
@@ -33,6 +34,56 @@ public sealed record Diagnostic(
             source,
             code);
     }
+
+    /// <summary>
+    /// Severity icon for display (e.g., "❌", "⚠️").
+    /// </summary>
+    public string SeverityIcon => Severity switch
+    {
+        DiagnosticSeverity.Error => "❌",
+        DiagnosticSeverity.Warning => "⚠️",
+        DiagnosticSeverity.Information => "ℹ️",
+        DiagnosticSeverity.Hint => "💡",
+        _ => "❓"
+    };
+
+    /// <summary>
+    /// Severity color name for display (e.g., "Red", "Orange").
+    /// </summary>
+    public string SeverityColor => Severity switch
+    {
+        DiagnosticSeverity.Error => "Red",
+        DiagnosticSeverity.Warning => "Orange",
+        DiagnosticSeverity.Information => "Blue",
+        DiagnosticSeverity.Hint => "Gray",
+        _ => "Black"
+    };
+
+    /// <summary>
+    /// File name extracted from the URI.
+    /// </summary>
+    public string FileName
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(FileUri))
+                return string.Empty;
+            try
+            {
+                var uri = new Uri(FileUri);
+                return Path.GetFileName(uri.LocalPath);
+            }
+            catch
+            {
+                return FileUri;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Location text for display (e.g., "Ln 5, Col 10").
+    /// </summary>
+    public string LocationText => $"Ln {Range.StartLine + 1}, Col {Range.StartCharacter + 1}";
 }
 
 /// <summary>

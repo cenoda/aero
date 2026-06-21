@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -39,6 +41,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private readonly IMessageBus _bus;
     private readonly ILanguageDetectionService _languageDetection;
     private readonly DiagnosticStore _diagnosticStore;
+    private readonly LSPManager? _lspManager;
     private readonly ObservableCollection<EditorTabViewModel> _tabs = new();
 
     // Stored handlers for unsubscribe
@@ -55,6 +58,8 @@ public class EditorViewModel : ReactiveObject, IDisposable
     [Reactive] public bool HasDocument { get; set; }
     [Reactive] public bool IsFindReplaceVisible { get; set; }
     [Reactive] public string StatusText { get; set; } = "";
+    [Reactive] public bool IsCompletionVisible { get; set; }
+    [Reactive] public string CompletionText { get; set; } = "";
 
     /// <summary>
     /// Raised when a find/replace action should be executed against the active TextEditor.
@@ -74,17 +79,26 @@ public class EditorViewModel : ReactiveObject, IDisposable
     public FindReplaceViewModel FindReplace { get; }
 
     public ReactiveCommand<EditorTabViewModel, Unit> CloseTabCommand { get; }
+    public ReactiveCommand<Unit, Unit> CompletionCommand { get; }
 
-    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace, ILanguageDetectionService languageDetection, DiagnosticStore diagnosticStore)
+    public EditorViewModel(
+        DocumentManager documentManager,
+        IMessageBus bus,
+        FindReplaceViewModel findReplace,
+        ILanguageDetectionService languageDetection,
+        DiagnosticStore diagnosticStore,
+        LSPManager? lspManager = null)
     {
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         FindReplace = findReplace ?? throw new ArgumentNullException(nameof(findReplace));
         _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
         _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
+        _lspManager = lspManager;
 
         // Create commands
         CloseTabCommand = ReactiveCommand.Create<EditorTabViewModel>(CloseTab);
+        CompletionCommand = ReactiveCommand.CreateFromTask(RequestCompletionAsync);
 
         // Wire up Find/Replace actions
         FindReplace.SetActions(
@@ -434,5 +448,36 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
         if (_diagnosticsUpdatedHandler != null)
             _bus.Unsubscribe<DocMsg.DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
+    }
+
+    /// <summary>
+    /// Request LSP completion for the active document at the current caret position.
+    /// </summary>
+    private async Task RequestCompletionAsync()
+    {
+        var doc = ActiveTab?.Document;
+        if (doc == null)
+            return;
+
+        var caret = doc.CaretOffset;
+        var line = doc.InnerDocument.GetLineByOffset(caret);
+        var lineOffset = line.Offset;
+        var col = caret - lineOffset;
+
+        var completions = await _lspManager!.RequestCompletionAsync(doc, line.LineNumber - 1, col, CancellationToken.None).ConfigureAwait(false);
+
+        if (completions.Count > 0)
+        {
+            CompletionText = string.Join(" | ", completions.Select(c => c.Label));
+            IsCompletionVisible = true;
+        }
+        else
+        {
+            CompletionText = "(no suggestions)";
+            IsCompletionVisible = true;
+            // Auto-hide after 2 seconds
+            await Task.Delay(2000);
+            IsCompletionVisible = false;
+        }
     }
 }

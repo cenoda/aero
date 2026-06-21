@@ -24,6 +24,7 @@
         <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextTabCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousTabCommand}"/>
         <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseFileCommand}"/>
+        <KeyBinding Gesture="Ctrl+Space" Command="{Binding EditorViewModel.CompletionCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>
@@ -51,6 +52,10 @@
             <MenuItem Header="_View">
                 <MenuItem Header="Toggle _File Explorer" Command="{Binding ToggleFileExplorerCommand}"/>
                 <MenuItem Header="Toggle _Terminal" Command="{Binding ToggleTerminalCommand}"/>
+                <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
@@ -78,10 +83,11 @@
                           ResizeDirection="Columns"
                           ResizeBehavior="PreviousAndNext"/>
 
-            <!-- Editor + status bar -->
+            <!-- Editor + bottom panel + status bar -->
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
@@ -89,8 +95,22 @@
                 <views:EditorView Grid.Row="0"
                                DataContext="{Binding EditorViewModel}"/>
 
+                <!-- Problems panel (Phase 4 M4) -->
+                <GridSplitter Grid.Row="1"
+                              Height="4"
+                              Background="#CCCCCC"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"
+                              IsVisible="{Binding IsBottomPanelVisible}"/>
+
+                <views:ProblemsView Grid.Row="2"
+                                   DataContext="{Binding ProblemsViewModel}"
+                                   IsVisible="{Binding IsBottomPanelVisible}"
+                                   MinHeight="100"
+                                   MaxHeight="300"/>
+
                 <!-- Status bar -->
-                <Border Grid.Row="1"
+                <Border Grid.Row="3"
                         Background="#F0F0F0"
                         BorderBrush="#CCCCCC"
                         BorderThickness="0,1,0,0"

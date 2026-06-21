@@ -58,6 +58,7 @@
 <Compile Include="../src/Languages/Models/PublishDiagnosticsParams.cs" />
     <Compile Include="../src/Languages/Models/ServerCapabilities.cs" />
     <Compile Include="../src/Languages/Models/Diagnostic.cs" />
+    <Compile Include="../src/Languages/Models/CompletionItem.cs" />
     <Compile Include="../src/Languages/DiagnosticStore.cs" />
   </ItemGroup>
 

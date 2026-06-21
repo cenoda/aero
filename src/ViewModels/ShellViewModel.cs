@@ -26,6 +26,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly DocumentManager _documentManager;
     private readonly EditorViewModel _editorViewModel;
     private readonly FileExplorerViewModel _fileExplorerViewModel;
+    private readonly ProblemsViewModel _problemsViewModel;
 
     // Stored handlers for unsubscribe
     private Action<FolderOpened>? _folderOpenedHandler;
@@ -38,10 +39,12 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public string WindowTitle { get; set; } = "Aero";
     [Reactive] public bool IsFileExplorerVisible { get; set; } = true;
     [Reactive] public bool IsTerminalVisible { get; set; }
+    [Reactive] public bool IsBottomPanelVisible { get; set; }
 
     // ViewModels
     public EditorViewModel EditorViewModel => _editorViewModel;
     public FileExplorerViewModel FileExplorerViewModel => _fileExplorerViewModel;
+    public ProblemsViewModel ProblemsViewModel => _problemsViewModel;
 
     // Commands
     public ReactiveCommand<Unit, Unit> NewFileCommand { get; }
@@ -57,6 +60,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleFileExplorerCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleTerminalCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleProblemsCommand { get; }
     public ReactiveCommand<Unit, Unit> NextTabCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
@@ -65,12 +69,14 @@ public class ShellViewModel : ReactiveObject, IDisposable
         IMessageBus bus,
         DocumentManager documentManager,
         EditorViewModel editorViewModel,
-        FileExplorerViewModel fileExplorerViewModel)
+        FileExplorerViewModel fileExplorerViewModel,
+        ProblemsViewModel problemsViewModel)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _editorViewModel = editorViewModel ?? throw new ArgumentNullException(nameof(editorViewModel));
         _fileExplorerViewModel = fileExplorerViewModel ?? throw new ArgumentNullException(nameof(fileExplorerViewModel));
+        _problemsViewModel = problemsViewModel ?? throw new ArgumentNullException(nameof(problemsViewModel));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -86,6 +92,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
         ReplaceCommand = ReactiveCommand.Create(Replace);
         ToggleFileExplorerCommand = ReactiveCommand.Create(ToggleFileExplorer);
         ToggleTerminalCommand = ReactiveCommand.Create(ToggleTerminal);
+        ToggleProblemsCommand = ReactiveCommand.Create(ToggleProblems);
         NextTabCommand = ReactiveCommand.Create(NextTab);
         PreviousTabCommand = ReactiveCommand.Create(PreviousTab);
         AboutCommand = ReactiveCommand.Create(About);
@@ -416,6 +423,11 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private void ToggleTerminal()
     {
         IsTerminalVisible = !IsTerminalVisible;
+    }
+
+    private void ToggleProblems()
+    {
+        IsBottomPanelVisible = !IsBottomPanelVisible;
     }
 
     private void About()

@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="https://github.com/avaloniaui/avaloniaui"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Aero.ViewModels"
+             xmlns:lang="using:Aero.Languages"
+             x:Class="Aero.Views.ProblemsView"
+             x:DataType="vm:ProblemsViewModel">
+
+    <Border Background="#FAFAFA"
+            BorderBrush="#CCCCCC"
+            BorderThickness="0,1,0,0">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top"
+                    Background="#F0F0F0"
+                    BorderBrush="#CCCCCC"
+                    BorderThickness="0,0,0,1"
+                    Padding="8,6">
+                <TextBlock Text="Problems"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Empty state -->
+            <TextBlock Text="No problems detected."
+                        IsVisible="{Binding !Diagnostics.Count}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Opacity="0.6"/>
+
+            <!-- Diagnostics list -->
+            <ListBox ItemsSource="{Binding Diagnostics}"
+                    IsVisible="{Binding Diagnostics.Count}"
+                    Background="Transparent"
+                    BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="lang:Diagnostic">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,2">
+                            <!-- Severity icon -->
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding SeverityIcon}"
+                                       Foreground="{Binding SeverityColor}"
+                                       FontWeight="Bold"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"/>
+
+                            <!-- Message and location -->
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Message}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FileName}"
+                                           FontSize="11"
+                                           Opacity="0.7"/>
+                            </StackPanel>
+
+                            <!-- Line:Col -->
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding LocationText}"
+                                       FontSize="11"
+                                       Opacity="0.7"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Border>
+</UserControl>

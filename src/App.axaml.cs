@@ -97,6 +97,7 @@ public partial class App : Application
         services.AddSingleton<EditorViewModel>();
         services.AddSingleton<FindReplaceViewModel>();
         services.AddSingleton<FileExplorerViewModel>();
+        services.AddSingleton<ProblemsViewModel>();
 
         return services.BuildServiceProvider();
     }

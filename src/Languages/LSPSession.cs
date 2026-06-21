@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 using StreamJsonRpc;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -99,6 +100,31 @@ public sealed class LSPSession : IDisposable
 
         cancellationToken.ThrowIfCancellationRequested();
         return await _jsonRpc.InvokeAsync<T>(method, @params).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Request textDocument/completion for the given document and caret position.
+    /// </summary>
+    public async Task<IList<CompletionItem>> RequestCompletionAsync(
+        string textDocumentUri,
+        int line,
+        int character,
+        CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = await _jsonRpc.InvokeAsync<IList<CompletionItem>>(
+            "textDocument/completion",
+            new
+            {
+                textDocument = new { uri = textDocumentUri },
+                position = new { line, character }
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        return result ?? new List<CompletionItem>();
     }
 
     public void SendNotification(string method, object? @params)

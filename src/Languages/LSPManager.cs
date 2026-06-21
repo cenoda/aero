@@ -470,6 +470,40 @@ diagnostics.Add(new Diagnostic(
         _diagnosticStore.SetDiagnostics(uri, diagnostics);
     }
 
+    /// <summary>
+    /// Request completion for the active document at the given caret position.
+    /// Returns an empty list if no session is active.
+    /// </summary>
+    public async Task<IList<CompletionItem>> RequestCompletionAsync(
+        TextDocument document,
+        int line,
+        int character,
+        CancellationToken cancellationToken)
+    {
+        LSPSession? session;
+        lock (_sessionLock)
+        {
+            session = _session;
+        }
+
+        if (session == null)
+            return Array.Empty<CompletionItem>();
+
+        var uri = document?.Uri;
+        if (string.IsNullOrEmpty(uri))
+            return Array.Empty<CompletionItem>();
+
+        try
+        {
+            return await session.RequestCompletionAsync(uri, line, character, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Completion request failed: {ex.Message}");
+            return Array.Empty<CompletionItem>();
+        }
+    }
+
     private static Avalonia.Threading.Dispatcher? GetUiDispatcher()
     {
         try
