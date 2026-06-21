@@ -42,8 +42,6 @@ features in settings.
 - Output panel with process runner (Phase 5)
 
 ### 🚧 In Progress
-- Phase 5.5: Refactoring Pass (abstraction-first design)
-- Phase 6: Multi-language Build System
 - Phase 7: Git Integration
 
 ### 🧠 The Agent Layer (Coming After Phase 8)
@@ -153,6 +151,10 @@ The IDE is fully functional without agents. Agents are plugins.
 | A1–A5 — Agent Layer | ⬜ After Phase 8 |
 
 [Full checklist →](docs/roadmap/PHASES.md)
+
+### ✅ Completed
+- Phase 5.5: Abstraction Implementation Pass
+- Phase 6: Build & Output Integration
 
 ---
 

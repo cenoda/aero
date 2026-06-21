@@ -1,4 +1,4 @@
-# TODO: Editor Diagnostic Rendering Fixes
+# Editor Diagnostic Rendering Fixes (Historical Documentation)
 
 ## RESOLVED (2026-06-21)
 
