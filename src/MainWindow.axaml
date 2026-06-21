@@ -51,8 +51,9 @@
                 <MenuItem Header="_Find..." Command="{Binding FindCommand}" InputGesture="Ctrl+F"/>
                 <MenuItem Header="_Replace..." Command="{Binding ReplaceCommand}" InputGesture="Ctrl+H"/>
             </MenuItem>
-            <MenuItem Header="_View">
-                <MenuItem Header="Toggle _File Explorer" Command="{Binding ToggleFileExplorerCommand}"/>
+<MenuItem Header="_View">
+                <MenuItem Header="Toggle _Sidebar" Command="{Binding ToggleSidebarCommand}"/>
+                <MenuItem Header="Toggle _Git Panel" Command="{Binding ToggleSidebarTabCommand}"/>
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
                 <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
@@ -74,11 +75,18 @@
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
-                 (parent DataContext), not FileExplorerViewModel (child DataContext override). -->
+<!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
+                 (parent DataContext), not child ViewModels. -->
             <Grid Grid.Column="0"
-                  IsVisible="{Binding IsFileExplorerVisible}">
-                <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
+                  IsVisible="{Binding IsSidebarVisible}">
+                <TabControl SelectedIndex="{Binding ActiveSidebarTabIndex}">
+                    <TabItem Header="Explorer">
+                        <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
+                    </TabItem>
+                    <TabItem Header="Git">
+                        <views:GitPanelView DataContext="{Binding GitViewModel}"/>
+                    </TabItem>
+                </TabControl>
             </Grid>
 
             <!-- Draggable divider between sidebar and editor -->
@@ -124,13 +132,13 @@
                     </TabItem>
                 </TabControl>
 
-                <!-- Status bar -->
+<!-- Status bar -->
                 <Border Grid.Row="3"
                         Background="#F0F0F0"
                         BorderBrush="#CCCCCC"
                         BorderThickness="0,1,0,0"
                         Padding="8,4">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
                         <!-- Cursor position -->
                         <TextBlock Grid.Column="0"
                                   Text="{Binding EditorViewModel.CursorPosition}"
@@ -140,6 +148,14 @@
                         <TextBlock Grid.Column="1"
                                   Text="{Binding EditorViewModel.Language}"
                                   Margin="0,0,16,0"/>
+
+                        <!-- Branch (visible when Git repository is open) -->
+                        <TextBlock Grid.Column="2"
+                                  Text="{Binding GitViewModel.CurrentBranch}"
+                                  Foreground="Green"
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,16,0"
+                                  IsVisible="{Binding GitViewModel.HasGitRepository}"/>
 
                         <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
                         <TextBlock Grid.Column="3"

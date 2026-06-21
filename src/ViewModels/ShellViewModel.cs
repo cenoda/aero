@@ -49,9 +49,10 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private bool _disposed;
     private string? _workspacePath;
 
-    [Reactive] public string StatusText { get; set; } = "Aero IDE";
+[Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
-    [Reactive] public bool IsFileExplorerVisible { get; set; } = true;
+    [Reactive] public bool IsSidebarVisible { get; set; } = true;
+    [Reactive] public int ActiveSidebarTabIndex { get; set; }
     [Reactive] public int ActiveBottomTabIndex { get; set; }
     [Reactive] public bool IsBottomPanelVisible { get; set; }
 
@@ -74,7 +75,8 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> RedoCommand { get; }
     public ReactiveCommand<Unit, Unit> FindCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
-    public ReactiveCommand<Unit, Unit> ToggleFileExplorerCommand { get; }
+public ReactiveCommand<Unit, Unit> ToggleSidebarCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleSidebarTabCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleOutputCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleProblemsCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleBottomPanelCommand { get; }
@@ -116,7 +118,8 @@ public ShellViewModel(
         RedoCommand = ReactiveCommand.Create(Redo);
         FindCommand = ReactiveCommand.Create(Find);
         ReplaceCommand = ReactiveCommand.Create(Replace);
-        ToggleFileExplorerCommand = ReactiveCommand.Create(ToggleFileExplorer);
+ToggleSidebarCommand = ReactiveCommand.Create(ToggleSidebar);
+        ToggleSidebarTabCommand = ReactiveCommand.Create(ToggleSidebarTab);
         ToggleOutputCommand = ReactiveCommand.Create(ToggleOutput);
         ToggleProblemsCommand = ReactiveCommand.Create(ToggleProblems);
         ToggleBottomPanelCommand = ReactiveCommand.Create(ToggleBottomPanel);
@@ -465,9 +468,15 @@ _documentSavedHandler = OnDocumentSaved;
         _editorViewModel.ShowFindReplace(focusReplace: true);
     }
 
-    private void ToggleFileExplorer()
+    private void ToggleSidebar()
     {
-        IsFileExplorerVisible = !IsFileExplorerVisible;
+        IsSidebarVisible = !IsSidebarVisible;
+    }
+
+    private void ToggleSidebarTab()
+    {
+        // Toggle between Explorer (0) and Git (1) tabs
+        ActiveSidebarTabIndex = ActiveSidebarTabIndex == 0 ? 1 : 0;
     }
 
     private void ToggleOutput()
