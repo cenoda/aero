@@ -6,6 +6,7 @@ using Aero.ViewModels;
 using Aero.Tests.Stubs;
 using Xunit;
 
+
 namespace Aero.Tests.ViewModels;
 
 /// <summary>
@@ -22,7 +23,8 @@ public class EditorViewModelCloseTabTests
         var languageDetection = new LanguageDetectionService();
         var dm = new DocumentManager(bus, languageDetection);
         var findReplace = new FindReplaceViewModel();
-        var vm = new EditorViewModel(dm, bus, findReplace, languageDetection);
+        var diagnosticStore = new DiagnosticStore(bus);
+        var vm = new EditorViewModel(dm, bus, findReplace, languageDetection, diagnosticStore);
         return (vm, bus, dm);
     }
 

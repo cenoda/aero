@@ -38,6 +38,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private readonly DocumentManager _documentManager;
     private readonly IMessageBus _bus;
     private readonly ILanguageDetectionService _languageDetection;
+    private readonly DiagnosticStore _diagnosticStore;
     private readonly ObservableCollection<EditorTabViewModel> _tabs = new();
 
     // Stored handlers for unsubscribe
@@ -45,6 +46,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
     private Action<DocMsg.DocumentClosed>? _documentClosedHandler;
     private Action<DocMsg.ActiveDocumentChanged>? _activeDocumentChangedHandler;
     private Action<DocMsg.DocumentSaved>? _documentSavedHandler;
+    private Action<DocMsg.DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
     private bool _disposed;
 
     [Reactive] public EditorTabViewModel? ActiveTab { get; set; }
@@ -60,16 +62,26 @@ public class EditorViewModel : ReactiveObject, IDisposable
     /// </summary>
     public event Action<FindReplaceArgs>? FindReplaceRequested;
 
+    /// <summary>
+    /// Raised when diagnostics in the workspace change (DiagnosticsUpdated arrived on the bus).
+    /// The view subscribes to this to trigger a redraw on the active TextEditor.
+    /// </summary>
+    public event Action? DiagnosticsChanged;
+
+    /// <summary>The DiagnosticStore injected at construction; used by the renderer at draw time.</summary>
+    public DiagnosticStore DiagnosticStore => _diagnosticStore;
+
     public FindReplaceViewModel FindReplace { get; }
 
     public ReactiveCommand<EditorTabViewModel, Unit> CloseTabCommand { get; }
 
-    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace, ILanguageDetectionService languageDetection)
+    public EditorViewModel(DocumentManager documentManager, IMessageBus bus, FindReplaceViewModel findReplace, ILanguageDetectionService languageDetection, DiagnosticStore diagnosticStore)
     {
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         FindReplace = findReplace ?? throw new ArgumentNullException(nameof(findReplace));
         _languageDetection = languageDetection ?? throw new ArgumentNullException(nameof(languageDetection));
+        _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
 
         // Create commands
         CloseTabCommand = ReactiveCommand.Create<EditorTabViewModel>(CloseTab);
@@ -86,10 +98,12 @@ public class EditorViewModel : ReactiveObject, IDisposable
         _documentClosedHandler = msg => OnDocumentClosed(msg);
         _activeDocumentChangedHandler = msg => OnActiveDocumentChanged(msg);
         _documentSavedHandler = msg => OnDocumentSaved(msg);
+        _diagnosticsUpdatedHandler = msg => DiagnosticsChanged?.Invoke();
         _bus.Subscribe(_documentOpenedHandler);
         _bus.Subscribe(_documentClosedHandler);
         _bus.Subscribe(_activeDocumentChangedHandler);
         _bus.Subscribe(_documentSavedHandler);
+        _bus.Subscribe(_diagnosticsUpdatedHandler);
     }
 
     /// <summary>All open tabs.</summary>
@@ -418,5 +432,7 @@ public class EditorViewModel : ReactiveObject, IDisposable
             _bus.Unsubscribe<DocMsg.ActiveDocumentChanged>(_activeDocumentChangedHandler);
         if (_documentSavedHandler != null)
             _bus.Unsubscribe<DocMsg.DocumentSaved>(_documentSavedHandler);
+        if (_diagnosticsUpdatedHandler != null)
+            _bus.Unsubscribe<DocMsg.DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
     }
 }

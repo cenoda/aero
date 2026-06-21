@@ -22,11 +22,8 @@ public partial class EditorView : UserControl
     private TextEditor? _activeEditor;
     private int _subscribeGeneration;
     private Action<FindReplaceArgs>? _findReplaceHandler;
+    private Action? _diagnosticsChangedHandler;
     private CompositeDisposable? _reactiveSubscriptions;
-    private EditorDiagnosticRenderer? _diagnosticRenderer;
-    private DiagnosticStore? _diagnosticStore;
-    private Action<DiagnosticsUpdated>? _diagnosticsUpdatedHandler;
-    private IMessageBus? _bus;
 
     // One shared TextMate registry/theme for the editor panel.
     private readonly RegistryOptions _registryOptions = new(ThemeName.DarkPlus);
@@ -34,6 +31,10 @@ public partial class EditorView : UserControl
     // Track TextMate installations per TextEditor so they are disposed when the
     // editor control goes away (tab close) instead of leaking across open/close.
     private readonly Dictionary<TextEditor, TextMate.Installation> _textMateInstallations = new();
+
+    // Track diagnostic renderers per TextEditor so repeated tab activations
+    // do not stack duplicate BackgroundRenderers on the same editor instance.
+    private readonly Dictionary<TextEditor, EditorDiagnosticRenderer> _diagnosticRenderers = new();
 
     // Subscription to the active tab's LanguageId changes (e.g. Save As).
     private IDisposable? _languageIdSubscription;
@@ -54,11 +55,11 @@ public partial class EditorView : UserControl
         _languageIdSubscription?.Dispose();
         _languageIdSubscription = null;
 
-        // Unsubscribe from DiagnosticsUpdated
-        if (_bus != null && _diagnosticsUpdatedHandler != null)
+        // Unsubscribe from previous ViewModel's DiagnosticsChanged
+        if (DataContext is EditorViewModel previousVmForDiag && _diagnosticsChangedHandler != null)
         {
-            _bus.Unsubscribe<DiagnosticsUpdated>(_diagnosticsUpdatedHandler);
-            _diagnosticsUpdatedHandler = null;
+            previousVmForDiag.DiagnosticsChanged -= _diagnosticsChangedHandler;
+            _diagnosticsChangedHandler = null;
         }
 
         // Unsubscribe from previous ViewModel's FindReplaceRequested to prevent leak
@@ -81,23 +82,13 @@ public partial class EditorView : UserControl
             _findReplaceHandler = OnFindReplaceRequested;
             vm.FindReplaceRequested += _findReplaceHandler;
 
-            // Subscribe to DiagnosticStoreReady to receive the store reference and MessageBus.
-            // This is AGENTS-compliant: no reflection, no service locator.
-            Action<DiagnosticStoreReady>? storeReadyHandler = null;
-            storeReadyHandler = msg =>
-            {
-                _diagnosticStore = msg.Store;
-                _bus = msg.Bus;
-                _bus.Unsubscribe<DiagnosticStoreReady>(storeReadyHandler!);
-                // Subscribe to DiagnosticsUpdated once we have the bus.
-                _diagnosticsUpdatedHandler = OnDiagnosticsUpdated;
-                _bus.Subscribe(_diagnosticsUpdatedHandler);
-            };
-            _bus?.Subscribe(storeReadyHandler);
+            // When DiagnosticsUpdated arrives (forwarded by the VM), redraw the active editor.
+            _diagnosticsChangedHandler = OnDiagnosticsChanged;
+            vm.DiagnosticsChanged += _diagnosticsChangedHandler;
         }
     }
 
-    private void OnDiagnosticsUpdated(DiagnosticsUpdated msg)
+    private void OnDiagnosticsChanged()
     {
         // Trigger a redraw on the active editor to show updated diagnostics.
         if (_activeEditor != null)
@@ -167,7 +158,7 @@ public partial class EditorView : UserControl
                 _languageIdSubscription = newTab.WhenAnyValue(x => x.LanguageId)
                     .Subscribe(id => ApplyGrammar(installation, id));
 
-                // Add diagnostic renderer to each editor when it becomes active.
+                // Add diagnostic renderer once per editor instance.
                 RegisterDiagnosticRendererForEditor(newTab.Document);
             }
         }, DispatcherPriority.Loaded);
@@ -187,7 +178,8 @@ public partial class EditorView : UserControl
     }
 
     /// <summary>
-    /// Called when the editor control is unloaded (e.g., tab closed) — cleans up TextMate.
+    /// Called when the editor control is unloaded (e.g., tab closed) — cleans up TextMate
+    /// and the diagnostic renderer.
     /// </summary>
     private void OnEditorUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -201,29 +193,34 @@ public partial class EditorView : UserControl
             installation.Dispose();
             _textMateInstallations.Remove(editor);
         }
+
+        _diagnosticRenderers.Remove(editor);
     }
 
     /// <summary>
-    /// Creates and adds the diagnostic renderer to the given editor.
-    /// Called each time the active tab changes so each editor gets its own renderer
-    /// that references the current document (not a captured closure).
+    /// Creates and adds the diagnostic renderer to the given editor — at most once per
+    /// TextEditor instance. The renderer is constructed from the VM's DiagnosticStore so
+    /// the store reference is always valid (constructor DI, not a runtime message fetch).
     /// </summary>
     private void RegisterDiagnosticRendererForEditor(Models.Editor.TextDocument? doc)
     {
-        if (_diagnosticStore == null)
-            return;
-
         if (_activeEditor == null)
             return;
 
-        // Create a new renderer that uses a lambda to get the current document at draw time.
-        // This avoids the closure-capture bug where the renderer would point to the wrong file
-        // after tab switches.
-        _diagnosticRenderer = new EditorDiagnosticRenderer(
-            _diagnosticStore,
+        // Guard: only install one renderer per TextEditor instance.
+        if (_diagnosticRenderers.ContainsKey(_activeEditor))
+            return;
+
+        if (DataContext is not EditorViewModel vm)
+            return;
+
+        // Build a renderer that queries the store at draw time using the current document URI.
+        var renderer = new EditorDiagnosticRenderer(
+            vm.DiagnosticStore,
             () => GetActiveDocumentUri(doc));
 
-        _activeEditor.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
+        _activeEditor.TextArea.TextView.BackgroundRenderers.Add(renderer);
+        _diagnosticRenderers[_activeEditor] = renderer;
     }
 
     /// <summary>

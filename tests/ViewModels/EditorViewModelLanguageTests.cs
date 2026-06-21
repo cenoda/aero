@@ -19,7 +19,8 @@ public class EditorViewModelLanguageTests
         var detector = new LanguageDetectionService();
         var dm = new DocumentManager(bus, detector);
         var findReplace = new FindReplaceViewModel();
-        var vm = new EditorViewModel(dm, bus, findReplace, detector);
+        var diagnosticStore = new DiagnosticStore(bus);
+        var vm = new EditorViewModel(dm, bus, findReplace, detector, diagnosticStore);
         return (vm, bus, dm, detector);
     }
 

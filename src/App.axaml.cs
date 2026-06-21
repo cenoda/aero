@@ -32,12 +32,6 @@ public partial class App : Application
             // folder is opened and is disposed with the DI container on app exit.
             _services.GetRequiredService<LSPManager>();
 
-// Phase 5 — Diagnostics rendering (M5: visible error indication)
-            // Publish the DiagnosticStore so EditorView can receive it via message.
-            // Also include the MessageBus so EditorView can subscribe to DiagnosticsUpdated.
-            var diagnosticStore = _services.GetRequiredService<DiagnosticStore>();
-            bus.Publish(new DiagnosticStoreReady(diagnosticStore, bus));
-
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
