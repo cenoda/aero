@@ -6,7 +6,8 @@
              x:Class="Aero.Views.GitGraphView"
              x:DataType="vm:GitGraphViewModel">
   <Grid ColumnDefinitions="*,200">
-    <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto"
+    <ScrollViewer Grid.Column="0" MinWidth="200"
+                  HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto">
       <views:GitGraphControl x:Name="GraphControl"
                              Nodes="{Binding Nodes}"

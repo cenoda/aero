@@ -59,7 +59,7 @@ public class GitGraphViewModel : ReactiveObject
     public IReadOnlyList<GraphLaneInfo> Lanes { get; private set; } = Array.Empty<GraphLaneInfo>();
 
     public double TotalHeight => Nodes.Count > 0 ? Nodes.Max(n => n.CenterY) + RowHeight : 0;
-    public double TotalWidth => (Lanes.Count > 0 ? Lanes.Count : 1) * LaneWidth + LeftPadding * 2;
+    public double TotalWidth => Math.Max(300, (Lanes.Count > 0 ? Lanes.Count : 1) * LaneWidth + LeftPadding * 2);
 
     public async Task LoadAsync(IGitService gitService, CancellationToken ct = default)
     {
