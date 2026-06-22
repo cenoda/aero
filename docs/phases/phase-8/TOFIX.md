@@ -179,9 +179,9 @@ names organized by area. Actual color values can be determined during implementa
 - [x] Phase 7 TOFIX R4.4 and R4.5 resolved or explicitly deferred
 - [x] Dock.Avalonia 11.3.12.1 net8.0 fallback on net9.0 runtime validated (smoke test)
 - [x] Dock.Settings serialization API confirmed and documented in 8.1a README
-- [ ] 8.1b Tile Mode architecture decision recorded in 8.1b README
-- [ ] 8.1c spike completed; approach documented in 8.1c README
-- [ ] 8.2 color token inventory written before coding starts
+- [x] 8.1b Tile Mode architecture decision recorded in 8.1b README
+- [x] 8.1c spike completed; approach documented in 8.1c README
+- [x] 8.2 color token inventory written before coding starts
 - [ ] All sub-phases (8.1–8.9) test requirements met (unit + integration + manual per README)
 - [ ] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors)
 - [ ] `dotnet test tests` passes (current baseline: 401 passed)
