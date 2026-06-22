@@ -116,10 +116,16 @@ public interface ISettingsService
     Task<SettingsModel> LoadSettingsAsync();
     Task SaveSettingsAsync(SettingsModel settings);
 
-    /// <summary>Add a folder to the recent list. Normalizes path, deduplicates, enforces 10 max.</summary>
+    /// <summary>
+    /// Add a folder to the recent list. Normalizes path, deduplicates, enforces 10 max.
+    /// Must be called from the UI thread.
+    /// </summary>
     void AddRecentFolder(string path);
 
-    /// <summary>Recent folders list (most recent first, max 10). Consumed by 8.4 Welcome Page.</summary>
+    /// <summary>
+    /// Recent folders list (most recent first, max 10). Consumed by 8.4 Welcome Page.
+    /// Safe to read from any thread; writes are UI-thread only.
+    /// </summary>
     IReadOnlyList<string> GetRecentFolders();
 
     /// <summary>The ~/.aero/ config directory path.</summary>
@@ -145,6 +151,7 @@ private const int MaxRecentFolders = 10;
 - `IMessageBus` is optional (`null` in tests). When available, publishes `StatusMessage` on corrupt-file fallback.
 - No ViewModel dependency.
 - On construction, loads recent folders from workspace.json via `LoadRecentFoldersFromDisk()`.
+- **Sync I/O note:** `LoadRecentFoldersFromDisk()` reads synchronously. The workspace file is ~1KB, runs during DI build before the window is shown — negligible (<1ms). The async `Load*` methods are for runtime reloads.
 
 **File paths (computed once in constructor):**
 ```csharp
@@ -376,7 +383,9 @@ else
             shell.WindowHeight = win.Height;
             shell.IsWindowMaximized = win.IsMaximized;
             mainWindow.Position = new PixelPoint((int)win.X, (int)win.Y);
-            // Set directly on startup — XAML binding may not be evaluated yet
+            // Set Size and WindowState directly — XAML bindings may not be evaluated yet
+            mainWindow.Width = win.Width;
+            mainWindow.Height = win.Height;
             mainWindow.WindowState = win.IsMaximized
                 ? Avalonia.Controls.WindowState.Maximized
                 : Avalonia.Controls.WindowState.Normal;
@@ -488,7 +497,7 @@ All tests use `Path.GetTempPath()` + unique GUID subdirectory (never real `~/.ae
 ## Definition of Done (Exit Gates)
 
 - [ ] `dotnet build src/aero.csproj` passes (0 errors)
-- [ ] `dotnet test tests` passes (baseline: 401 + new: 10 = 411+)
+- [ ] `dotnet test tests` passes (baseline: 401 + new: 14 = 415+)
 - [ ] Closing and reopening the IDE restores:
   - Last opened folder (tree loads automatically)
   - Previously open files (tabs restored)
