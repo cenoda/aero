@@ -27,7 +27,7 @@ features in settings.
 
 ## Features
 
-### ✅ What Works Today (Phase 5 Complete)
+### ✅ What Works Today (Phase 7 Complete)
 - Tabbed text editor with AvaloniaEdit (syntax-aware, line numbers)
 - File open/save via Ctrl+O / Ctrl+S and system dialogs
 - Undo/Redo (full AvaloniaEdit undo stack)
@@ -40,9 +40,15 @@ features in settings.
 - Problems panel with diagnostics list
 - Ctrl+Space for code completion
 - Output panel with process runner (Phase 5)
+- Multi-language build system with Ctrl+Shift+B (Phase 6)
+- Build errors populate Problems panel; click to jump to file/line
+- Git panel with staged/unstaged changes, diff viewer, commit UI (Phase 7)
+- Branch indicator in status bar
+- File modified indicators in editor tabs and file tree
+- Branch graph with commit history visualisation
 
 ### 🚧 In Progress
-- Phase 7: Git Integration
+- Phase 8: UI Polish (dockable panels, theme engine, command palette, welcome page, settings, workspace persistence)
 
 ### 🧠 The Agent Layer (Coming After Phase 8)
 - Multiple AI agents running side-by-side
@@ -133,7 +139,7 @@ The IDE is fully functional without agents. Agents are plugins.
 
 ## Development Status
 
-**Current phase: Phase 5.5 (Abstraction Pass) — Complete**
+**Current phase: Phase 8 — UI Polish (In Progress)**
 
 | Phase | Status |
 |-------|--------|
@@ -145,8 +151,8 @@ The IDE is fully functional without agents. Agents are plugins.
 | 5 — Output Panel | ✅ Complete |
 | 5.5 — Abstraction Pass | ✅ Complete |
 | 6 — Multi-language Build | ✅ Complete |
-| 7 — Git Integration | ⬜ Planned |
-| 8 — UI Polish | ⬜ Planned |
+| 7 — Git Integration | ✅ Complete |
+| 8 — UI Polish | 🔄 In Progress |
 | 9 — Advanced Features | ⬜ Planned |
 | 10 — Plugin System | ⬜ Planned |
 | A1–A5 — Agent Layer | ⬜ After Phase 8 |
@@ -156,6 +162,7 @@ The IDE is fully functional without agents. Agents are plugins.
 ### ✅ Completed
 - Phase 5.5: Abstraction Implementation Pass
 - Phase 6: Build & Output Integration
+- Phase 7: Git Integration (branch graph, diff viewer, commit UI, auto-reload)
 
 ---
 
