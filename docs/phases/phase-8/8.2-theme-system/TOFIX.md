@@ -9,6 +9,31 @@
 
 ---
 
+## User Review — Pre-Implementation Audit (2026-06-22)
+
+13 issues identified and verified against live `src/`. All confirmed as either addressed
+by the implementation plan or low-risk informational items.
+
+| # | Severity | Summary | Plan Addressed? |
+|---|----------|---------|-----------------|
+| 1 | Medium | Token count 103 ≠ 115 (README/TOKENS.md mismatch) | ✅ R1.1 |
+| 2 | High | 23+ hardcoded hex colors in Views | ✅ Plan Step 7 |
+| 3 | Low | Tokens with no current matching view (debug, syntax, etc.) | ✅ Informational |
+| 4 | High | App.axaml missing theme dictionary include | ✅ Plan Step 4 |
+| 5 | — | SettingsModel.Theme verified at line 7 | ✅ Verified |
+| 6 | — | ISettingsService.Load/Save verified | ✅ Verified |
+| 7 | High | ShellViewModel missing theme toggle | ✅ Plan Step 6 |
+| 8 | Medium | EditorView.axaml.cs hardcoded DarkPlus | ✅ R1.3 / Plan Step 8 |
+| 9 | Medium | GitDiffViewModel hardcoded brushes | ✅ R1.4 / Plan Step 7 |
+| 10 | Low | Ctrl+Shift+T key binding available | ✅ Plan adds it |
+| 11 | High | ThemeService not in DI | ✅ Plan Step 5 |
+| 12 | Medium | Phase 8 TOFIX persistent checks incomplete | ✅ Precondition |
+| 13 | Medium | Roadmap Phase 8.2 still `[ ]` | ✅ Plan Step 10 |
+
+**Conclusion:** Plan is sound — all 13 verified issues have corresponding plan steps.
+
+---
+
 ## Round 1 — Pre-Implementation Risks (2026-06-22)
 
 ---
