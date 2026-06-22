@@ -148,10 +148,10 @@ Task<IReadOnlyList<GitGraphCommit>> GetGraphAsync(int count, CancellationToken c
 
 | Milestone | Deliverable |
 |-----------|-------------|
-| M7-G1 | `GitGraphModels.cs`, `GetGraphAsync` on interface + `LibGit2SharpService` |
-| M7-G2 | `GitGraphViewModel` with lane-assignment algorithm, unit tests |
-| M7-G3 | `GitGraphControl` custom rendering, `GitGraphView`, tab switcher in `GitPanelView` |
-| M7-G4 | `GitGraphCommitDetailViewModel` + detail pane in XAML |
+| M7-G1 | `GitGraphModels.cs`, `GetGraphAsync` on interface + `LibGit2SharpService` — ✅ Done |
+| M7-G2 | `GitGraphViewModel` with lane-assignment algorithm, unit tests — ✅ Done |
+| M7-G3 | `GitGraphControl` custom rendering, `GitGraphView`, tab switcher in `GitPanelView` — ✅ Done |
+| M7-G4 | `GitGraphCommitDetailViewModel` + detail pane in XAML — ✅ Done |
 
 ---
 
@@ -242,10 +242,10 @@ src/ViewModels/GitViewModel.cs    ← Create GitWatcher on repo open; dispose on
 
 | ID | Deliverable | Dependencies |
 |----|-------------|--------------|
-| M7-G1 | Graph models + `GetGraphAsync` service method | Baseline complete |
-| M7-G2 | `GitGraphViewModel` with lane layout + tests | M7-G1 |
-| M7-G3 | `GitGraphControl` rendering + `GitGraphView` + tab | M7-G2 |
-| M7-G4 | Commit detail panel | M7-G3 |
+| M7-G1 | Graph models + `GetGraphAsync` service method | Baseline complete — ✅ Done |
+| M7-G2 | `GitGraphViewModel` with lane layout + tests | M7-G1 — ✅ Done |
+| M7-G3 | `GitGraphControl` rendering + `GitGraphView` + tab | M7-G2 — ✅ Done |
+| M7-G4 | Commit detail panel | M7-G3 — ✅ Done |
 | M8-W1 | `GitWatcher` + tests | Baseline complete — ✅ Done |
 | M8-W2 | `GitViewModel` watcher integration | M8-W1 — ✅ Done |
 
@@ -257,12 +257,12 @@ M8-W1 and M7-G1 can proceed in parallel (no dependency between them).
 
 The Phase 7 exit conditions (all previously met) are supplemented with:
 
-- [ ] Branch graph tab renders DAG with correct lane coloring for local branches
-- [ ] Clicking a commit node shows SHA, author, date, message in the detail pane
-- [ ] Branch/tag labels visible next to their commit nodes
-- [x] Git panel auto-refreshes when external `git commit` / `git checkout` is run
-- [x] Auto-reload debounce fires within 1.5 seconds of a `.git/index` or `.git/HEAD` change
-- [x] All new tests passing; `dotnet test tests` total = 375 (13 new GitWatcher tests)
+- [x] Branch graph tab renders DAG with correct lane coloring for local branches — ✅ Done
+- [x] Clicking a commit node shows SHA, author, date, message in the detail pane — ✅ Done
+- [x] Branch/tag labels visible next to their commit nodes — ✅ Done
+- [x] Git panel auto-refreshes when external `git commit` / `git checkout` is run — ✅ Done
+- [x] Auto-reload debounce fires within 1.5 seconds of a `.git/index` or `.git/HEAD` change — ✅ Done
+- [x] All new tests passing; `dotnet test tests` total = 392/392 (13 GitWatcher + 6 GetGraphAsync + 11 GitGraphViewModel) — ✅ Done
 
 ---
 

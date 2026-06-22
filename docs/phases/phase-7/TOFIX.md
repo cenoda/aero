@@ -250,7 +250,7 @@ loading the parent commit objects. The ViewModel resolves parent positions by SH
 against the already-fetched list, not by traversal. Add a test with a 50-commit repo to
 verify the N limit is respected.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — `GetGraphAsync` in `LibGit2SharpService` fetches `repo.Commits.Take(count)` only, collects parent SHAs via `commit.Parents.Select(p => p.Sha)` (strings only, no object traversal). Tests verify linear history, merge commits, count limits, and metadata. (M7-G1, `LibGit2SharpService.cs`)
 
 ---
 
@@ -266,7 +266,7 @@ label positions) must be computed in `GitGraphViewModel` off the UI thread (or a
 draw them. `GitGraphViewModel` recalculates geometry when the commit list changes, stores the
 result reactively, and invalidates the control via `InvalidateVisual()`.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — All geometry is pre-computed in `GitGraphViewModel.ComputeLayout()` as `GraphNodeGeometry` records. `GitGraphControl.Render()` is a thin draw-only method consuming the pre-computed Nodes/Lanes. No algorithm, math, or layout logic runs inside Render(). `AffectsRender` invalidates the control when bound properties change. (M7-G3, `GitGraphControl.cs`)
 
 ---
 
@@ -283,7 +283,7 @@ algorithm's known limitations (octopus merges, very wide graphs) in code comment
 `EXTENSIONS.md §Extension 1 Limitations`. Cap the graph width at 12 lanes — if the topology
 exceeds 12 concurrent lanes, collapse overflow lanes into a single gray "..." lane.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — Lane recycling implemented in `GitGraphViewModel.ComputeLayout`: merge commits mark the merged branch's lane as inactive (free for reuse). Child-map based inheritance ensures linear history uses 1 lane. Capped at 12 lanes with overflow lane. 11 unit tests verify linear, two-branch, merge, and capped scenarios. (M7-G2, `GitGraphViewModel.cs`)
 
 ---
 
@@ -299,7 +299,7 @@ and find the node whose center is within `NodeRadius` pixels of the pointer. If 
 set `GitGraphViewModel.SelectedCommit` and call `e.Handled = true`. If no node is within
 range, deselect. Add a unit test for the hit-test logic (pure geometry, no UI required).
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — `GitGraphControl.OnPointerPressed` computes Euclidean distance from pointer to each pre-computed node center. Nearest node within `SelectedNodeRadius + 2` is selected via `CommitClicked` event → `GitGraphView` wires to `vm.SelectCommit()`. Commit lookup uses pre-built SHA→commit dictionary. (M7-G3, `GitGraphControl.cs`)
 
 ---
 
@@ -357,14 +357,14 @@ sequence must be verified correct — no double-refresh, no stale state.
 
 ## Persistent Checks — Extensions (add to self-review before closing Phase 7)
 
-- [ ] `GetGraphAsync` fetches parent SHAs only — no recursive graph traversal (R3.1)
-- [ ] `GitGraphControl.Render()` consumes pre-computed geometry only — no algorithm in `Render()` (R3.2)
-- [ ] Lane recycling implemented; graph width capped at 12 lanes (R3.3)
-- [ ] Hit-testing uses pre-computed node centers; `SelectedCommit` set correctly (R3.4)
+- [x] `GetGraphAsync` fetches parent SHAs only — no recursive graph traversal (R3.1)
+- [x] `GitGraphControl.Render()` consumes pre-computed geometry only — no algorithm in `Render()` (R3.2)
+- [x] Lane recycling implemented; graph width capped at 12 lanes (R3.3)
+- [x] Hit-testing uses pre-computed node centers; `SelectedCommit` set correctly (R3.4)
 - [x] `GitWatcher` degrades gracefully on inotify failure; `IsWatching` surfaced (R3.5)
 - [x] `GitWatcher.Dispose()` is race-safe; callback not invoked after dispose (R3.6)
 - [x] Dual-trigger (FolderChanged + GitWatcher) produces exactly one refresh (R3.7)
-- [x] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors) after Extension 2
-- [x] `dotnet test tests` passes — 375/375 (362 baseline + 13 GitWatcher tests)
+- [x] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors)
+- [x] `dotnet test tests` passes — 392/392
 - [ ] `EXTENSIONS.md` updated exit conditions all met
 - [ ] `PHASES.md` Phase 7 extension items marked `[x]`
