@@ -93,13 +93,39 @@ public class GitGraphControl : Control
     {
         foreach (var n in nodes)
         {
-            if (n.BranchLabel == null) continue;
-            var txt = new FormattedText(n.BranchLabel, System.Globalization.CultureInfo.CurrentCulture, Avalonia.Media.FlowDirection.LeftToRight, new Typeface("Consolas, Menlo, monospace"), 11, Brushes.White);
-            var col = Color.Parse(n.LaneColor);
-            var bg = new SolidColorBrush(Color.FromArgb(200, col.R, col.G, col.B));
-            var rc = new Rect(n.CenterX + NR + 4, n.CenterY - 8, txt.Width + 8, 16);
-            ctx.FillRectangle(bg, rc, 3);
-            ctx.DrawText(txt, new Point(n.CenterX + NR + 8, n.CenterY - 7));
+            var textX = n.CenterX + NR + 8;
+
+            if (n.BranchLabel != null)
+            {
+                var branchText = new FormattedText(
+                    n.BranchLabel,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    Avalonia.Media.FlowDirection.LeftToRight,
+                    new Typeface("Consolas, Menlo, monospace"),
+                    11,
+                    Brushes.White);
+
+                var col = Color.Parse(n.LaneColor);
+                var bg = new SolidColorBrush(Color.FromArgb(200, col.R, col.G, col.B));
+                var rc = new Rect(textX - 4, n.CenterY - 8, branchText.Width + 8, 16);
+                ctx.FillRectangle(bg, rc, 3);
+                ctx.DrawText(branchText, new Point(textX, n.CenterY - 7));
+
+                textX += branchText.Width + 12;
+            }
+
+            if (!string.IsNullOrWhiteSpace(n.Message))
+            {
+                var messageText = new FormattedText(
+                    n.Message,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    Avalonia.Media.FlowDirection.LeftToRight,
+                    new Typeface("Consolas, Menlo, monospace"),
+                    11,
+                    Brushes.Gainsboro);
+
+                ctx.DrawText(messageText, new Point(textX, n.CenterY - 7));
+            }
         }
     }
 

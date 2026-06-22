@@ -1,0 +1,3 @@
+- [x] Update GraphNodeGeometry to carry commit message and populate it in GitGraphViewModel layout generation.
+- [x] Update GitGraphControl label rendering to draw commit messages beside graph nodes (with branch-label-aware offset).
+- [ ] Run test/build validation (`dotnet test`) and confirm no regressions.

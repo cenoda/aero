@@ -505,15 +505,30 @@ public sealed class LibGit2SharpService : IGitService
     private Dictionary<string, string> BuildBranchRefMap()
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
-        var refsDir = Path.Combine(_gitDir, "refs", "heads");
+        var localRefsDir = Path.Combine(_gitDir, "refs", "heads");
+        var remoteRefsDir = Path.Combine(_gitDir, "refs", "remotes");
 
-        // Loose refs
-        if (Directory.Exists(refsDir))
+        // Loose local refs (refs/heads/*)
+        if (Directory.Exists(localRefsDir))
         {
-            foreach (var file in Directory.GetFiles(refsDir))
+            foreach (var file in Directory.GetFiles(localRefsDir, "*", SearchOption.AllDirectories))
             {
                 var sha = File.ReadAllText(file).Trim();
-                map[sha] = Path.GetFileName(file);
+                var relative = Path.GetRelativePath(localRefsDir, file).Replace('\\', '/');
+                if (!map.ContainsKey(sha))
+                    map[sha] = relative;
+            }
+        }
+
+        // Loose remote refs (refs/remotes/*)
+        if (Directory.Exists(remoteRefsDir))
+        {
+            foreach (var file in Directory.GetFiles(remoteRefsDir, "*", SearchOption.AllDirectories))
+            {
+                var sha = File.ReadAllText(file).Trim();
+                var relative = Path.GetRelativePath(remoteRefsDir, file).Replace('\\', '/');
+                // Prefer remote-tracking label over local to avoid duplicate "master"
+                map[sha] = relative;
             }
         }
 
@@ -529,9 +544,14 @@ public sealed class LibGit2SharpService : IGitService
                 if (parts.Length < 2) continue;
                 var sha = parts[0];
                 var refName = parts[1].Trim();
-                if (!refName.StartsWith("refs/heads/")) continue;
-                var friendlyName = refName["refs/heads/".Length..];
-                if (!map.ContainsKey(sha)) // loose ref takes precedence
+                string? friendlyName = null;
+                if (refName.StartsWith("refs/remotes/"))
+                    friendlyName = refName["refs/remotes/".Length..];
+                else if (refName.StartsWith("refs/heads/"))
+                    friendlyName = refName["refs/heads/".Length..];
+
+                if (friendlyName == null) continue;
+                if (!map.ContainsKey(sha)) // loose refs take precedence
                     map[sha] = friendlyName;
             }
         }

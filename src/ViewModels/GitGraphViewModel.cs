@@ -16,7 +16,7 @@ namespace Aero.ViewModels;
 public record GraphNodeGeometry(
     string Sha, int RowIndex, int LaneIndex,
     double CenterX, double CenterY, string LaneColor,
-    bool IsHead, bool IsMerge, string? BranchLabel,
+    bool IsHead, bool IsMerge, string? BranchLabel, string Message,
     IReadOnlyList<ParentEndpoint> ParentConnections);
 
 /// <summary>A connection from a commit to one of its parents.</summary>
@@ -193,7 +193,9 @@ public class GitGraphViewModel : ReactiveObject
             nodes.Add(new GraphNodeGeometry(c.Sha, i, li, cx, cy,
                 laneInfos[Math.Min(li, laneInfos.Count - 1)].Color,
                 IsHead: i == 0, IsMerge: c.ParentShas.Count >= 2,
-                c.BranchLabels.Count > 0 ? c.BranchLabels[0] : null, conns));
+                c.BranchLabels.Count > 0 ? c.BranchLabels[0] : null,
+                c.Message,
+                conns));
         }
         return (nodes, laneInfos);
     }
