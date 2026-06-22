@@ -1,7 +1,66 @@
 # Phase 8 — To Fix
 
-> **Status:** Active — pre-implementation risks recorded (2026-06-22).
+> **Status:** Active — implementation risks and findings recorded (2026-06-23).
 > Resolve all open items before declaring Phase 8 complete.
+
+---
+
+## Round 5 — M1/M2 Implementation Findings (2026-06-23)
+
+---
+
+### R5.1 DockControl init order: InitializeFactory must come before Layout *(priority: high, BLOCKER for drag-and-drop)*
+
+**Description:** During M2 runtime testing, drag-and-drop failed silently because
+`DockControl.InitializeFactory = true` was set AFTER `DockControl.Layout = layout`.
+DockControl's `OnPropertyChanged` fires `Initialize()` the moment `Layout` is assigned —
+and it checks `InitializeFactory` to set up internal locators (ContextLocator,
+HostWindowLocator, DockableLocator) that drag-and-drop requires.
+
+**Required fix (already applied in commit 9624d10):**
+1. Set `DockControl.InitializeFactory = true` BEFORE `DockControl.Layout = layout`
+2. Set `DockControl.InitializeLayout = false` (CreateDefaultLayout already calls InitLayout)
+3. Set `DockControl.Factory = layout.Factory!` explicitly as safety net
+4. Assign `DockControl.Layout = layout` LAST
+
+**Status:** [x] Closed — fixed in commit 9624d10 (2026-06-23)
+
+---
+
+### R5.2 AeroDockFactory model property dictionaries are new instances on every access *(priority: low)*
+
+**Description:** `AeroDockFactory` overrides `ToolControls`, `DocumentControls`, etc. as
+properties returning `new Dictionary<>()` on every access. Dock.Avalonia may call these
+repeatedly during layout operations, creating new dictionaries each time and losing state.
+
+**Required fix:** Store dictionaries as fields in the factory, return the same instance:
+
+```csharp
+private readonly Dictionary<IDockable, IDockableControl> _toolControls = new();
+public override IDictionary<IDockable, IDockableControl> ToolControls => _toolControls;
+```
+
+Apply to all 10 dictionary/list property overrides in `AeroDockFactory`.
+
+**Status:** [ ] Open — fix in M7 cleanup or earlier if issues appear
+
+---
+
+### R5.3 Model classes lack Equals/GetHashCode overrides *(priority: low)*
+
+**Description:** Dock.Avalonia uses `IDockable` identity (likely `Id` string) to track
+dockables. Our model classes rely on reference equality. If Dock compares dockables by
+value or uses them as dictionary keys, mismatches may occur.
+
+**Required fix:** Override `Equals` and `GetHashCode` on all Aero* model classes using
+the `Id` property:
+
+```csharp
+public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
+public override int GetHashCode() => Id?.GetHashCode() ?? 0;
+```
+
+**Status:** [ ] Open — add during M4/M7 if runtime issues appear
 
 ---
 
