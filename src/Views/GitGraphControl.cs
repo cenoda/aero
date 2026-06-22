@@ -22,20 +22,13 @@ public class GitGraphControl : Control
     public IReadOnlyList<GraphNodeGeometry>? Nodes { get => GetValue(NodesProperty); set => SetValue(NodesProperty, value); }
     public IReadOnlyList<GraphLaneInfo>? Lanes { get => GetValue(LanesProperty); set => SetValue(LanesProperty, value); }
     public GitGraphCommit? SelectedCommit { get => GetValue(SelectedCommitProperty); set => SetValue(SelectedCommitProperty, value); }
-    public event Action<GitGraphCommit>? CommitClicked;
+    /// <summary>Raised with the SHA of the clicked commit.</summary>
+    public event Action<string>? CommitClicked;
 
     private const double NR = 6.0;
     private const double SNR = 8.0;
-    private readonly Dictionary<string, GitGraphCommit> _shaMap = new();
 
     static GitGraphControl() { AffectsRender<GitGraphControl>(NodesProperty, LanesProperty, SelectedCommitProperty); }
-
-    public void SetCommitLookup(IReadOnlyList<GitGraphCommit> commits)
-    {
-        _shaMap.Clear();
-        if (commits != null)
-            foreach (var c in commits) _shaMap[c.Sha] = c;
-    }
 
     public override void Render(DrawingContext ctx)
     {
@@ -116,14 +109,14 @@ public class GitGraphControl : Control
         var pos = e.GetPosition(this);
         var nodes = Nodes;
         if (nodes == null) return;
-        GitGraphCommit? closest = null;
+        string? closestSha = null;
         double minDist = double.MaxValue;
         foreach (var n in nodes)
         {
             var dx = pos.X - n.CenterX; var dy = pos.Y - n.CenterY;
             var dist = Math.Sqrt(dx * dx + dy * dy);
-            if (dist <= SNR + 2 && dist < minDist) { minDist = dist; _shaMap.TryGetValue(n.Sha, out closest); }
+            if (dist <= SNR + 2 && dist < minDist) { minDist = dist; closestSha = n.Sha; }
         }
-        if (closest != null) { CommitClicked?.Invoke(closest); e.Handled = true; }
+        if (closestSha != null) { CommitClicked?.Invoke(closestSha); e.Handled = true; }
     }
 }

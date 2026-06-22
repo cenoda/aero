@@ -102,9 +102,10 @@ public sealed class GitWatcher : IDisposable
 
             ArmDebounce();
         }
-        catch (Exception ex)
+        // W1 fix: Only catch non-fatal exceptions
+        catch (Exception ex) when (ex is not (OutOfMemoryException or
+            StackOverflowException or AccessViolationException))
         {
-            // Never let an exception escape the FileSystemWatcher callback
             System.Diagnostics.Debug.WriteLine(
                 $"[GitWatcher] Event handler failed: {ex.Message}");
         }

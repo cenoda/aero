@@ -94,6 +94,13 @@ public class GitGraphViewModel : ReactiveObject
             Detail.Hide();
     }
 
+    /// <summary>Selects a commit by SHA (called from GitGraphControl hit-test).</summary>
+    public void SelectCommitBySha(string sha)
+    {
+        var commit = Commits.FirstOrDefault(c => c.Sha == sha);
+        SelectCommit(commit);
+    }
+
     private static (IReadOnlyList<GraphNodeGeometry>, IReadOnlyList<GraphLaneInfo>)
         ComputeLayout(IReadOnlyList<GitGraphCommit> commits)
     {

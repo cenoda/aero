@@ -6,6 +6,8 @@ namespace Aero.Views;
 
 public partial class GitGraphView : UserControl
 {
+    private Action<string>? _clickHandler;
+
     public GitGraphView()
     {
         InitializeComponent();
@@ -14,10 +16,17 @@ public partial class GitGraphView : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+
+        // G1 fix: Unsubscribe previous handler before subscribing new one
+        if (_clickHandler != null)
+            GraphControl.CommitClicked -= _clickHandler;
+        _clickHandler = null;
+
         if (DataContext is GitGraphViewModel vm)
         {
-            GraphControl.SetCommitLookup(vm.Commits);
-            GraphControl.CommitClicked += c => vm.SelectCommit(c);
+            // G2 fix: Pass SHA string — ViewModel looks up from its Commits list
+            _clickHandler = sha => vm.SelectCommitBySha(sha);
+            GraphControl.CommitClicked += _clickHandler;
         }
     }
 }

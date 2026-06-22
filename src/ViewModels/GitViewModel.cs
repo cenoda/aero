@@ -125,6 +125,10 @@ public class GitViewModel : ReactiveObject, IDisposable
         _gitWatcher?.Dispose();
         _gitWatcher = new GitWatcher(gitDir, () => _ = RefreshStatusInternalAsync());
 
+        // W2 fix: Surface IsWatching = false to the user
+        if (!_gitWatcher.IsWatching)
+            _bus.Publish(new StatusMessage("Git auto-reload unavailable (inotify limit). Use Refresh manually."));
+
         // Publish repository detection so other VMs can sync their state
         _bus.Publish(new GitRepositoryChanged(_workspacePath!, true));
     }

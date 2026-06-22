@@ -194,63 +194,17 @@ public sealed class LibGit2SharpService : IGitService
             // This avoids LibGit2Sharp 0.30 bugs where repo.Branches hangs and
             // repo.Refs.FromGlob returns empty on some Linux environments.
             var headSha = repo.Head?.Tip?.Sha;
-            var refsDir = Path.Combine(_gitDir, "refs", "heads");
+            var branchMap = BuildBranchRefMap();
 
-            // Loose refs
-            if (Directory.Exists(refsDir))
+            foreach (var kvp in branchMap)
             {
-                var files = Directory.GetFiles(refsDir);
-                foreach (var file in files)
-                {
-                    var friendlyName = Path.GetFileName(file);
-                    var sha = File.ReadAllText(file).Trim();
-                    var canonicalName = $"refs/heads/{friendlyName}";
-                    var isCurrent = string.Equals(sha, headSha, StringComparison.Ordinal);
-
-                    result.Add(new GitBranchInfo(
-                        friendlyName,
-                        canonicalName,
-                        isCurrent,
-                        IsRemote: false,
-                        UpstreamName: null));
-                }
-            }
-
-            // Packed refs (for repos with many branches)
-            var packedRefsPath = Path.Combine(_gitDir, "packed-refs");
-            if (File.Exists(packedRefsPath))
-            {
-                var packedContent = await File.ReadAllTextAsync(packedRefsPath, ct);
-                foreach (var line in packedContent.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-                {
-                    if (line.StartsWith('#'))
-                        continue;
-
-                    var parts = line.Split(' ', 2);
-                    if (parts.Length < 2)
-                        continue;
-
-                    var sha = parts[0];
-                    var refName = parts[1].Trim();
-
-                    if (!refName.StartsWith("refs/heads/"))
-                        continue;
-
-                    var friendlyName = refName["refs/heads/".Length..];
-
-                    // Skip if already found as a loose ref
-                    if (result.Any(b => string.Equals(b.Name, friendlyName, StringComparison.Ordinal)))
-                        continue;
-
-                    var isCurrent = string.Equals(sha, headSha, StringComparison.Ordinal);
-
-                    result.Add(new GitBranchInfo(
-                        friendlyName,
-                        refName,
-                        isCurrent,
-                        IsRemote: false,
-                        UpstreamName: null));
-                }
+                var isCurrent = string.Equals(kvp.Key, headSha, StringComparison.Ordinal);
+                result.Add(new GitBranchInfo(
+                    kvp.Value,
+                    $"refs/heads/{kvp.Value}",
+                    isCurrent,
+                    IsRemote: false,
+                    UpstreamName: null));
             }
 
             return result;
@@ -486,17 +440,8 @@ public sealed class LibGit2SharpService : IGitService
             ct.ThrowIfCancellationRequested();
             var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
 
-            // Build a map of branch refs → SHA for label lookup
-            var branchRefs = new Dictionary<string, string>(StringComparer.Ordinal);
-            var refsDir = Path.Combine(_gitDir, "refs", "heads");
-            if (Directory.Exists(refsDir))
-            {
-                foreach (var file in Directory.GetFiles(refsDir))
-                {
-                    var sha = File.ReadAllText(file).Trim();
-                    branchRefs[sha] = Path.GetFileName(file);
-                }
-            }
+            // Build a map of SHA → branch name (reads loose refs + packed-refs — G3 fix)
+            var branchRefs = BuildBranchRefMap();
 
             var result = new List<GitGraphCommit>();
             var commits = repo.Commits.Take(count);
@@ -551,6 +496,47 @@ public sealed class LibGit2SharpService : IGitService
             _semaphore.Release();
             _semaphore.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Builds a SHA → branch name map from loose refs (refs/heads/) and
+    /// packed-refs. Used by both GetBranchesAsync and GetGraphAsync.
+    /// </summary>
+    private Dictionary<string, string> BuildBranchRefMap()
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        var refsDir = Path.Combine(_gitDir, "refs", "heads");
+
+        // Loose refs
+        if (Directory.Exists(refsDir))
+        {
+            foreach (var file in Directory.GetFiles(refsDir))
+            {
+                var sha = File.ReadAllText(file).Trim();
+                map[sha] = Path.GetFileName(file);
+            }
+        }
+
+        // Packed refs (G3 fix)
+        var packedRefsPath = Path.Combine(_gitDir, "packed-refs");
+        if (File.Exists(packedRefsPath))
+        {
+            var packedContent = File.ReadAllText(packedRefsPath);
+            foreach (var line in packedContent.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (line.StartsWith('#')) continue;
+                var parts = line.Split(' ', 2);
+                if (parts.Length < 2) continue;
+                var sha = parts[0];
+                var refName = parts[1].Trim();
+                if (!refName.StartsWith("refs/heads/")) continue;
+                var friendlyName = refName["refs/heads/".Length..];
+                if (!map.ContainsKey(sha)) // loose ref takes precedence
+                    map[sha] = friendlyName;
+            }
+        }
+
+        return map;
     }
 
     /// <summary>
