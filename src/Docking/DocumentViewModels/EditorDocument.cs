@@ -1,9 +1,12 @@
-using Dock.Avalonia.Controls;
-using Dock.Model.Controls;
+using System;
+using System.Collections.Generic;
 
 namespace Aero.Docking.DocumentViewModels;
 
-public class EditorDocument : ManagedDockableBase, IDocument
+/// <summary>
+/// Document dock implementation for the editor area.
+/// </summary>
+public class EditorDocument : Dock.Avalonia.Controls.ManagedDockableBase, Dock.Model.Controls.IDocument
 {
     public EditorDocument()
     {
