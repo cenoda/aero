@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Phase 8.9 Design System: Shadow System (layered depth) -->
+  <BoxShadow x:Key="Shadow.Subtle">0 1px 2px 0 rgba(0,0,0,0.08)</BoxShadow>
+  <BoxShadow x:Key="Shadow.Medium">0 4px 12px 0 rgba(0,0,0,0.12)</BoxShadow>
+  <BoxShadow x:Key="Shadow.Popup">0 8px 24px 0 rgba(0,0,0,0.16)</BoxShadow>
+</ResourceDictionary>

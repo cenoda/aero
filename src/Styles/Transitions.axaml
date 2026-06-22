@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Phase 8.9 Design System: Transition Timing (200ms CubicOut)
+       Applied via Avalonia Transitions on controls that support them.
+       Note: Avalonia does not have a CSS-like global transition: property;
+       these values are used per-control in Style setters. -->
+  <x:Double x:Key="Transition.DurationMs">200</x:Double>
+  <x:String x:Key="Transition.Easing">CubicOut</x:String>
+</ResourceDictionary>

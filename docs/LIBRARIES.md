@@ -33,7 +33,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
 | **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. |
-| **DialogHost.Avalonia** | Modal popup overlays. | Command palette, goto-line, find-in-files picker, settings popups. |
+| **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
 
 
 
@@ -78,8 +78,8 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Text glyphs (current)** | Lightweight built-in symbols rendered as text in the file tree. | Stable on Avalonia 11.3 with no extra dependency; used through Phase 2. |
-| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | Deferred to Phase 8: current compatible versions were not stable with Avalonia 11.3, and newer versions require Avalonia 12. |
+| **Text glyphs (current)** | Lightweight built-in symbols rendered as text in the file tree. | Stable on Avalonia 11.3 with no extra dependency; adopted as the Phase 8 solution per Phase 8.5 decision. 8 distinct glyphs for file types. |
+| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | Deferred to Avalonia 12 upgrade (Phase 9+). Current compatible versions were not stable with Avalonia 11.3; newer versions require Avalonia 12. See `docs/phases/phase-8/8.5-icon-decision/`. |
 
 ## TESTING
 
@@ -126,8 +126,9 @@ Phase 3: + AvaloniaEdit.TextMate, TextMateSharp.Grammars
 Phase 4: + StreamJsonRpc
 Phase 5: + CliWrap, Pty.Net, VtNetCore
 Phase 7: + LibGit2Sharp, DiffPlex
-Phase 8: + Dock.Avalonia, DialogHost.Avalonia, FuzzySharp,
-          icon-library decision, Microsoft.Extensions.*
+Phase 8: + Dock.Avalonia, FuzzySharp,
+          text glyphs (icon decision resolved — no new package), Microsoft.Extensions.*
+          (DialogHost.Avalonia skipped — requires Avalonia 12; custom overlay instead)
 Phase 10: + McMaster.NETCore.Plugins
 Anytime: + Humanizer, Polly, xUnit, NSubstitute
 ```

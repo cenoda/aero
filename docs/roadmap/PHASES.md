@@ -152,15 +152,109 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] **Branch graph** — visual DAG of commit history with lane coloring, branch labels, and commit detail panel
 - [x] **Auto-reload** — `GitWatcher` on `.git/HEAD` + `.git/index`; panel refreshes automatically on external git operations
 
-## Phase 8: UI Polish
-- [ ] **Dockable panels** — drag to rearrange layout
-- [ ] **Theme system** — light/dark switch
-- [ ] **Command palette** — Ctrl+Shift+P fuzzy search
-- [ ] **Keybinding config** — customizable shortcuts
-- [ ] **Welcome page** — recent projects, new file, etc.
-- [ ] **Settings page** — preferences UI (font, theme, tab size, etc.)
+## Phase 8: Core UI Polish — Design & User Choice
+
+> **This is the first phase where your intent is the product.**
+> Previous phases (0–7) were engineering — LSP, Git, Build — where there's a right answer.
+> Phase 8 is design — there's no right answer, only *your taste*.
+>
+> ### Design Target: JetBrains Rider level
+>
+> > "Honestly, the minimum MVP is JetBrains Rider quality. Only then does this mean something."
+>
+| VS Code (what we're *not*) | Aero (what we're *going for*) |
+|-----------------------------|-------------------------------|
+| Flat, angular, clunky | Rounded, clean, smooth |
+| Forced single layout | User-configurable orchestration environment |
+| 15 theme colors | **80–100 color tokens, fully overridable** via JSON |
+| No design system | Unified spacing/radius/shadow/transition (Apple/Rider inspired) |
+>
+> ### Philosophy: User Choice, Not Lock-In
+>
+> > "Aero is not just an IDE — it's a platform where users configure their own orchestration environment."
+>
+> | User Type | Need | Aero's Response |
+> |-----------|------|-----------------|
+> | **Conservative** | Traditional IDE (text center, agent right) | Preset layout provided |
+> | **Progressive** | VS Code style (agent as main view) | Preset layout provided |
+> | **Ultra-progressive** | Multi-agent view (split, pipeline, multiple windows) | Dock.Avalonia full custom |
+> | **Orchestration** | Auto-route Agent A → Agent B | Phase A4 (Agent-to-Agent Pipeline) |
+>
+> Every Phase 8 decision answers: *"Does this give the user choice, or does it force them?"*
+>
+> ---
+>
+> **Entry condition:** Phase 7 is complete.
+> **Exit condition:** Panels are dockable in two modes; theme has 80–100 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
+
+### 8.1 Dockable Panels — Layout Modes [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
+- [ ] **8.1a Freeform Mode** — wire existing panels into Dock.Avalonia (draggable, resizable, hideable, rearrangeable)
+- [ ] **8.1b Tile Mode** — auto-layout with tiling + stack (tab) support. Panels tile side-by-side, stack when overlapped. Keyboard-navigation optimized. Manual adjustment still allowed (avoids Hyperland limitation).
+- [ ] **8.1c Tear-Away Windows** — panels can be dragged out of the main window into standalone OS windows (Chrome tab style). Re-dockable.
+- [ ] **Tile + Stack mixing** — panels tile when placed side-by-side, merge into tabs when placed in the same slot.
+- [ ] Mode switching in settings; no restart required.
+- [ ] Principles: Tile Mode *must* still allow manual adjustment. Mode switch must be instant.
+
+### 8.2 Theme Engine — 80–100 Color Tokens + JSON Override [`docs/phases/phase-8/8.2-theme-system/`](docs/phases/phase-8/8.2-theme-system/)
+- [ ] Define **80–100 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.)
+- [ ] Create Light and Dark presets stored as ResourceDictionary in `src/Styles/`
+- [ ] **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
+- [ ] Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme
+- [ ] Ctrl+Shift+T or View → Toggle Theme
+
+### 8.3 Command Palette [`docs/phases/phase-8/8.3-command-palette/`](docs/phases/phase-8/8.3-command-palette/)
+- [ ] Define `ICommandRegistry` with command metadata (shared with 8.8)
+- [ ] Ctrl+Shift+P opens DialogHost overlay with FuzzySharp-filtered command list
+- [ ] Enter executes, Esc dismisses; keyboard hints shown
+
+### 8.4 Welcome Page [`docs/phases/phase-8/8.4-welcome-page/`](docs/phases/phase-8/8.4-welcome-page/)
+- [ ] Landing tab when no files open: recent folders (from 8.7), quick-action buttons
+- [ ] Empty state on first launch (no recent folders)
+
+### 8.5 Icon Decision & Integration [`docs/phases/phase-8/8.5-icon-decision/`](docs/phases/phase-8/8.5-icon-decision/)
+- [x] Resolve TOFIX R3.1 — **commit to text glyphs for Phase 8** (no new icon package)
+- [ ] Apply consistent file-type glyphs to tree (8 types: folder, code, text, image, config, markup, project, unknown)
+- [ ] Apply tab glyphs in editor tabs
+- [ ] Update `docs/LIBRARIES.md` with the decision
+
+### 8.6 Settings Page [`docs/phases/phase-8/8.6-settings-page/`](docs/phases/phase-8/8.6-settings-page/)
+- [ ] Single dialog: Font, Theme, Tab Size, Editor options, **Layout Mode selector** (Tile/Freeform)
+- [ ] Persist to `~/.aero/settings.json` (via ISettingsService from 8.7); immediate apply, no restart
+
+### 8.7 Workspace Persistence [`docs/phases/phase-8/8.7-workspace-persistence/`](docs/phases/phase-8/8.7-workspace-persistence/)
+- [ ] Define `ISettingsService` / `SettingsService` (shared persistence layer for 8.4, 8.6)
+- [ ] Remember last folder, open files, active tab, window position across restarts (`~/.aero/workspace.json`)
+- [ ] Remember recent folders list (for 8.4 Welcome Page)
+
+### 8.8 Keybinding Display (Read-Only) [`docs/phases/phase-8/8.8-keybinding-display/`](docs/phases/phase-8/8.8-keybinding-display/)
+- [ ] Define `ICommandRegistry` (shared with 8.3) if not already done
+- [ ] Categorized read-only keyboard shortcuts reference
+- [ ] Custom keybinding editing deferred to **Phase 9: Advanced Features**
+
+### 8.9 Design System Foundation [`docs/phases/phase-8/8.9-design-system/`](docs/phases/phase-8/8.9-design-system/)
+> ⚠️ **Execute this sub-phase FIRST.** All other sub-phases depend on it.
+- [ ] **Spacing Scale** — 4px grid base (4/8/12/16/24/32). Applied to button padding, list item height, section gaps, panel margins.
+- [ ] **Corner Radius** — unified rounding for buttons (`6px`), inputs (`6px`), panels (`8px`), popups (`10px`), tabs (`4px` top only), scrollbar thumbs (`4px`)
+- [ ] **Shadow System** — layered depth (subtle `0 1px 2px rgba(0,0,0,0.08)` / medium `0 4px 12px rgba(0,0,0,0.12)` / popup `0 8px 24px rgba(0,0,0,0.16)`)
+- [ ] **Transition Timing** — 200ms `CubicOut` as default for hover, focus, panel open/close, tab switch, color change
+- [ ] **Typography** — Inter font, size scale: 11px (status bar), 12px (UI labels), 13px (body), 14px (tab titles), 16px (heading)
+- [ ] **Border System** — unified 1px Solid border for panel dividers, inputs, grid lines
+- [ ] **Color Token Naming Convention** — `{area}.{property}` e.g. `editor.background`, `panel.border`, `button.hoverBackground`. Feeds into 8.2 Theme Engine.
+- [ ] Output as Avalonia ResourceDictionary files in `src/Styles/` (`Spacing.axaml`, `CornerRadius.axaml`, `Shadows.axaml`, `Transitions.axaml`, `Typography.axaml`, `Borders.axaml`)
+- [ ] Exact values set by design agent; this folder defines scope only
+
+### Phase 8 Tests (All Sub-Phases)
+- [ ] Unit tests for command registry, theme tokens, settings I/O, glyph mapping
+- [ ] Integration tests for settings round-trip, workspace persistence, theme switch
+- [ ] Manual tests for dockable panels (drag, resize, tear-away, mode switch)
+- [ ] All pre-existing tests continue to pass
 
 ## Phase 9: Advanced Features
+
+> Goal: Power-user editing features and LSP-driven code intelligence.
+> Entry condition: Phase 8 is complete.
+
+- [ ] **Keybinding editing** — customizable shortcuts with conflict detection (moved from Phase 8)
 - [ ] **Multi-cursor editing** — Ctrl+D to select next occurrence
 - [ ] **Minimap** — scrollable code overview
 - [ ] **Snippets** — configurable code snippets
@@ -188,7 +282,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## AGENT TRACK: Multi-Agent AI Orchestration
 
 ### Phase A1: Agent Foundation
-> ⚠️ Phase 8 (UI Polish / Docking) 완료 후 시작할 것. 그 전에 시작하면 레이아웃 완성 후 전부 재작업해야 함.
+> ⚠️ Phase 8 (Core UI Polish — especially dockable panels) 완료 후 시작할 것. 그 전에 시작하면 레이아웃 완성 후 전부 재작업해야 함.
 
 - [ ] **IAgent interface** — Id, Name, Kind (CLI/API/Local), Role (Frontend/Backend)
 - [ ] **AgentRegistry** — discover/register/unregister agents
