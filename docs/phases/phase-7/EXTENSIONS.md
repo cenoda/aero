@@ -262,7 +262,7 @@ The Phase 7 exit conditions (all previously met) are supplemented with:
 - [x] Branch/tag labels visible next to their commit nodes — ✅ Done
 - [x] Git panel auto-refreshes when external `git commit` / `git checkout` is run — ✅ Done
 - [x] Auto-reload debounce fires within 1.5 seconds of a `.git/index` or `.git/HEAD` change — ✅ Done
-- [x] All new tests passing; `dotnet test tests` total = 392/392 (13 GitWatcher + 6 GetGraphAsync + 11 GitGraphViewModel) — ✅ Done
+- [x] All new tests passing; `dotnet test tests` total = **398/398** — ✅ Done
 
 ---
 

@@ -412,63 +412,41 @@ The SHA map stays empty for the lifetime of the view. All hit-test lookups in
 `OnPointerPressed` miss, so clicking any commit node does nothing and the detail pane
 never populates.
 
-**Fix:** Move `SetCommitLookup` to after `LoadAsync` completes. Options:
-(a) At the end of `GitGraphViewModel.LoadAsync`, raise a notification (e.g., set a
-dummy reactive property) that `GitGraphView` observes to re-call `SetCommitLookup`; or
-(b) have `GitGraphControl` build its own lookup from the `Nodes` dependency property
-via a `PropertyChangedCallback` on `NodesProperty`.
+**Fix applied:** `CommitClicked` event signature changed from `Action<GitGraphCommit>` to
+`Action<string>` (SHA only). `GitGraphControl.OnPointerPressed` fires the SHA string
+directly from `GraphNodeGeometry` — no lookup map needed. `GitGraphView` wires
+`_clickHandler = sha => vm.SelectCommitBySha(sha)`. `GitGraphViewModel.SelectCommitBySha`
+does `Commits.FirstOrDefault(c => c.Sha == sha)` and delegates to `SelectCommit`. The
+`SetCommitLookup` call and `_shaMap` dictionary are gone entirely.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — no lookup map; hit-test operates on pre-computed `Nodes` geometry only.
 
 ---
 
 ### R4.2 `CommitClicked` event leaks on DataContext reassignment *(priority: medium)*
 
-**Description:** `GitGraphView.OnDataContextChanged` calls `GraphControl.CommitClicked += c => vm.SelectCommit(c)`
-without unsubscribing the previous handler. If the DataContext changes (workspace switch),
-stale lambdas accumulate on the event, each calling `SelectCommit` on an old ViewModel.
+**Description:** `GitGraphView.OnDataContextChanged` subscribed `CommitClicked` without
+unsubscribing the previous handler, accumulating stale lambdas on workspace switch.
 
-**Fix:** Store the handler in a field:
-```csharp
-private Action<GitGraphCommit>? _clickHandler;
+**Fix applied:** `_clickHandler` field stored; old handler unsubscribed before new one
+is added. `CommitClicked` signature is now `Action<string>` (SHA), so the lambda is
+`sha => vm.SelectCommitBySha(sha)` — no closure over the commit object.
 
-protected override void OnDataContextChanged(EventArgs e)
-{
-    base.OnDataContextChanged(e);
-    if (_clickHandler != null)
-        GraphControl.CommitClicked -= _clickHandler;
-    _clickHandler = null;
-
-    if (DataContext is GitGraphViewModel vm)
-    {
-        GraphControl.SetCommitLookup(vm.Commits);
-        _clickHandler = c => vm.SelectCommit(c);
-        GraphControl.CommitClicked += _clickHandler;
-    }
-}
-```
-
-**Status:** [ ] Open
+**Status:** [x] Fixed — handler field pattern in `GitGraphView.axaml.cs`.
 
 ---
 
 ### R4.3 `GetGraphAsync` skips `packed-refs` — branch labels missing on gc'd repos *(priority: medium)*
 
-**Description:** `GetGraphAsync` builds the SHA→branch label map from loose refs only
-(`refs/heads/` directory). Any repo that has been `git gc`'d moves refs to `packed-refs`.
-The result: branch labels won't appear on any node in a normally-used repo.
-`GetBranchesAsync` correctly reads both — the logic just wasn't carried over.
+**Description:** Original `GetGraphAsync` read only loose refs for branch label lookup.
+Any repo after `git gc` stores refs in `packed-refs`, so all labels were missing.
 
-**Fix:** Extract the loose-ref + packed-refs reading into a private helper:
-```csharp
-private Dictionary<string, string> BuildBranchRefsBySha()
-{
-    // Read refs/heads/* (loose) + packed-refs, return SHA → branchName
-}
-```
-Call from both `GetBranchesAsync` and `GetGraphAsync`.
+**Fix applied:** Extracted `BuildBranchRefMap()` private helper that reads loose
+refs (`refs/heads/*`) then `packed-refs`, with loose refs taking precedence. Both
+`GetBranchesAsync` and `GetGraphAsync` now call this helper. `GetBranchesAsync`
+simplified accordingly — its inline duplication removed.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — shared `BuildBranchRefMap()` in `LibGit2SharpService`.
 
 ---
 
@@ -479,7 +457,7 @@ Call from both `GetBranchesAsync` and `GetGraphAsync`.
 
 **Fix:** Narrow to `catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))`.
 
-**Status:** [ ] Open
+**Status:** [ ] Open — low priority, handler body is trivial and unlikely to throw.
 
 ---
 
@@ -491,4 +469,4 @@ continues without auto-reload. The user has no indication that Refresh must be d
 **Fix:** After `new GitWatcher(...)`, check `_gitWatcher.IsWatching` and publish a
 `StatusMessage` if false.
 
-**Status:** [ ] Open
+**Status:** [ ] Open — low priority, inotify limit is uncommon in normal usage.
