@@ -51,6 +51,9 @@ public class GitGraphViewModel : ReactiveObject
     [Reactive] public string? ErrorMessage { get; set; }
     [Reactive] public GitGraphCommit? SelectedCommit { get; set; }
 
+    /// <summary>Detail pane ViewModel for the selected commit.</summary>
+    public GitGraphCommitDetailViewModel Detail { get; } = new();
+
     public IReadOnlyList<GitGraphCommit> Commits { get; private set; } = Array.Empty<GitGraphCommit>();
     public IReadOnlyList<GraphNodeGeometry> Nodes { get; private set; } = Array.Empty<GraphNodeGeometry>();
     public IReadOnlyList<GraphLaneInfo> Lanes { get; private set; } = Array.Empty<GraphLaneInfo>();
@@ -82,7 +85,14 @@ public class GitGraphViewModel : ReactiveObject
         finally { IsLoading = false; }
     }
 
-    public void SelectCommit(GitGraphCommit? commit) => SelectedCommit = commit;
+    public void SelectCommit(GitGraphCommit? commit)
+    {
+        SelectedCommit = commit;
+        if (commit != null)
+            Detail.Show(commit);
+        else
+            Detail.Hide();
+    }
 
     private static (IReadOnlyList<GraphNodeGeometry>, IReadOnlyList<GraphLaneInfo>)
         ComputeLayout(IReadOnlyList<GitGraphCommit> commits)

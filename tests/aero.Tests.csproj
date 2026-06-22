@@ -106,6 +106,7 @@
     <Compile Include="../src/ViewModels/GitDiffViewModel.cs" />
     <Compile Include="../src/ViewModels/DiffTabViewModel.cs" />
     <Compile Include="../src/ViewModels/GitGraphViewModel.cs" />
+    <Compile Include="../src/ViewModels/GitGraphCommitDetailViewModel.cs" />
   </ItemGroup>
 
 </Project>
