@@ -398,4 +398,33 @@ public class LibGit2SharpServiceTests : IDisposable
         // HEAD commit should have at least one branch label (the current branch)
         Assert.NotEmpty(headCommit.BranchLabels);
     }
+
+    // --- Packed-refs test (G3) ---
+
+    [Fact]
+    public async Task GetGraphAsync_PackedRefs_IncludesBranchLabels()
+    {
+        // Arrange: create a repo and force branches into packed-refs
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+        RunGit("branch", "feature1");
+        RunGit("branch", "feature2");
+
+        // Pack refs to move branch pointers into packed-refs
+        RunGit("pack-refs", "--all");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(5, CancellationToken.None);
+
+        // Assert: HEAD commit should have branch labels despite being in packed-refs
+        Assert.NotNull(graph);
+        Assert.NotEmpty(graph);
+        var headCommit = graph[0];
+        // On 'master' or 'main' depending on git version
+        Assert.NotEmpty(headCommit.BranchLabels);
+    }
 }

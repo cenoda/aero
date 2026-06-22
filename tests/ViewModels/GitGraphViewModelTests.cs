@@ -117,6 +117,62 @@ public class GitGraphViewModelTests
         var vm2 = new GitGraphViewModel(); vm2.LoadAsync(new FakeGitService(cs)).GetAwaiter().GetResult();
         Assert.Equal(vm1.Lanes[0].Color, vm2.Lanes[0].Color);
     }
+
+    [Fact] public void SelectCommitBySha_FindsCommit()
+    {
+        var cs = new[] { C("abc123","msg1",new[]{"prev"},new[]{"main"}), C("prev","msg0",Array.Empty<string>()) };
+        var vm = new GitGraphViewModel();
+        vm.LoadAsync(new FakeGitService(cs)).GetAwaiter().GetResult();
+        vm.SelectCommitBySha("abc123");
+        Assert.NotNull(vm.SelectedCommit);
+        Assert.Equal("abc123", vm.SelectedCommit!.Sha);
+        Assert.True(vm.Detail.IsVisible);
+        Assert.Equal("msg1", vm.Detail.Message);
+    }
+
+    [Fact] public void SelectCommitBySha_UnknownSha_ClearsSelection()
+    {
+        var cs = new[] { C("abc123","msg1",new[]{"prev"},new[]{"main"}), C("prev","msg0",Array.Empty<string>()) };
+        var vm = new GitGraphViewModel();
+        vm.LoadAsync(new FakeGitService(cs)).GetAwaiter().GetResult();
+        vm.SelectCommitBySha("abc123");
+        Assert.NotNull(vm.SelectedCommit);
+        vm.SelectCommitBySha("nonexistent");
+        Assert.Null(vm.SelectedCommit);
+        Assert.False(vm.Detail.IsVisible);
+    }
+
+    [Fact] public void Detail_Show_PopulatesFields()
+    {
+        var commit = C("abc1234","Test message",new[]{"prev"},new[]{"main","feature"});
+        var vm = new GitGraphViewModel();
+        vm.Detail.Show(commit);
+        Assert.True(vm.Detail.IsVisible);
+        Assert.Equal("abc1234", vm.Detail.FullSha);
+        Assert.Equal("abc1234", vm.Detail.ShortSha); // exactly 7 chars
+        Assert.Equal("Author", vm.Detail.Author);
+        Assert.Equal("Test message", vm.Detail.Message);
+        Assert.Equal(2, vm.Detail.BranchLabels.Count);
+    }
+
+    [Fact] public void Detail_Hide_ClearsFields()
+    {
+        var commit = C("abc1234","msg",new[]{"prev"},new[]{"main"});
+        var vm = new GitGraphViewModel();
+        vm.Detail.Show(commit);
+        Assert.True(vm.Detail.IsVisible);
+        vm.Detail.Hide();
+        Assert.False(vm.Detail.IsVisible);
+        Assert.Empty(vm.Detail.ShortSha);
+        Assert.Empty(vm.Detail.Message);
+    }
+
+    [Fact] public void Detail_Show_NullCommit_Hides()
+    {
+        var vm = new GitGraphViewModel();
+        vm.Detail.Show(null!);
+        Assert.False(vm.Detail.IsVisible);
+    }
 }
 
 
