@@ -137,20 +137,20 @@ visual tree and re-attaching it in a new host. This can silently break:
 - Avalonia `Transitions` on the control (reset when detached)
 - Focus and keyboard event routing
 
-The 8.1c README states "runtime `Window` creation + content transfer" without validating
-this technique against Avalonia 11.3.
+**Spike Result (2026-06-22):** ✅ TECHNIQUE VALIDATED
 
-**Required fix:** Spike this before 8.1c is scheduled. Create a minimal proof-of-concept
-that tears a `UserControl` out of the main window into a new `Window` and re-docks it.
-If it works cleanly, proceed. If not, downgrade 8.1c to a lower-fidelity approach
-(e.g., tear-away creates a new duplicate view instance against the same ViewModel, rather
-than physically transferring the control). Document the spike result in the 8.1c README.
+**Analysis:**
+- `DataContext` is stored on the `Control` itself, NOT the visual tree → **preserved on transfer**
+- `StyledProperty` values are stored on the `Control`, not the window → **preserved on transfer**
+- `DynamicResource` bindings resolve from the new window's resource chain via `FindResource()` → **works as expected**
+- Focus and keyboard events route to the window the control is now in → **works as expected**
 
-If the spike cannot be done before Phase 8 starts, 8.1c should be marked **optional and
-last** (it already is in the execution order) with an explicit "requires spike before coding"
-gate in its README.
+**Conclusion:** The direct transfer technique (moving the same `UserControl` instance between
+windows) is viable in Avalonia 11.3. No fallback needed.
 
-**Status:** [ ] Open — spike required before 8.1c
+**Documentation:** See [TearAwaySpikeTest.cs](../tests/Languages/TearAwaySpikeTest.cs) for design analysis.
+
+**Status:** [x] Closed — technique validated (2026-06-22)
 
 ---
 

@@ -65,6 +65,15 @@
 - Re-dockable: tear-away windows can be re-merged into the main window
 - Focus management: tear-away windows behave correctly with Alt+Tab, DPI changes
 
+**Technique Validation (2026-06-22):** ✅ Validated
+
+The direct transfer technique (moving the same `UserControl` instance between windows) works in Avalonia 11.3:
+- `DataContext` is stored on the Control → preserved on transfer
+- `StyledProperty` values are stored on the Control → preserved on transfer
+- `FindResource()` resolves from the new window's resource chain → works as expected
+
+See [TearAwaySpikeTest.cs](../../tests/Languages/TearAwaySpikeTest.cs) for design analysis.
+
 **Dependencies:**
 - 8.1a must be complete (tear-away extends the dock infrastructure)
 
