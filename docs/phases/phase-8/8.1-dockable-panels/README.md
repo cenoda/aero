@@ -13,7 +13,7 @@
 
 **Dependencies:**
 - **8.9 Design System** — spacing/padding values for panel headers, borders, and sizes
-- **8.5 Icon Decision** — icon for panel headers (or text glyphs as fallback)
+- **8.5 Icon Decision** — icon assets and mapping conventions for panel header/icon consistency
 
 **Exit condition (8.1a):** Existing panels work in Freeform Mode — user can drag, resize, rearrange, and hide all panels. Mode switchable in settings.
 

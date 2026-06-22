@@ -54,7 +54,7 @@ Core principle: **Tile Mode must still allow manual window adjustment** (unlike 
 
 ## Related Documents
 
-- `docs/LIBRARIES.md` — Dock.Avalonia, FuzzySharp, text glyphs (icon decision)
+- `docs/LIBRARIES.md` — Dock.Avalonia, FuzzySharp, Phosphor embedded PathIcon assets (icon decision)
 - `docs/roadmap/PHASES.md` — parent roadmap with checklist
 
 ## Recommended Execution Order
@@ -64,7 +64,7 @@ Phase 8 sub-phases have dependencies — the order below minimizes rework:
 ```
 1.  8.9  Design System         ← Foundation: spacing, radius, shadows, typography, color naming
 2.  8.7  Workspace Persistence ← Shared ISettingsService for 8.4, 8.6
-3.  8.5  Icon Decision          ← Parallel with 8.7 (text glyphs commit for Phase 8)
+3.  8.5  Icon Decision          ← Parallel with 8.7 (Phosphor embedded PathIcon integration for Phase 8)
 4.  8.2  Theme Engine           ← Depends on 8.9 naming convention; 115 tokens + JSON override
 5.  8.1a Dockable Panels (Freeform) ← Depends on 8.9, 8.5; wire existing panels into Dock.Avalonia
 6.  8.3  Command Palette        ← Depends on DialogHost, 8.9, 8.2; shared CommandRegistry

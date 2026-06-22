@@ -127,7 +127,7 @@ Phase 4: + StreamJsonRpc
 Phase 5: + CliWrap, Pty.Net, VtNetCore
 Phase 7: + LibGit2Sharp, DiffPlex
 Phase 8: + Dock.Avalonia, FuzzySharp,
-          text glyphs (icon decision resolved — no new package), Microsoft.Extensions.*
+          Phosphor embedded PathIcon assets (icon decision resolved — no new package), Microsoft.Extensions.*
           (DialogHost.Avalonia skipped — requires Avalonia 12; custom overlay instead)
 Phase 10: + McMaster.NETCore.Plugins
 Anytime: + Humanizer, Polly, xUnit, NSubstitute
