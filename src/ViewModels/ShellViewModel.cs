@@ -602,7 +602,7 @@ public ShellViewModel(
         // Show about dialog
     }
 
-    private async Task SaveWorkspaceStateAsync()
+    internal async Task SaveWorkspaceStateAsync()
     {
         var state = new WorkspaceState
         {

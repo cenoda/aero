@@ -75,6 +75,7 @@ public partial class MainWindow : Window
             var canExit = await shell.CheckDirtyBeforeExitAsync();
             if (canExit)
             {
+                await shell.SaveWorkspaceStateAsync();
                 _exitHandled = true;
                 Close();
             }

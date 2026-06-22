@@ -233,15 +233,15 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 
 ### 8.9 Design System Foundation [`docs/phases/phase-8/8.9-design-system/`](docs/phases/phase-8/8.9-design-system/)
 > ⚠️ **Execute this sub-phase FIRST.** All other sub-phases depend on it.
-- [ ] **Spacing Scale** — 4px grid base (4/8/12/16/24/32). Applied to button padding, list item height, section gaps, panel margins.
-- [ ] **Corner Radius** — unified rounding for buttons (`6px`), inputs (`6px`), panels (`8px`), popups (`10px`), tabs (`4px` top only), scrollbar thumbs (`4px`)
-- [ ] **Shadow System** — layered depth (subtle `0 1px 2px rgba(0,0,0,0.08)` / medium `0 4px 12px rgba(0,0,0,0.12)` / popup `0 8px 24px rgba(0,0,0,0.16)`)
-- [ ] **Transition Timing** — 200ms `CubicOut` as default for hover, focus, panel open/close, tab switch, color change
-- [ ] **Typography** — Inter font, size scale: 11px (status bar), 12px (UI labels), 13px (body), 14px (tab titles), 16px (heading)
-- [ ] **Border System** — unified 1px Solid border for panel dividers, inputs, grid lines
-- [ ] **Color Token Naming Convention** — `{area}.{property}` e.g. `editor.background`, `panel.border`, `button.hoverBackground`. Feeds into 8.2 Theme Engine.
-- [ ] Output as Avalonia ResourceDictionary files in `src/Styles/` (`Spacing.axaml`, `CornerRadius.axaml`, `Shadows.axaml`, `Transitions.axaml`, `Typography.axaml`, `Borders.axaml`)
-- [ ] Exact values set by design agent; this folder defines scope only
+- [x] **Spacing Scale** — 4px grid base (4/8/12/16/24/32). Applied to button padding, list item height, section gaps, panel margins.
+- [x] **Corner Radius** — unified rounding for buttons (`6px`), inputs (`6px`), panels (`8px`), popups (`10px`), tabs (`4px` top only), scrollbar thumbs (`4px`)
+- [x] **Shadow System** — layered depth (subtle `0 1px 2px rgba(0,0,0,0.08)` / medium `0 4px 12px rgba(0,0,0,0.12)` / popup `0 8px 24px rgba(0,0,0,0.16)`)
+- [x] **Transition Timing** — 200ms `CubicOut` as default for hover, focus, panel open/close, tab switch, color change
+- [x] **Typography** — Inter font, size scale: 11px (status bar), 12px (UI labels), 13px (body), 14px (tab titles), 16px (heading)
+- [x] **Border System** — unified 1px Solid border for panel dividers, inputs, grid lines
+- [x] **Color Token Naming Convention** — `{area}.{property}` e.g. `editor.background`, `panel.border`, `button.hoverBackground`. Feeds into 8.2 Theme Engine.
+- [x] Output as Avalonia ResourceDictionary files in `src/Styles/` (`Spacing.axaml`, `CornerRadius.axaml`, `Shadows.axaml`, `Transitions.axaml`, `Typography.axaml`, `Borders.axaml` + `ControlThemes.axaml`)
+- [x] Exact values set by design agent; this folder defines scope only
 
 ### Phase 8 Tests (All Sub-Phases)
 - [ ] Unit tests for command registry, theme tokens, settings I/O, glyph mapping

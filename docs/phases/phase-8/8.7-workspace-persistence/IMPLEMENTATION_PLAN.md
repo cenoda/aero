@@ -1,14 +1,14 @@
 # 8.7 — Workspace Persistence Implementation Plan
 
-**Status:** Draft — pre-implementation (2026-06-22)
+**Status:** ✅ Complete — all items implemented and verified (2026-06-22)
 
 ---
 
 ## M0: Entry Gates
 
-- [ ] `dotnet test tests` passes (baseline: 401 passed)
-- [ ] `dotnet build src/aero.csproj` succeeds (0 errors)
-- [ ] `docs/phases/phase-8/TOFIX.md` has no open blocker items for 8.7
+- [x] `dotnet test tests` passes (baseline: 416 passed)
+- [x] `dotnet build src/aero.csproj` succeeds (0 errors)
+- [x] `docs/phases/phase-8/TOFIX.md` has no open blocker items for 8.7
 
 ---
 

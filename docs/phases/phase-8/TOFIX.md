@@ -207,6 +207,100 @@ No code change needed.
 
 ---
 
+## Round 3 — Phase 8.7 Implementation Review (2026-06-22)
+
+---
+
+### R3.1 `MainWindow.OnClosing` bypasses `SaveWorkspaceStateAsync` — X button loses workspace state *(priority: high)*
+
+**Location:** `src/MainWindow.axaml.cs` — `OnClosing` handler (line 62)
+
+**Description:** When the user closes the IDE via the OS window close button (X), the
+`OnClosing` event handler runs the dirty-document check but **never calls
+`SaveWorkspaceStateAsync()`**. Only the **File → Exit** menu command (`ExitAsync` at
+`src/ViewModels/ShellViewModel.cs` line 367) saves workspace state.
+
+This means window position, open files list, active tab index, and recent folders changes
+made during the session are silently lost when exiting via the X button.
+
+**Root cause:** `OnClosing` calls `shell.CheckDirtyBeforeExitAsync()` then `Close()`, but
+never calls `SaveWorkspaceStateAsync()` — compare with `ExitAsync()` which does:
+```csharp
+// ExitAsync (line 367) — saves:
+await SaveWorkspaceStateAsync();
+
+// OnClosing (line 62) — does NOT save:
+var canExit = await shell.CheckDirtyBeforeExitAsync();
+if (canExit) { _exitHandled = true; Close(); }
+```
+
+**Severity:** Medium — the other exit path (File → Exit, Ctrl+Q) saves correctly. But
+clicking X is the most common close gesture. The inconsistency is a UX regression.
+
+**Required fix:** In `OnClosing`, add `await shell.SaveWorkspaceStateAsync()` after the
+dirty check passes and before `Close()`:
+
+```csharp
+if (canExit)
+{
+    await shell.SaveWorkspaceStateAsync();
+    _exitHandled = true;
+    Close();
+}
+```
+
+Note: This requires `SaveWorkspaceStateAsync` to be `internal` or `public` on
+`ShellViewModel` — currently it is `private` (line 605). Change visibility to `internal`.
+
+**Status:** [x] Closed — `SaveWorkspaceStateAsync` changed to `internal`; `OnClosing` now calls it after dirty check passes (2026-06-22)
+
+---
+
+### R3.2 `IMPLEMENTATION_PLAN.md` status header still says "Draft — pre-implementation" *(priority: medium)*
+
+**Location:** `docs/phases/phase-8/8.7-workspace-persistence/IMPLEMENTATION_PLAN.md` line 3
+
+**Description:** The plan status reads:
+```
+**Status:** Draft — pre-implementation (2026-06-22)
+```
+But the implementation is **fully complete**: all 6 new source files exist, all 15 tests
+pass (416 total), all "Definition of Done" items (lines 500-511) are marked `[x]`.
+
+The status header directly contradicts reality. A reviewer reading the plan will
+legitimately think 8.7 hasn't been started.
+
+**Required fix:** Change line 3 to:
+```
+**Status:** ✅ Complete — all items implemented and verified (2026-06-22)
+```
+
+**Status:** [x] Closed — updated to "✅ Complete" (2026-06-22)
+
+---
+
+### R3.3 `IMPLEMENTATION_PLAN.md` M0 entry gates unchecked despite all passing *(priority: low)*
+
+**Location:** `docs/phases/phase-8/8.7-workspace-persistence/IMPLEMENTATION_PLAN.md` lines 9-11
+
+**Description:** All three M0 entry gates remain `[ ]` unchecked:
+```markdown
+- [ ] `dotnet test tests` passes (baseline: 401 passed)
+- [ ] `dotnet build src/aero.csproj` succeeds (0 errors)
+- [ ] `docs/phases/phase-8/TOFIX.md` has no open blocker items for 8.7
+```
+
+All three conditions are currently met:
+- `dotnet test tests` — **416 passed** (above 401 baseline)
+- `dotnet build src/aero.csproj` — **0 errors**
+- `TOFIX.md` — no 8.7-open items (R3.1 excluded — it is the subject of this round)
+
+**Required fix:** Mark all three `[x]` and update the baseline from 401 to 416.
+
+**Status:** [x] Closed — all three gates marked `[x]`, baseline updated to 416 (2026-06-22)
+
+---
+
 ## Persistent Checks (self-review before closing Phase 8)
 
 - [x] Phase 7 TOFIX R4.4 and R4.5 resolved or explicitly deferred
@@ -217,5 +311,5 @@ No code change needed.
 - [x] 8.2 color token inventory written before coding starts
 - [ ] All sub-phases (8.1–8.9) test requirements met (unit + integration + manual per README)
 - [ ] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors)
-- [ ] `dotnet test tests` passes (current baseline: 401 passed)
+- [ ] `dotnet test tests` passes (current baseline: 416 passed)
 - [ ] `docs/roadmap/PHASES.md` Phase 8 items all `[x]`
