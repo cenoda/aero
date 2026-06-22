@@ -38,14 +38,26 @@ public partial class MainWindow : Window
     {
         if (DockControl == null) return;
 
-        // Create the default layout
+        // Create the factory and layout
+        // CreateDefaultLayout() creates its own factory and calls InitLayout(root)
         var layout = AeroDockFactory.CreateDefaultLayout();
 
-        // Assign layout to DockControl
-        DockControl.Layout = layout;
-
-        // Initialize the factory (do NOT set InitializeLayout = true)
+        // CRITICAL: Set InitializeFactory BEFORE Layout assignment.
+        // When Layout is set, DockControl.OnPropertyChanged fires Initialize()
+        // which checks InitializeFactory to set up locators (ContextLocator,
+        // HostWindowLocator, etc.) that drag-and-drop needs.
         DockControl.InitializeFactory = true;
+
+        // We already called InitLayout inside CreateDefaultLayout, so prevent double-init.
+        DockControl.InitializeLayout = false;
+
+        // Set the factory explicitly as a safety net for drag-and-drop wiring.
+        // The factory from the layout tree is the same AeroDockFactory instance,
+        // but DockControl needs it on its own property for some internal lookups.
+        DockControl.Factory = layout.Factory!;
+
+        // Now assign layout — this triggers Initialize() with all locators ready.
+        DockControl.Layout = layout;
     }
 
     /// <summary>
