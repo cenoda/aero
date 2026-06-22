@@ -24,7 +24,8 @@ It appears in older Dock documentation from pre-11.x. The available base type in
    directly with `INotifyPropertyChanged` property notification.
 4. Remove `DockObject` references from M1 code examples (already done in plan update).
 
-**Status:** [ ] Open — resolved in M0.5 spike
+**Status:** [x] Closed — M0.5 verification complete (2026-06-22)
+**Resolution:** ManagedDockableBase is public and implements IDockable. Use it as base class + explicit ITool/IDocument implementation. See M05_VERIFICATION.md for details.
 
 ---
 
