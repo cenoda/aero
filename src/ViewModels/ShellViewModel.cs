@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Models.Editor;
+using Aero.Models.Settings;
 using Aero.Services;
 using Aero.Services.Build;
 using Avalonia;
@@ -36,6 +37,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly BuildServiceFactory _buildServiceFactory;
     private readonly DiagnosticStore _diagnosticStore;
     private readonly GitViewModel _gitViewModel;
+    private readonly ISettingsService _settingsService;
     private IBuildService? _buildService;
     private CancellationTokenSource? _buildCts;
 
@@ -55,6 +57,13 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public int ActiveSidebarTabIndex { get; set; }
     [Reactive] public int ActiveBottomTabIndex { get; set; }
     [Reactive] public bool IsBottomPanelVisible { get; set; }
+
+    // Window state — persisted via ISettingsService (Phase 8.7)
+    [Reactive] public double WindowX { get; set; }
+    [Reactive] public double WindowY { get; set; }
+    [Reactive] public double WindowWidth { get; set; } = 1200;
+    [Reactive] public double WindowHeight { get; set; } = 800;
+    [Reactive] public bool IsWindowMaximized { get; set; }
 
     // ViewModels
     public EditorViewModel EditorViewModel => _editorViewModel;
@@ -94,7 +103,8 @@ public ShellViewModel(
         OutputViewModel outputViewModel,
         BuildServiceFactory buildServiceFactory,
         DiagnosticStore diagnosticStore,
-        GitViewModel gitViewModel)
+        GitViewModel gitViewModel,
+        ISettingsService settingsService)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
@@ -105,6 +115,7 @@ public ShellViewModel(
         _buildServiceFactory = buildServiceFactory ?? throw new ArgumentNullException(nameof(buildServiceFactory));
         _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
         _gitViewModel = gitViewModel ?? throw new ArgumentNullException(nameof(gitViewModel));
+        _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -133,6 +144,9 @@ ToggleSidebarCommand = ReactiveCommand.Create(ToggleSidebar);
         {
             StatusText = msg.Path;
             _workspacePath = msg.Path;
+            _settingsService.AddRecentFolder(msg.Path);
+            // Fire-and-forget — handles its own errors internally
+            _ = SaveWorkspaceStateAsync();
         };
         _bus.Subscribe(_folderOpenedHandler);
         _statusMessageHandler = msg =>
@@ -350,6 +364,7 @@ _documentSavedHandler = OnDocumentSaved;
         if (!await CheckDirtyBeforeExitAsync())
             return;
 
+        await SaveWorkspaceStateAsync();
         _documentManager.ClearLastDirtyState();
         Dispose();
 
@@ -585,6 +600,33 @@ _documentSavedHandler = OnDocumentSaved;
     private void About()
     {
         // Show about dialog
+    }
+
+    private async Task SaveWorkspaceStateAsync()
+    {
+        var state = new WorkspaceState
+        {
+            LastFolderPath = _workspacePath,
+            OpenFilePaths = _editorViewModel.Tabs
+                .Select(t => t.FilePath).Where(p => p != null).ToList()!,
+            ActiveTabIndex = _editorViewModel.ActiveTab != null
+                ? _editorViewModel.Tabs.IndexOf(_editorViewModel.ActiveTab) : 0,
+            Window = new WindowState
+            {
+                X = WindowX, Y = WindowY,
+                Width = WindowWidth, Height = WindowHeight,
+                IsMaximized = IsWindowMaximized
+            },
+            RecentFolders = _settingsService.GetRecentFolders().ToList()
+        };
+        try
+        {
+            await _settingsService.SaveWorkspaceStateAsync(state);
+        }
+        catch (Exception ex)
+        {
+            _bus.Publish(new StatusMessage($"Save failed: {ex.Message}"));
+        }
     }
 
     /// <summary>

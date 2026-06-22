@@ -119,6 +119,9 @@ public partial class App : Application
         // Phase 7 — Git integration
         services.AddSingleton<GitServiceFactory>();
 
+        // Phase 8.7 — Workspace persistence & settings
+        services.AddSingleton<ISettingsService, SettingsService>();
+
         // ViewModels
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<EditorViewModel>();

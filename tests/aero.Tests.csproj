@@ -107,6 +107,13 @@
     <Compile Include="../src/ViewModels/DiffTabViewModel.cs" />
     <Compile Include="../src/ViewModels/GitGraphViewModel.cs" />
     <Compile Include="../src/ViewModels/GitGraphCommitDetailViewModel.cs" />
+
+    <!-- Phase 8.7 — Settings models & service -->
+    <Compile Include="../src/Models/Settings/WorkspaceState.cs" />
+    <Compile Include="../src/Models/Settings/WindowState.cs" />
+    <Compile Include="../src/Models/Settings/SettingsModel.cs" />
+    <Compile Include="../src/Services/ISettingsService.cs" />
+    <Compile Include="../src/Services/SettingsService.cs" />
   </ItemGroup>
 
 </Project>
