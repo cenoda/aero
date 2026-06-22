@@ -227,7 +227,7 @@ public IReadOnlyList<string> GetRecentFolders()
 
 ### 4. Register in DI — `src/App.axaml.cs`
 
-In `BuildServices()`:
+In `BuildServices()`, in the services section after `GitServiceFactory` (line ~120), keeping the services-then-viewmodels ordering:
 ```csharp
 services.AddSingleton<ISettingsService, SettingsService>();
 ```
@@ -262,6 +262,7 @@ _folderOpenedHandler = msg =>
     StatusText = msg.Path;
     _workspacePath = msg.Path;
     AddRecentFolder(msg.Path);
+    // Fire-and-forget — SaveWorkspaceStateAsync handles its own errors internally
     _ = SaveWorkspaceStateAsync();
 };
 ```
@@ -311,6 +312,8 @@ this.PositionChanged += (_, args) =>
 ```
 
 **6b. Bind Width, Height, WindowState in XAML:**
+
+Replace the hardcoded `Width="1200"` and `Height="800"` on `MainWindow.axaml` lines 8-9 with bindings (defaults now live in `ShellViewModel`):
 ```xml
 <Window Width="{Binding WindowWidth}"
         Height="{Binding WindowHeight}"
@@ -328,36 +331,58 @@ Add `xmlns:converters="using:Aero.Converters"` to the Window element.
 
 ### 7. Startup Restore — `src/App.axaml.cs`
 
-After `desktop.MainWindow = mainWindow`, before CLI arg check:
+After `desktop.MainWindow = mainWindow`, before CLI arg check.
+`OnFrameworkInitializationCompleted` uses `async void` (Avalonia lifecycle override),
+with a single `try/catch` guarding the entire restore sequence.
 
 ```csharp
-var settings = _services.GetRequiredService<ISettingsService>();
-var ws = await settings.LoadWorkspaceStateAsync();
-
-if (ws?.Window is { } win)
+try
 {
-    shell.WindowWidth = win.Width;
-    shell.WindowHeight = win.Height;
-    shell.IsWindowMaximized = win.IsMaximized;
-    mainWindow.Position = new PixelPoint((int)win.X, (int)win.Y);
+    var settings = _services.GetRequiredService<ISettingsService>();
+    var ws = await settings.LoadWorkspaceStateAsync();
+
+    if (ws?.Window is { } win)
+    {
+        shell.WindowWidth = win.Width;
+        shell.WindowHeight = win.Height;
+        shell.IsWindowMaximized = win.IsMaximized;
+        mainWindow.Position = new PixelPoint((int)win.X, (int)win.Y);
+        // Set directly on startup — XAML binding may not be evaluated yet
+        mainWindow.WindowState = win.IsMaximized
+            ? Avalonia.Controls.WindowState.Maximized
+            : Avalonia.Controls.WindowState.Normal;
+    }
+
+    if (ws?.LastFolderPath is { } folder && Directory.Exists(folder))
+    {
+        bus.Publish(new FolderOpened(folder));
+
+        // Per-file try/catch so one bad file doesn't abort the rest
+        foreach (var fp in ws.OpenFilePaths.Where(File.Exists))
+        {
+            try { await shell.EditorViewModel.OpenFileAsync(fp); }
+            catch (Exception ex)
+            {
+                bus.Publish(new StatusMessage(
+                    $"Failed to restore {fp}: {ex.Message}"));
+            }
+        }
+
+        if (ws.ActiveTabIndex >= 0
+            && ws.ActiveTabIndex < shell.EditorViewModel.Tabs.Count)
+            shell.EditorViewModel.ActivateTab(
+                shell.EditorViewModel.Tabs[ws.ActiveTabIndex]);
+
+        foreach (var recent in ws.RecentFolders)
+            shell.AddRecentFolder(recent);
+    }
 }
-
-if (ws?.LastFolderPath is { } folder && Directory.Exists(folder))
+catch (Exception ex)
 {
-    bus.Publish(new FolderOpened(folder));
-    foreach (var fp in ws.OpenFilePaths.Where(File.Exists))
-        await shell.EditorViewModel.OpenFileAsync(fp);
-    if (ws.ActiveTabIndex >= 0
-        && ws.ActiveTabIndex < shell.EditorViewModel.Tabs.Count)
-        shell.EditorViewModel.ActivateTab(
-            shell.EditorViewModel.Tabs[ws.ActiveTabIndex]);
-    foreach (var recent in ws.RecentFolders)
-        shell.AddRecentFolder(recent);
+    bus.Publish(new StatusMessage(
+        $"Workspace restore failed: {ex.Message}"));
 }
 ```
-
-`OnFrameworkInitializationCompleted` uses `async void` with `try/catch` guard
-— it's an Avalonia lifecycle override (same category as event handlers).
 
 ---
 
@@ -400,6 +425,7 @@ if (ws?.LastFolderPath is { } folder && Directory.Exists(folder))
 4. **Open file paths only, no scroll/caret** — Per-document scroll state deferred.
 5. **Layout state (sidebar width, dock layout)** — Left for 8.1.
 6. **`SettingsModel` fields are placeholders** — Values validated by 8.6, not 8.7.
+7. **Window position stored as `double`, restored as `int`** — `PixelPoint` uses integer coordinates. No sub-pixel precision loss in practice (window positions are always whole pixels).
 
 ---
 
