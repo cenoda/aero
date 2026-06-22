@@ -190,20 +190,23 @@ public sealed class LibGit2SharpService : IGitService
 
             var result = new List<GitBranchInfo>();
 
-            // Read branch refs directly from the filesystem (.git/refs/heads/ and packed-refs).
-            // This avoids LibGit2Sharp 0.30 bugs where repo.Branches hangs and
-            // repo.Refs.FromGlob returns empty on some Linux environments.
-            var headSha = repo.Head?.Tip?.Sha;
-            var branchMap = BuildBranchRefMap();
+            // Read refs directly from filesystem to avoid LibGit2Sharp 0.30 enumeration issues.
+            // Keep local and remote refs distinct (same SHA may have multiple labels).
+            var refs = BuildBranchRefs();
 
-            foreach (var kvp in branchMap)
+            // Local first, then remote, both alphabetical for stable UI ordering.
+            foreach (var branchRef in refs
+                .OrderBy(r => r.IsRemote)
+                .ThenBy(r => r.Name, StringComparer.Ordinal))
             {
-                var isCurrent = string.Equals(kvp.Key, headSha, StringComparison.Ordinal);
+                var isCurrent = !branchRef.IsRemote &&
+                    string.Equals(branchRef.Name, repo.Head?.FriendlyName, StringComparison.Ordinal);
+
                 result.Add(new GitBranchInfo(
-                    kvp.Value,
-                    $"refs/heads/{kvp.Value}",
+                    branchRef.Name,
+                    branchRef.CanonicalName,
                     isCurrent,
-                    IsRemote: false,
+                    branchRef.IsRemote,
                     UpstreamName: null));
             }
 
@@ -440,8 +443,16 @@ public sealed class LibGit2SharpService : IGitService
             ct.ThrowIfCancellationRequested();
             var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
 
-            // Build a map of SHA → branch name (reads loose refs + packed-refs — G3 fix)
-            var branchRefs = BuildBranchRefMap();
+            // Build a map of SHA → branch labels (multiple refs can point to same commit).
+            var labelsBySha = BuildBranchRefs()
+                .GroupBy(r => r.Sha, StringComparer.Ordinal)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(r => r.Name)
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(n => n, StringComparer.Ordinal)
+                        .ToList(),
+                    StringComparer.Ordinal);
 
             var result = new List<GitGraphCommit>();
             var commits = repo.Commits.Take(count);
@@ -455,11 +466,9 @@ public sealed class LibGit2SharpService : IGitService
                     ?? Array.Empty<string>();
 
                 // Collect branch labels pointing to this commit
-                var labels = new List<string>();
-                if (branchRefs.TryGetValue(commit.Sha, out var label))
-                {
-                    labels.Add(label);
-                }
+                var labels = labelsBySha.TryGetValue(commit.Sha, out var commitLabels)
+                    ? commitLabels
+                    : new List<string>();
 
                 result.Add(new GitGraphCommit(
                     commit.Sha,
@@ -499,65 +508,83 @@ public sealed class LibGit2SharpService : IGitService
     }
 
     /// <summary>
-    /// Builds a SHA → branch name map from loose refs (refs/heads/) and
-    /// packed-refs. Used by both GetBranchesAsync and GetGraphAsync.
+    /// Builds branch refs from loose refs and packed-refs while preserving
+    /// distinct local/remote refs even when they point to the same SHA.
     /// </summary>
-    private Dictionary<string, string> BuildBranchRefMap()
+    private List<BranchRef> BuildBranchRefs()
     {
-        var map = new Dictionary<string, string>(StringComparer.Ordinal);
-        var localRefsDir = Path.Combine(_gitDir, "refs", "heads");
-        var remoteRefsDir = Path.Combine(_gitDir, "refs", "remotes");
+        var refs = new List<BranchRef>();
+        var seenCanonicalNames = new HashSet<string>(StringComparer.Ordinal);
 
-        // Loose local refs (refs/heads/*)
+        void AddRef(string sha, string canonicalName, string name, bool isRemote)
+        {
+            if (string.IsNullOrWhiteSpace(sha))
+                return;
+
+            if (isRemote && string.Equals(name, "origin/HEAD", StringComparison.Ordinal))
+                return; // symbolic remote HEAD alias; avoid duplicate-looking branch entries
+
+            if (seenCanonicalNames.Add(canonicalName))
+            {
+                refs.Add(new BranchRef(sha, canonicalName, name, isRemote));
+            }
+        }
+
+        var localRefsDir = Path.Combine(_gitDir, "refs", "heads");
         if (Directory.Exists(localRefsDir))
         {
             foreach (var file in Directory.GetFiles(localRefsDir, "*", SearchOption.AllDirectories))
             {
                 var sha = File.ReadAllText(file).Trim();
                 var relative = Path.GetRelativePath(localRefsDir, file).Replace('\\', '/');
-                if (!map.ContainsKey(sha))
-                    map[sha] = relative;
+                AddRef(sha, $"refs/heads/{relative}", relative, isRemote: false);
             }
         }
 
-        // Loose remote refs (refs/remotes/*)
+        var remoteRefsDir = Path.Combine(_gitDir, "refs", "remotes");
         if (Directory.Exists(remoteRefsDir))
         {
             foreach (var file in Directory.GetFiles(remoteRefsDir, "*", SearchOption.AllDirectories))
             {
                 var sha = File.ReadAllText(file).Trim();
                 var relative = Path.GetRelativePath(remoteRefsDir, file).Replace('\\', '/');
-                // Prefer remote-tracking label over local to avoid duplicate "master"
-                map[sha] = relative;
+                AddRef(sha, $"refs/remotes/{relative}", relative, isRemote: true);
             }
         }
 
-        // Packed refs (G3 fix)
         var packedRefsPath = Path.Combine(_gitDir, "packed-refs");
         if (File.Exists(packedRefsPath))
         {
             var packedContent = File.ReadAllText(packedRefsPath);
             foreach (var line in packedContent.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                if (line.StartsWith('#')) continue;
-                var parts = line.Split(' ', 2);
-                if (parts.Length < 2) continue;
+                if (line.StartsWith('#') || line.StartsWith('^'))
+                    continue;
+
+                var parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                    continue;
+
                 var sha = parts[0];
                 var refName = parts[1].Trim();
-                string? friendlyName = null;
-                if (refName.StartsWith("refs/remotes/"))
-                    friendlyName = refName["refs/remotes/".Length..];
-                else if (refName.StartsWith("refs/heads/"))
-                    friendlyName = refName["refs/heads/".Length..];
 
-                if (friendlyName == null) continue;
-                if (!map.ContainsKey(sha)) // loose refs take precedence
-                    map[sha] = friendlyName;
+                if (refName.StartsWith("refs/heads/", StringComparison.Ordinal))
+                {
+                    var name = refName["refs/heads/".Length..];
+                    AddRef(sha, refName, name, isRemote: false);
+                }
+                else if (refName.StartsWith("refs/remotes/", StringComparison.Ordinal))
+                {
+                    var name = refName["refs/remotes/".Length..];
+                    AddRef(sha, refName, name, isRemote: true);
+                }
             }
         }
 
-        return map;
+        return refs;
     }
+
+    private sealed record BranchRef(string Sha, string CanonicalName, string Name, bool IsRemote);
 
     /// <summary>
     /// Map FileStatus to index-side status (staging area).

@@ -470,3 +470,32 @@ continues without auto-reload. The user has no indication that Refresh must be d
 `StatusMessage` if false.
 
 **Status:** [ ] Open — low priority, inotify limit is uncommon in normal usage.
+
+---
+
+## Round 5 — Branch List Duplication Investigation (2026-06-22)
+
+### R5.1 Duplicate `origin/master` appears in branch UI *(priority: high)*
+
+**Description:** The branch data pipeline previously used a SHA→single-label dictionary.
+When multiple refs pointed at the same commit (e.g., `master`, `origin/master`, and
+symbolic `origin/HEAD`), label selection/override behavior could produce confusing or
+duplicate-looking remote branch entries in the UI. Additionally, remote refs were
+previously emitted with `CanonicalName = refs/heads/*` and `IsRemote = false`, which
+misclassified remote-tracking refs and made deduplication logic fragile.
+
+**Fix applied:**
+1. `LibGit2SharpService` ref mapping changed from SHA→single-label to explicit ref records
+   (`BranchRef`) preserving each canonical ref name.
+2. `GetBranchesAsync` now emits accurate branch metadata:
+   - local: `refs/heads/*`, `IsRemote = false`
+   - remote: `refs/remotes/*`, `IsRemote = true`
+3. Symbolic remote head alias `origin/HEAD` is excluded from branch list generation.
+4. `GetGraphAsync` now supports multiple labels per commit SHA instead of one label.
+
+**Validation coverage added (`LibGit2SharpServiceTests`):**
+- Distinct local `master` and remote `origin/master` are both returned with correct canonical names.
+- `origin/HEAD` is excluded.
+- Graph labels include both local and remote labels when they point to the same SHA.
+
+**Status:** [x] Fixed — implemented in `src/Services/Git/LibGit2SharpService.cs` with test coverage in `tests/Services/Git/LibGit2SharpServiceTests.cs`.
