@@ -9,7 +9,7 @@
 - Remember window size, position, and maximized state
 - Remember recent folders list (for 8.4 Welcome Page)
 - Store workspace state in `~/.aero/workspace.json`
-- Store user preferences in `~/.aero/settings.json` (via `Microsoft.Extensions.Configuration.Json`)
+- Store user preferences in `~/.aero/settings.json` (via `System.Text.Json`)
 - **Note:** This sub-phase is primarily the infrastructure layer. The UI for settings (8.6) and the welcome page (8.4) build on top of it.
 
 **Dependencies:**

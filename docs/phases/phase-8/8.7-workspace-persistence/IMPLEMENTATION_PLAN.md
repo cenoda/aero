@@ -245,15 +245,7 @@ services.AddSingleton<ISettingsService, SettingsService>();
 
 **5b. Inject `ISettingsService`:** Add parameter to constructor, store as `_settingsService`.
 
-**5c. Recent folders:** Delegate to `_settingsService` which manages the list internally.
-```csharp
-private void AddRecentFolder(string path)
-{
-    _settingsService.AddRecentFolder(path);
-}
-```
-
-**Note:** `AddRecentFolder` on `ISettingsService` normalizes the path (`Path.GetFullPath`, trims trailing separator), deduplicates (moves existing entry to top), and enforces the 10-item limit. ShellViewModel does not own the list.
+**5c. Recent folders:** The `ISettingsService` manages the recent folders list internally (normalized, deduplicated, max 10). ShellViewModel does not own the list. Callers use `_settingsService.AddRecentFolder(path)` directly — no wrapper method needed.
 
 **5d. Save on FolderOpened** — in `_folderOpenedHandler`:
 ```csharp
@@ -261,7 +253,7 @@ _folderOpenedHandler = msg =>
 {
     StatusText = msg.Path;
     _workspacePath = msg.Path;
-    AddRecentFolder(msg.Path);
+    _settingsService.AddRecentFolder(msg.Path);
     // Fire-and-forget — SaveWorkspaceStateAsync handles its own errors internally
     _ = SaveWorkspaceStateAsync();
 };
@@ -292,7 +284,7 @@ private async Task SaveWorkspaceStateAsync()
         RecentFolders = _settingsService.GetRecentFolders().ToList()
     };
     try { await _settingsService.SaveWorkspaceStateAsync(state); }
-    catch (Exception ex) { StatusText = $"Save failed: {ex.Message}"; }
+    catch (Exception ex) { _bus.Publish(new StatusMessage($"Save failed: {ex.Message}")); }
 }
 ```
 
@@ -320,7 +312,36 @@ Replace the hardcoded `Width="1200"` and `Height="800"` on `MainWindow.axaml` li
         WindowState="{Binding IsWindowMaximized, Converter={StaticResource BoolToWindowStateConverter}}">
 ```
 
-**6c. BoolToWindowStateConverter:** Create `src/Converters/BoolToWindowStateConverter.cs`.
+**6c. BoolToWindowStateConverter:** Create `src/Converters/BoolToWindowStateConverter.cs`:
+```csharp
+namespace Aero.Converters;
+
+using System;
+using System.Globalization;
+using Avalonia.Data.Converters;
+
+public class BoolToWindowStateConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType,
+        object? parameter, CultureInfo culture)
+    {
+        if (value is bool isMaximized)
+            return isMaximized
+                ? Avalonia.Controls.WindowState.Maximized
+                : Avalonia.Controls.WindowState.Normal;
+        return Avalonia.Controls.WindowState.Normal;
+    }
+
+    public object? ConvertBack(object? value, Type targetType,
+        object? parameter, CultureInfo culture)
+    {
+        if (value is Avalonia.Controls.WindowState state)
+            return state == Avalonia.Controls.WindowState.Maximized;
+        return false;
+    }
+}
+```
+
 Register in `MainWindow.axaml` `<Window.Resources>` (scoped, not global):
 ```xml
 <Window.Resources>
@@ -331,56 +352,62 @@ Add `xmlns:converters="using:Aero.Converters"` to the Window element.
 
 ### 7. Startup Restore — `src/App.axaml.cs`
 
-After `desktop.MainWindow = mainWindow`, before CLI arg check.
-`OnFrameworkInitializationCompleted` uses `async void` (Avalonia lifecycle override),
-with a single `try/catch` guarding the entire restore sequence.
+After `desktop.MainWindow = mainWindow`.
+`OnFrameworkInitializationCompleted` uses `async void` (Avalonia lifecycle override).
+
+CLI args take precedence over workspace restore. Restore only when no folder argument is given:
 
 ```csharp
-try
+if (desktop.Args is { Length: > 0 } args && System.IO.Directory.Exists(args[0]))
 {
-    var settings = _services.GetRequiredService<ISettingsService>();
-    var ws = await settings.LoadWorkspaceStateAsync();
-
-    if (ws?.Window is { } win)
+    bus.Publish(new FolderOpened(System.IO.Path.GetFullPath(args[0])));
+}
+else
+{
+    // Workspace restore — skip when CLI arg is present
+    try
     {
-        shell.WindowWidth = win.Width;
-        shell.WindowHeight = win.Height;
-        shell.IsWindowMaximized = win.IsMaximized;
-        mainWindow.Position = new PixelPoint((int)win.X, (int)win.Y);
-        // Set directly on startup — XAML binding may not be evaluated yet
-        mainWindow.WindowState = win.IsMaximized
-            ? Avalonia.Controls.WindowState.Maximized
-            : Avalonia.Controls.WindowState.Normal;
-    }
+        var settings = _services.GetRequiredService<ISettingsService>();
+        var ws = await settings.LoadWorkspaceStateAsync();
 
-    if (ws?.LastFolderPath is { } folder && Directory.Exists(folder))
-    {
-        bus.Publish(new FolderOpened(folder));
-
-        // Per-file try/catch so one bad file doesn't abort the rest
-        foreach (var fp in ws.OpenFilePaths.Where(File.Exists))
+        if (ws?.Window is { } win)
         {
-            try { await shell.EditorViewModel.OpenFileAsync(fp); }
-            catch (Exception ex)
-            {
-                bus.Publish(new StatusMessage(
-                    $"Failed to restore {fp}: {ex.Message}"));
-            }
+            shell.WindowWidth = win.Width;
+            shell.WindowHeight = win.Height;
+            shell.IsWindowMaximized = win.IsMaximized;
+            mainWindow.Position = new PixelPoint((int)win.X, (int)win.Y);
+            // Set directly on startup — XAML binding may not be evaluated yet
+            mainWindow.WindowState = win.IsMaximized
+                ? Avalonia.Controls.WindowState.Maximized
+                : Avalonia.Controls.WindowState.Normal;
         }
 
-        if (ws.ActiveTabIndex >= 0
-            && ws.ActiveTabIndex < shell.EditorViewModel.Tabs.Count)
-            shell.EditorViewModel.ActivateTab(
-                shell.EditorViewModel.Tabs[ws.ActiveTabIndex]);
+        if (ws?.LastFolderPath is { } folder && Directory.Exists(folder))
+        {
+            bus.Publish(new FolderOpened(folder));
 
-        foreach (var recent in ws.RecentFolders)
-            shell.AddRecentFolder(recent);
+            // Per-file try/catch so one bad file doesn't abort the rest
+            foreach (var fp in ws.OpenFilePaths.Where(File.Exists))
+            {
+                try { await shell.EditorViewModel.OpenFileAsync(fp); }
+                catch (Exception ex)
+                {
+                    bus.Publish(new StatusMessage(
+                        $"Failed to restore {fp}: {ex.Message}"));
+                }
+            }
+
+            if (ws.ActiveTabIndex >= 0
+                && ws.ActiveTabIndex < shell.EditorViewModel.Tabs.Count)
+                shell.EditorViewModel.ActivateTab(
+                    shell.EditorViewModel.Tabs[ws.ActiveTabIndex]);
+        }
     }
-}
-catch (Exception ex)
-{
-    bus.Publish(new StatusMessage(
-        $"Workspace restore failed: {ex.Message}"));
+    catch (Exception ex)
+    {
+        bus.Publish(new StatusMessage(
+            $"Workspace restore failed: {ex.Message}"));
+    }
 }
 ```
 
