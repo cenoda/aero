@@ -106,16 +106,18 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
     /// Resolved <see cref="Geometry"/> for the current <see cref="Glyph"/> key.
     /// Used by XAML bindings that cannot resolve resource keys dynamically.
     /// </summary>
-    public Geometry GlyphGeometry
+    public Geometry? GlyphGeometry
     {
         get
         {
-            object? resource = null;
             if (Application.Current is { } app)
-                app.TryFindResource(Glyph, out resource);
-            return resource is Geometry g ? g : _emptyGeometry;
+            {
+                app.TryFindResource(Glyph, out var resource);
+                if (resource is Geometry g)
+                    return g;
+            }
+
+            return null;
         }
     }
-
-    private static readonly Geometry _emptyGeometry = Geometry.Parse("M0,0");
 }

@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:Aero.Converters"
              x:Class="Aero.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -14,14 +15,17 @@
                 <ResourceInclude Source="avares://aero/Styles/Transitions.axaml" />
                 <ResourceInclude Source="avares://aero/Styles/Icons.axaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Converters (app-level) -->
+            <converters:BoolToWindowStateConverter x:Key="BoolToWindowStateConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
         <StyleInclude Source="avares://Avalonia.Themes.Simple/SimpleTheme.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
-        <!-- Material.Icons.Avalonia paused — see docs/phases/phase-2/TOFIX.md
-             Round 3 R3.1. Will be re-added when the icon library decision is made. -->
+        <!-- Phosphor Icons embedded via src/Styles/Icons.axaml (Phase 8.5).
+             Material.Icons.Avalonia deferred to Avalonia 12 upgrade. -->
         <!-- Phase 8.9 Control Themes — layered after SimpleTheme so overrides win -->
         <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
     </Application.Styles>

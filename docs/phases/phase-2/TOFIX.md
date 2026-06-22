@@ -164,14 +164,15 @@ lands, swap the XAML binding from `{Binding Glyph}` to
    Phase 2 (M3–M5 don't need richer visuals), revisit in Phase 8 UI
    Polish when the rest of the layout work is done.
 
-**Status:** ✅ DEFERRED TO PHASE 8 (resolved 2026-06-18).
+**Status:** ✅ RESOLVED IN PHASE 8.5 (originally deferred 2026-06-18, resolved 2026-06-22).
 User chose option 3 (keep text glyphs through Phase 2, revisit in
-Phase 8 "UI Polish"). Avalonia 12 upgrade risk outweighs cosmetic
-benefit; Phase 8 is the natural home for a polish-cycle icon decision
-(theme system, Dock.Avalonia, etc. are all in flight then). The VM's
-`IconKind` strings are already a forward-compat hook — Phase 8 just
-swaps the XAML binding. See `docs/roadmap/PHASES.md` Phase 8 checklist
-for the eventual icon-library decision.
+Phase 8 "UI Polish"). Phase 8.5 resolved this with **Phosphor Icons** —
+8 embedded `StreamGeometry` vectors (MIT licensed), no NuGet dependency.
+`FileExplorerNodeViewModel.Glyph` maps legacy `IconKind` strings to new
+icon resource keys; `GlyphGeometry` resolves via `TryFindResource`. Both
+the file tree and editor tabs now render `PathIcon` glyphs. See
+`docs/phases/phase-8/8.5-icon-decision/` for the full decision and
+implementation.
 
 ---
 

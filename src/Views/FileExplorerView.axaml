@@ -10,9 +10,8 @@
             BorderBrush="#CCCCCC"
             BorderThickness="0,0,1,0">
         <DockPanel>
-            <!-- Header: title + refresh button.
-                 Icons paused — see docs/phases/phase-2/TOFIX.md R3.1. Will
-                 add Material.Icons back when the icon-library decision lands. -->
+             <!-- Header: title + refresh button.
+                  Phosphor Icons (Phase 8.5) — 8 embedded vector glyphs. -->
             <Border DockPanel.Dock="Top"
                     Background="#F0F0F0"
                     BorderBrush="#CCCCCC"
@@ -64,8 +63,7 @@
                          Margin="0,2,0,0"/>
 
             <!-- The tree. ItemsSource binds the root collection; TreeDataTemplate
-                 recurses into Children. A simple glyph prefix replaces icons
-                 for now (see TOFIX R3.1). -->
+                 recurses into Children. Icons via PathIcon bound to GlyphGeometry. -->
             <TreeView x:Name="ExplorerTree"
                       ItemsSource="{Binding RootNodes}"
                       SelectedItem="{Binding SelectedNode, Mode=TwoWay}"

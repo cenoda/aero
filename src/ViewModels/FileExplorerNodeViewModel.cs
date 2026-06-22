@@ -70,10 +70,9 @@ public class FileExplorerNodeViewModel : ReactiveObject
     /// </summary>
     public FileExplorerViewModel? Owner { get; set; }
 
-    /// <summary>Material icon kind (e.g. <c>Folder</c>, <c>FileDocument</c>, <c>CSharp</c>).
-    /// Held as a string for forward-compat with Material.Icons.Avalonia, but the
-    /// view currently renders <see cref="Glyph"/> instead (icons paused — see
-    /// docs/phases/phase-2/TOFIX.md R3.1).</summary>
+    /// <summary>Icon kind (e.g. <c>Folder</c>, <c>FileDocument</c>, <c>LanguageCsharp</c>).
+    /// Held as a string for backward-compat with legacy keys. The view renders
+    /// <see cref="Glyph"/> (Phosphor icon key) via <see cref="GlyphGeometry"/>.</summary>
     public string IconKind { get; }
 
     /// <summary>
