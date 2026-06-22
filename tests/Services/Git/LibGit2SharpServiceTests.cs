@@ -250,4 +250,152 @@ public class LibGit2SharpServiceTests : IDisposable
         // Assert
         Assert.NotNull(ex.InnerException);
     }
+
+    // --- GetGraphAsync tests (M7-G1) ---
+
+    [Fact]
+    public async Task GetGraphAsync_LinearHistory_ReturnsCorrectCount()
+    {
+        // Arrange: create a repo with 5 commits
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("f1.txt", "a");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C1");
+        CreateFile("f2.txt", "b");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C2");
+        CreateFile("f3.txt", "c");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C3");
+        CreateFile("f4.txt", "d");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C4");
+        CreateFile("f5.txt", "e");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C5");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(10, CancellationToken.None);
+
+        Assert.NotNull(graph);
+        Assert.Equal(5, graph.Count);
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_MergeCommit_IncludesBothParents()
+    {
+        // Arrange: create a repo with a merge commit
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("main.txt", "main");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C1 (main)");
+        RunGit("branch", "feature");
+        CreateFile("feature.txt", "feature work");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C2 (main)");
+        RunGit("checkout", "feature");
+        CreateFile("on-feature.txt", "feat");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "C3 (feature)");
+        RunGit("checkout", "master");
+        RunGit("merge", "feature", "--no-edit", "-m", "Merge feature into master");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(10, CancellationToken.None);
+
+        // The merge commit (HEAD) should have two parents
+        var mergeCommit = graph.FirstOrDefault();
+        Assert.NotNull(mergeCommit);
+        Assert.Equal(2, mergeCommit!.ParentShas.Count);
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_RespectsCountLimit()
+    {
+        // Arrange: create a repo with 10 commits
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        for (int i = 0; i < 10; i++)
+        {
+            CreateFile($"f{i}.txt", $"content{i}");
+            RunGit("add", ".");
+            RunGit("commit", "-m", $"C{i + 1}");
+        }
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(3, CancellationToken.None);
+
+        // Should return at most 3 commits
+        Assert.NotNull(graph);
+        Assert.Equal(3, graph.Count);
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_CommitHasCorrectMetadata()
+    {
+        // Arrange: create a repo with one commit
+        RunGit("init");
+        RunGit("config", "user.email", "author@test.com");
+        RunGit("config", "user.name", "Test Author");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(5, CancellationToken.None);
+
+        Assert.NotNull(graph);
+        Assert.NotEmpty(graph);
+        var commit = graph[0];
+        Assert.False(string.IsNullOrEmpty(commit.Sha));
+        Assert.Equal("Initial commit", commit.Message);
+        Assert.Equal("Test Author", commit.Author);
+        Assert.NotEqual(default, commit.AuthorDate);
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_InitialCommit_HasNoParents()
+    {
+        // Arrange: create a repo with one commit (no parents)
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(5, CancellationToken.None);
+
+        Assert.NotNull(graph);
+        Assert.NotEmpty(graph);
+        var initialCommit = graph.Last(); // last in the list = oldest
+        Assert.Empty(initialCommit.ParentShas);
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_CurrentBranch_IsLabeled()
+    {
+        // Arrange: create a repo on 'main' (or 'master') branch
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        using var sut = CreateService();
+        var graph = await sut.GetGraphAsync(5, CancellationToken.None);
+
+        Assert.NotNull(graph);
+        Assert.NotEmpty(graph);
+        var headCommit = graph[0];
+        // HEAD commit should have at least one branch label (the current branch)
+        Assert.NotEmpty(headCommit.BranchLabels);
+    }
 }

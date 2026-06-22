@@ -478,6 +478,62 @@ public sealed class LibGit2SharpService : IGitService
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<GitGraphCommit>> GetGraphAsync(int count, CancellationToken ct)
+    {
+        await _semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var repo = _repository ?? throw new ObjectDisposedException(nameof(LibGit2SharpService));
+
+            // Build a map of branch refs → SHA for label lookup
+            var branchRefs = new Dictionary<string, string>(StringComparer.Ordinal);
+            var refsDir = Path.Combine(_gitDir, "refs", "heads");
+            if (Directory.Exists(refsDir))
+            {
+                foreach (var file in Directory.GetFiles(refsDir))
+                {
+                    var sha = File.ReadAllText(file).Trim();
+                    branchRefs[sha] = Path.GetFileName(file);
+                }
+            }
+
+            var result = new List<GitGraphCommit>();
+            var commits = repo.Commits.Take(count);
+
+            foreach (var commit in commits)
+            {
+                // Collect parent SHAs as strings only — no recursive traversal (R3.1)
+                var parentShas = commit.Parents
+                    .Select(p => p.Sha)
+                    .ToList() as IReadOnlyList<string>
+                    ?? Array.Empty<string>();
+
+                // Collect branch labels pointing to this commit
+                var labels = new List<string>();
+                if (branchRefs.TryGetValue(commit.Sha, out var label))
+                {
+                    labels.Add(label);
+                }
+
+                result.Add(new GitGraphCommit(
+                    commit.Sha,
+                    commit.MessageShort,
+                    commit.Author.Name,
+                    commit.Author.When,
+                    parentShas,
+                    labels));
+            }
+
+            return result;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed)

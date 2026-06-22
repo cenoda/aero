@@ -99,6 +99,7 @@
     <Compile Include="../src/Services/Git/GitServiceUnavailableException.cs" />
     <Compile Include="../src/Services/Git/LibGit2SharpService.cs" />
     <Compile Include="../src/Services/Git/GitWatcher.cs" />
+    <Compile Include="../src/Services/Git/GitGraphModels.cs" />
 
     <!-- Git ViewModels (Phase 7) -->
     <Compile Include="../src/ViewModels/GitViewModel.cs" />

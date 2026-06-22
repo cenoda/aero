@@ -65,4 +65,11 @@ public interface IGitService : IDisposable
     /// Returns null for each key if not found.
     /// </summary>
     Task<string[]> GetConfigAsync(string[] keys, CancellationToken ct);
+
+    /// <summary>
+    /// Gets commit graph data (commits with parent SHAs) for rendering a
+    /// visual branch graph (DAG). Returns the top <paramref name="count"/>
+    /// commits from HEAD. Parent SHAs are strings — no recursive traversal.
+    /// </summary>
+    Task<IReadOnlyList<GitGraphCommit>> GetGraphAsync(int count, CancellationToken ct);
 }
