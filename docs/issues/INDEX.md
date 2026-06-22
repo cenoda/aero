@@ -5,7 +5,7 @@ Quick-scan list of all issues. Update status here when opening/closing.
 | # | Title | Label | Priority | Status | Path |
 |---|-------|-------|----------|--------|------|
 | 010 | Adopt Avalonia.Headless UI harness for interactive verification | CHORE | medium | open | `open/ISSUE-010-adopt-avalonia-headless-ui-harness.md` |
-| 002 | Phase 7 documentation corruption — false claims of completion | BUG | high | open | `open/ISSUE-002-phase7-docs-corruption.md` |
+| 002 | Phase 7 documentation corruption — false claims of completion | BUG | high | closed | `closed/ISSUE-002-phase7-docs-corruption.md` |
 | 009 | M4 context-menu → dialog flow not verifiable under headless Xvfb (harness limitation) | CHORE | medium | closed | `closed/ISSUE-009-headless-contextmenu-dialog-verification.md` |
 | 008 | Editor content area blank — missing AvaloniaEdit theme | BUG | critical | closed | `closed/ISSUE-008-editor-layout-no-content.md` |
 | 007 | Tab close button binding crashes app when a tab is created | BUG | critical | closed | `closed/ISSUE-007-tab-close-binding-crash.md` |

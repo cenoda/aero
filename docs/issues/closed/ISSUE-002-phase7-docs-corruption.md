@@ -102,4 +102,21 @@ The `docs/roadmap/PHASES.md` file contains **two contradictory Phase 7 sections*
 
 ---
 
-*Created: 2026-06-22 | Status: Open | Severity: High*
+## Resolution Note (2026-06-22)
+
+All claims in this issue have been verified against current source code:
+
+| Claim | Verdict | Evidence |
+|-------|---------|----------|
+| PHASES.md has two contradictory Phase 7 sections | ✅ **Resolved** — Single clean Phase 7 section at lines 143-154; no out-of-scope items | `grep` confirms no duplicate sections and no merge/rebase/cherry-pick items |
+| `LibGit2SharpService.cs` etc. do not exist | ✅ **Resolved** — All 4 service files, 3 ViewModel files, 4 View files exist; total 1,413 lines of Git code | `wc -l src/Services/Git/*.cs src/ViewModels/Git*.cs src/Views/Git*.axaml` |
+| DI registered in wrong location | ✅ **Resolved** — `App.axaml.cs:120` correctly registers `GitServiceFactory` and `GitViewModel` as singletons | Source code verified |
+| Test baseline count wrong (337 vs 328) | ✅ **Resolved** — Current test count is 362/362, validating implementation | `dotnet test` confirmed |
+| Wrong API (`Repository.Stage()` vs `Commands.Stage()`) | ✅ **Resolved** — All stage/unstage calls use `Commands.Stage(repo, path)` / `Commands.Unstage(repo, path)` | `LibGit2SharpService.cs` lines 129, 148 |
+
+The corruption was pre-implementation documentation that was cleaned up as the actual code was written. The issue served its purpose as an audit trail and is now closed.
+
+**Build:** `dotnet build src/aero.csproj` — ✅ 0 errors, 0 warnings
+**Tests:** `dotnet test tests` — ✅ 362/362 passed
+
+*Closed: 2026-06-22 | Status: Closed | Severity: High (resolved)*
