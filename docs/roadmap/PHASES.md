@@ -222,9 +222,9 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Persist to `~/.aero/settings.json` (via ISettingsService from 8.7); immediate apply, no restart
 
 ### 8.7 Workspace Persistence [`docs/phases/phase-8/8.7-workspace-persistence/`](docs/phases/phase-8/8.7-workspace-persistence/)
-- [ ] Define `ISettingsService` / `SettingsService` (shared persistence layer for 8.4, 8.6)
-- [ ] Remember last folder, open files, active tab, window position across restarts (`~/.aero/workspace.json`)
-- [ ] Remember recent folders list (for 8.4 Welcome Page)
+- [x] Define `ISettingsService` / `SettingsService` (shared persistence layer for 8.4, 8.6)
+- [x] Remember last folder, open files, active tab, window position across restarts (`~/.aero/workspace.json`)
+- [x] Remember recent folders list (for 8.4 Welcome Page)
 
 ### 8.8 Keybinding Display (Read-Only) [`docs/phases/phase-8/8.8-keybinding-display/`](docs/phases/phase-8/8.8-keybinding-display/)
 - [ ] Define `ICommandRegistry` (shared with 8.3) if not already done

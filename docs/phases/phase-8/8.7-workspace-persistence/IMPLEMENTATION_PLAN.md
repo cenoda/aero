@@ -487,6 +487,7 @@ All tests use `Path.GetTempPath()` + unique GUID subdirectory (never real `~/.ae
 | 12 | `AddRecentFolder_Deduplicates` | Same folder added twice → single entry |
 | 13 | `AddRecentFolder_MovesExistingToTop` | Folder1, Folder2, Folder1 → Folder1 first |
 | 14 | `GetRecentFolders_ReturnsReadOnly` | Returned list throws on Add |
+| 15 | `LoadWorkspaceStateAsync_CorruptJson_PublishesStatusMessage` | Corrupt JSON publishes a StatusMessage via bus |
 
 **Test patterns** (matching `tests/Services/DocumentManagerTests.cs`):
 - Use `StubMessageBus` to capture `StatusMessage`.
@@ -496,16 +497,16 @@ All tests use `Path.GetTempPath()` + unique GUID subdirectory (never real `~/.ae
 
 ## Definition of Done (Exit Gates)
 
-- [ ] `dotnet build src/aero.csproj` passes (0 errors)
-- [ ] `dotnet test tests` passes (baseline: 401 + new: 14 = 415+)
-- [ ] Closing and reopening the IDE restores:
+- [x] `dotnet build src/aero.csproj` passes (0 errors)
+- [x] `dotnet test tests` passes (baseline: 401 + new: 15 = 416)
+- [x] Closing and reopening the IDE restores:
   - Last opened folder (tree loads automatically)
   - Previously open files (tabs restored)
   - Active tab index
   - Window size and position
   - Maximized state
-- [ ] `~/.aero/workspace.json` and `~/.aero/settings.json` exist after first save
-- [ ] Corrupt or missing JSON files cause graceful fallback to defaults (no crash)
-- [ ] Recent folders list persists with correct ordering
-- [ ] `ISettingsService` is registered in DI and can be consumed by 8.4 and 8.6
-- [ ] `docs/roadmap/PHASES.md` Phase 8.7 items all `[x]`
+- [x] `~/.aero/workspace.json` and `~/.aero/settings.json` exist after first save
+- [x] Corrupt or missing JSON files cause graceful fallback to defaults (no crash)
+- [x] Recent folders list persists with correct ordering
+- [x] `ISettingsService` is registered in DI and can be consumed by 8.4 and 8.6
+- [x] `docs/roadmap/PHASES.md` Phase 8.7 items all `[x]`

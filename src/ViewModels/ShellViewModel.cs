@@ -51,7 +51,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private bool _disposed;
     private string? _workspacePath;
 
-[Reactive] public string StatusText { get; set; } = "Aero IDE";
+    [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
     [Reactive] public bool IsSidebarVisible { get; set; } = true;
     [Reactive] public int ActiveSidebarTabIndex { get; set; }
@@ -84,7 +84,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> RedoCommand { get; }
     public ReactiveCommand<Unit, Unit> FindCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplaceCommand { get; }
-public ReactiveCommand<Unit, Unit> ToggleSidebarCommand { get; }
+        public ReactiveCommand<Unit, Unit> ToggleSidebarCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleSidebarTabCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleOutputCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleProblemsCommand { get; }
@@ -129,7 +129,7 @@ public ShellViewModel(
         RedoCommand = ReactiveCommand.Create(Redo);
         FindCommand = ReactiveCommand.Create(Find);
         ReplaceCommand = ReactiveCommand.Create(Replace);
-ToggleSidebarCommand = ReactiveCommand.Create(ToggleSidebar);
+        ToggleSidebarCommand = ReactiveCommand.Create(ToggleSidebar);
         ToggleSidebarTabCommand = ReactiveCommand.Create(ToggleSidebarTab);
         ToggleOutputCommand = ReactiveCommand.Create(ToggleOutput);
         ToggleProblemsCommand = ReactiveCommand.Create(ToggleProblems);
@@ -167,7 +167,7 @@ ToggleSidebarCommand = ReactiveCommand.Create(ToggleSidebar);
         _bus.Subscribe(_statusMessageHandler);
         _activeDocumentChangedHandler = OnActiveDocumentChanged;
         _bus.Subscribe(_activeDocumentChangedHandler);
-_documentSavedHandler = OnDocumentSaved;
+        _documentSavedHandler = OnDocumentSaved;
         _bus.Subscribe(_documentSavedHandler);
 
         // Subscribe to Git messages (Phase 7)
@@ -687,7 +687,7 @@ _documentSavedHandler = OnDocumentSaved;
             _bus.Unsubscribe<StatusMessage>(_statusMessageHandler);
         if (_activeDocumentChangedHandler != null)
             _bus.Unsubscribe<ActiveDocumentChanged>(_activeDocumentChangedHandler);
-if (_documentSavedHandler != null)
+        if (_documentSavedHandler != null)
             _bus.Unsubscribe<DocumentSaved>(_documentSavedHandler);
         if (_gitStatusChangedHandler != null)
             _bus.Unsubscribe<GitStatusChanged>(_gitStatusChangedHandler);
