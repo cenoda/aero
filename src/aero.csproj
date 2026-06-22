@@ -15,6 +15,8 @@
   <ItemGroup>
     <!-- Fody weaver configuration (auto-generated, must be tracked in source) -->
     <None Include="FodyWeavers.xml" />
+    <!-- Theme preset JSON files — embedded so ThemeEngine can load them at runtime -->
+    <EmbeddedResource Include="Assets\Themes\*.json" />
   </ItemGroup>
 
   <ItemGroup>
