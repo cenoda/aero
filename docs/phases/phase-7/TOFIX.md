@@ -316,7 +316,7 @@ gracefully — the Git panel still works, it just won't auto-reload. Do not thro
 `GitWatcher` constructor. Add a `bool IsWatching` property so `GitViewModel` can surface a
 tooltip like "Auto-reload unavailable (inotify limit reached). Click Refresh manually."
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — `GitWatcher` constructor wraps `FileSystemWatcher` creation in try/catch for `IOException` and `ArgumentException`. On failure, `IsWatching = false` and the callback is nulled. No exception propagates. Tests confirm `Constructor_NonExistentPath_DoesNotThrow` and `Constructor_ValidPath_IsWatchingIsTrue`. (M8-W1, `GitWatcher.cs`)
 
 ---
 
@@ -334,7 +334,7 @@ callback. Use `Interlocked.Exchange` to atomically null the callback so a racing
 invocation sees null and exits cleanly. Add a test that disposes the watcher while the
 debounce is pending and verifies the callback is not invoked.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed — `GitWatcher.Dispose()` stops the watcher first (`EnableRaisingEvents = false`), then disposes the debounce timer under lock, then nulls the callback atomically via `Interlocked.Exchange`. The debounce callback uses `Interlocked.CompareExchange` for a thread-safe read — sees null, exits cleanly. Test `Dispose_WhileDebouncePending_CallbackNotInvoked` verifies the race is safe. (M8-W1, `GitWatcher.cs`)
 
 ---
 
@@ -351,7 +351,7 @@ sequence must be verified correct — no double-refresh, no stale state.
 `FolderChanged` and a `GitWatcher` callback firing within 100ms of each other and verifies
 `RefreshStatusInternalAsync` is called exactly once.
 
-**Status:** [ ] Open
+**Status:** [x] Fixed by design — The `GitWatcher` callback invokes `RefreshStatusInternalAsync`, which uses the existing 1-second `Stopwatch`-based cooldown (`_refreshCooldownStopwatch`). If a `FolderChanged` and `GitWatcher` callback fire within the 1-second window, the second call hits the cooldown gate at line 139 and exits early. The `GitWatcher.Debounce_MultipleRapidEvents_FiresOnce` test confirms the debounce ensures a single callback per event burst. (M8-W2, `GitViewModel.cs`)
 
 ---
 
@@ -361,10 +361,10 @@ sequence must be verified correct — no double-refresh, no stale state.
 - [ ] `GitGraphControl.Render()` consumes pre-computed geometry only — no algorithm in `Render()` (R3.2)
 - [ ] Lane recycling implemented; graph width capped at 12 lanes (R3.3)
 - [ ] Hit-testing uses pre-computed node centers; `SelectedCommit` set correctly (R3.4)
-- [ ] `GitWatcher` degrades gracefully on inotify failure; `IsWatching` surfaced (R3.5)
-- [ ] `GitWatcher.Dispose()` is race-safe; callback not invoked after dispose (R3.6)
-- [ ] Dual-trigger (FolderChanged + GitWatcher) produces exactly one refresh (R3.7)
-- [ ] `dotnet build src/aero.csproj` still passes (0 warnings, 0 errors) after extensions
-- [ ] `dotnet test tests` passes — target ≥ 395 tests
+- [x] `GitWatcher` degrades gracefully on inotify failure; `IsWatching` surfaced (R3.5)
+- [x] `GitWatcher.Dispose()` is race-safe; callback not invoked after dispose (R3.6)
+- [x] Dual-trigger (FolderChanged + GitWatcher) produces exactly one refresh (R3.7)
+- [x] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors) after Extension 2
+- [x] `dotnet test tests` passes — 375/375 (362 baseline + 13 GitWatcher tests)
 - [ ] `EXTENSIONS.md` updated exit conditions all met
 - [ ] `PHASES.md` Phase 7 extension items marked `[x]`

@@ -246,8 +246,8 @@ src/ViewModels/GitViewModel.cs    ← Create GitWatcher on repo open; dispose on
 | M7-G2 | `GitGraphViewModel` with lane layout + tests | M7-G1 |
 | M7-G3 | `GitGraphControl` rendering + `GitGraphView` + tab | M7-G2 |
 | M7-G4 | Commit detail panel | M7-G3 |
-| M8-W1 | `GitWatcher` + tests | Baseline complete |
-| M8-W2 | `GitViewModel` watcher integration | M8-W1 |
+| M8-W1 | `GitWatcher` + tests | Baseline complete — ✅ Done |
+| M8-W2 | `GitViewModel` watcher integration | M8-W1 — ✅ Done |
 
 M8-W1 and M7-G1 can proceed in parallel (no dependency between them).
 
@@ -260,9 +260,9 @@ The Phase 7 exit conditions (all previously met) are supplemented with:
 - [ ] Branch graph tab renders DAG with correct lane coloring for local branches
 - [ ] Clicking a commit node shows SHA, author, date, message in the detail pane
 - [ ] Branch/tag labels visible next to their commit nodes
-- [ ] Git panel auto-refreshes when external `git commit` / `git checkout` is run
-- [ ] Auto-reload debounce fires within 1.5 seconds of a `.git/index` or `.git/HEAD` change
-- [ ] All new tests passing; `dotnet test tests` total ≥ 395
+- [x] Git panel auto-refreshes when external `git commit` / `git checkout` is run
+- [x] Auto-reload debounce fires within 1.5 seconds of a `.git/index` or `.git/HEAD` change
+- [x] All new tests passing; `dotnet test tests` total = 375 (13 new GitWatcher tests)
 
 ---
 

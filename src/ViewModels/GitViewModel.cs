@@ -32,6 +32,7 @@ public class GitViewModel : ReactiveObject, IDisposable
     private Action<FolderOpened>? _folderOpenedHandler;
     private Action<FolderChanged>? _folderChangedHandler;
     private CancellationTokenSource? _statusRefreshCts;
+    private GitWatcher? _gitWatcher;
     private bool _disposed;
 
     // R1.3: Debounce/cooldown for status refresh
@@ -112,6 +113,11 @@ public class GitViewModel : ReactiveObject, IDisposable
 
         HasGitRepository = true;
         await RefreshStatusInternalAsync();
+
+        // Start GitWatcher for auto-reload on external git operations (M8-W2)
+        var gitDir = Path.Combine(path, ".git");
+        _gitWatcher?.Dispose();
+        _gitWatcher = new GitWatcher(gitDir, () => _ = RefreshStatusInternalAsync());
 
         // Publish repository detection so other VMs can sync their state
         _bus.Publish(new GitRepositoryChanged(_workspacePath!, true));
@@ -356,6 +362,10 @@ StatusText = IsDirty ? $"On {CurrentBranch} (dirty)" : $"On {CurrentBranch}";
             _bus.Unsubscribe<FolderOpened>(_folderOpenedHandler);
         if (_folderChangedHandler != null)
             _bus.Unsubscribe<FolderChanged>(_folderChangedHandler);
+
+        // Dispose GitWatcher for auto-reload (M8-W2)
+        _gitWatcher?.Dispose();
+        _gitWatcher = null;
 
         // Issue #5 fix: Don't dispose factory - it's a DI singleton, managed by the container
         // The container will dispose it when the app exits
