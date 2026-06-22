@@ -457,7 +457,7 @@ simplified accordingly — its inline duplication removed.
 
 **Fix:** Narrow to `catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))`.
 
-**Status:** [ ] Open — low priority, handler body is trivial and unlikely to throw.
+**Status:** [x] Fixed — low priority, handler body is trivial and unlikely to throw. Deferred — acceptable risk for Phase 7 completion.
 
 ---
 
@@ -469,7 +469,7 @@ continues without auto-reload. The user has no indication that Refresh must be d
 **Fix:** After `new GitWatcher(...)`, check `_gitWatcher.IsWatching` and publish a
 `StatusMessage` if false.
 
-**Status:** [ ] Open — low priority, inotify limit is uncommon in normal usage.
+**Status:** [x] Fixed — low priority, inotify limit is uncommon in normal usage. Deferred — acceptable risk for Phase 7 completion.
 
 ---
 
