@@ -12,52 +12,82 @@ using Aero.Docking.DocumentViewModels;
 namespace Aero.Docking;
 
 /// <summary>
-/// Factory for creating the default dock layout.
-/// Extends FactoryBase to provide concrete implementations for all dock types.
+/// Dock layout factory that creates Aero-specific dock types.
 /// </summary>
 public class AeroDockFactory : FactoryBase
 {
+    /// <summary>Creates a root dock container.</summary>
     public override IRootDock CreateRootDock() => new AeroRootDock();
 
+    /// <summary>Creates a proportional dock container.</summary>
     public override IProportionalDock CreateProportionalDock() => new AeroProportionalDock();
 
+    /// <summary>Creates a proportional dock splitter.</summary>
     public override IProportionalDockSplitter CreateProportionalDockSplitter() => new AeroProportionalDockSplitter();
 
+    /// <summary>Creates a tool dock container.</summary>
     public override IToolDock CreateToolDock() => new AeroToolDock();
 
+    /// <summary>Creates a document dock container.</summary>
     public override IDocumentDock CreateDocumentDock() => new AeroDocumentDock();
 
+    /// <summary>Not supported — use specific tool types directly.</summary>
     public override ITool CreateTool() => throw new InvalidOperationException("Use specific tool types (ExplorerTool, GitTool, etc.)");
 
+    /// <summary>Not supported — use EditorDocument directly.</summary>
     public override IDocument CreateDocument() => throw new InvalidOperationException("Use EditorDocument");
 
+    /// <summary>Creates a floating dock window.</summary>
     public override IDockWindow CreateDockWindow() => new AeroDockWindow();
 
-    // Other dock types - return minimal stubs
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IDockDock CreateDockDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IStackDock CreateStackDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IGridDock CreateGridDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IWrapDock CreateWrapDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IUniformGridDock CreateUniformGridDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override ISplitViewDock CreateSplitViewDock() => throw new NotImplementedException();
+    /// <summary>Not used by Aero — Dock layout does not require this type.</summary>
     public override IGridDockSplitter CreateGridDockSplitter() => throw new NotImplementedException();
 
-    // 10 abstract property getters from FactoryBase - using the correct types
-    public override IDictionary<IDockable, object> ToolControls => new Dictionary<IDockable, object>();
-    public override IDictionary<IDockable, object> DocumentControls => new Dictionary<IDockable, object>();
-    public override IDictionary<IDockable, IDockableControl> VisibleDockableControls => new Dictionary<IDockable, IDockableControl>();
-    public override IDictionary<IDockable, object> VisibleRootControls => new Dictionary<IDockable, object>();
-    public override IDictionary<IDockable, IDockableControl> PinnedDockableControls => new Dictionary<IDockable, IDockableControl>();
-    public override IDictionary<IDockable, object> PinnedRootControls => new Dictionary<IDockable, object>();
-    public override IDictionary<IDockable, IDockableControl> TabDockableControls => new Dictionary<IDockable, IDockableControl>();
-    public override IDictionary<IDockable, object> TabRootControls => new Dictionary<IDockable, object>();
-    public override IList<IDockControl> DockControls => new List<IDockControl>();
-    public override IList<IHostWindow> HostWindows => new List<IHostWindow>();
+    // Field-backed singletons — Dock.Avalonia may access these repeatedly during layout operations.
+    private readonly Dictionary<IDockable, object> _toolControls = new();
+    private readonly Dictionary<IDockable, object> _documentControls = new();
+    private readonly Dictionary<IDockable, IDockableControl> _visibleDockableControls = new();
+    private readonly Dictionary<IDockable, object> _visibleRootControls = new();
+    private readonly Dictionary<IDockable, IDockableControl> _pinnedDockableControls = new();
+    private readonly Dictionary<IDockable, object> _pinnedRootControls = new();
+    private readonly Dictionary<IDockable, IDockableControl> _tabDockableControls = new();
+    private readonly Dictionary<IDockable, object> _tabRootControls = new();
+    private readonly List<IDockControl> _dockControls = new();
+    private readonly List<IHostWindow> _hostWindows = new();
 
+    public override IDictionary<IDockable, object> ToolControls => _toolControls;
+    public override IDictionary<IDockable, object> DocumentControls => _documentControls;
+    public override IDictionary<IDockable, IDockableControl> VisibleDockableControls => _visibleDockableControls;
+    public override IDictionary<IDockable, object> VisibleRootControls => _visibleRootControls;
+    public override IDictionary<IDockable, IDockableControl> PinnedDockableControls => _pinnedDockableControls;
+    public override IDictionary<IDockable, object> PinnedRootControls => _pinnedRootControls;
+    public override IDictionary<IDockable, IDockableControl> TabDockableControls => _tabDockableControls;
+    public override IDictionary<IDockable, object> TabRootControls => _tabRootControls;
+    public override IList<IDockControl> DockControls => _dockControls;
+    public override IList<IHostWindow> HostWindows => _hostWindows;
+
+    /// <summary>Creates a new list containing the given items.</summary>
     public override IList<T> CreateList<T>(T[] items) => new List<T>(items);
 
+    /// <summary>Creates the default dock layout (delegates to <see cref="CreateDefaultLayout"/>).</summary>
     public override IRootDock CreateLayout() => CreateDefaultLayout();
 
+    /// <summary>
+    /// Builds the default Aero dock layout: left sidebar (Explorer + Git),
+    /// center editor, bottom panel (Problems + Output).
+    /// </summary>
     public static IRootDock CreateDefaultLayout()
     {
         // Create a local factory instance for creating the layout

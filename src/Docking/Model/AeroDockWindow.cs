@@ -29,6 +29,11 @@ public class AeroDockWindow : ManagedDockableBase, IDockWindow
     private IRootDock? _layout;
     private IHostWindow? _host;
 
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
+    /// <inheritdoc />
+    public override int GetHashCode() => Id?.GetHashCode() ?? 0;
+
     public string Id
     {
         get => _id;

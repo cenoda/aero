@@ -32,6 +32,11 @@ public class AeroToolDock : ManagedDockableBase, IToolDock
         Title = "ToolDock";
     }
 
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
+    /// <inheritdoc />
+    public override int GetHashCode() => Id?.GetHashCode() ?? 0;
+
     // IDock members
     public IList<IDockable>? VisibleDockables
     {

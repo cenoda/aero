@@ -13,4 +13,9 @@ public class EditorDocument : Dock.Avalonia.Controls.ManagedDockableBase, Dock.M
         Id = "Editor";
         Title = "Editor";
     }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is Dock.Model.Core.IDockable d && d.Id == Id;
+    /// <inheritdoc />
+    public override int GetHashCode() => Id?.GetHashCode() ?? 0;
 }
