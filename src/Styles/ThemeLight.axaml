@@ -1,0 +1,160 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Phase 8.2 Theme Engine: Light Preset — 115 color tokens -->
+    <!-- Colors inspired by JetBrains Rider / VS Code Light+ -->
+    <!-- MIT: Color values derived from open-source IDE themes -->
+
+    <!-- Global (1–6) -->
+    <SolidColorBrush x:Key="global.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="global.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="global.accent" Color="#0078D4"/>
+    <SolidColorBrush x:Key="global.accentHover" Color="#1A86D9"/>
+    <SolidColorBrush x:Key="global.error" Color="#E81123"/>
+    <SolidColorBrush x:Key="global.warning" Color="#F7630C"/>
+
+    <!-- Window (7–11) -->
+    <SolidColorBrush x:Key="window.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="window.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="window.border" Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="window.dropShadow" Color="#00000020"/>
+    <SolidColorBrush x:Key="window.inactiveBackground" Color="#F2F2F2"/>
+
+    <!-- Editor (12–25) -->
+    <SolidColorBrush x:Key="editor.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="editor.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="editor.lineHighlightBackground" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="editor.selectionBackground" Color="#2678CB33"/>
+    <SolidColorBrush x:Key="editor.findMatchBackground" Color="#FFFF00"/>
+    <SolidColorBrush x:Key="editor.findMatchHighlightBackground" Color="#FFAA0066"/>
+    <SolidColorBrush x:Key="editor.wordHighlightBackground" Color="#E8F0FE"/>
+    <SolidColorBrush x:Key="editor.bracketMatchBackground" Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="editor.bracketMatchBorder" Color="#0078D4"/>
+    <SolidColorBrush x:Key="editorIndentGuide.background" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="editorIndentGuide.activeBackground" Color="#C0C0C0"/>
+    <SolidColorBrush x:Key="editorLineNumber.foreground" Color="#AAAAAA"/>
+    <SolidColorBrush x:Key="editorLineNumber.activeForeground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="editorGutter.background" Color="#FFFFFF"/>
+
+    <!-- Tab (26–32) -->
+    <SolidColorBrush x:Key="tab.background" Color="#ECECEC"/>
+    <SolidColorBrush x:Key="tab.activeBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="tab.activeForeground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="tab.activeBorderTop" Color="#0078D4"/>
+    <SolidColorBrush x:Key="tab.inactiveBackground" Color="#ECECEC"/>
+    <SolidColorBrush x:Key="tab.inactiveForeground" Color="#6E6E6E"/>
+    <SolidColorBrush x:Key="tab.border" Color="#D4D4D4"/>
+
+    <!-- Panel / Sidebar / Bottom (33–44) -->
+    <SolidColorBrush x:Key="panel.background" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="panel.foreground" Color="#3C3C3C"/>
+    <SolidColorBrush x:Key="panel.border" Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="panel.headerBackground" Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="panel.headerForeground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="panel.sectionBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="panel.sectionForeground" Color="#3C3C3C"/>
+    <SolidColorBrush x:Key="panel.activeItemBackground" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="panel.activeItemForeground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="panel.hoverBackground" Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="panel.scrollbarBackground" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="panel.scrollbarThumb" Color="#C1C1C1"/>
+
+    <!-- Status Bar (45–48) -->
+    <SolidColorBrush x:Key="statusBar.background" Color="#0078D4"/>
+    <SolidColorBrush x:Key="statusBar.foreground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="statusBar.border" Color="#005A9E"/>
+    <SolidColorBrush x:Key="statusBar.hoverBackground" Color="#1A86D9"/>
+
+    <!-- Menu (49–53) -->
+    <SolidColorBrush x:Key="menu.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="menu.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="menu.selectionBackground" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="menu.selectionForeground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="menu.border" Color="#D4D4D4"/>
+
+    <!-- Button (54–58) -->
+    <SolidColorBrush x:Key="button.background" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="button.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="button.hoverBackground" Color="#D0D0D0"/>
+    <SolidColorBrush x:Key="button.activeBackground" Color="#C0C0C0"/>
+    <SolidColorBrush x:Key="button.border" Color="#C0C0C0"/>
+
+    <!-- Input (59–63) -->
+    <SolidColorBrush x:Key="input.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="input.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="input.border" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="input.placeholderForeground" Color="#AAAAAA"/>
+    <SolidColorBrush x:Key="input.focusBorder" Color="#0078D4"/>
+
+    <!-- Scrollbar (64–67) -->
+    <SolidColorBrush x:Key="scrollbar.background" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="scrollbarThumb.background" Color="#C1C1C1"/>
+    <SolidColorBrush x:Key="scrollbarThumb.hoverBackground" Color="#A0A0A0"/>
+    <SolidColorBrush x:Key="scrollbarThumb.activeBackground" Color="#808080"/>
+
+    <!-- Dialog / Overlay (68–73) -->
+    <SolidColorBrush x:Key="dialog.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="dialog.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="dialog.border" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="dialog.overlayBackground" Color="#00000066"/>
+    <SolidColorBrush x:Key="dialog.buttonBackground" Color="#0078D4"/>
+    <SolidColorBrush x:Key="dialog.buttonForeground" Color="#FFFFFF"/>
+
+    <!-- Find / Replace (74–76) -->
+    <SolidColorBrush x:Key="findReplace.background" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="findReplace.border" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="findReplace.inputBackground" Color="#FFFFFF"/>
+
+    <!-- Git Diff (77–86) -->
+    <SolidColorBrush x:Key="diff.insertedGutter" Color="#C3E6CB"/>
+    <SolidColorBrush x:Key="diff.removedGutter" Color="#F5C6CB"/>
+    <SolidColorBrush x:Key="diff.headerGutter" Color="#D6D6D6"/>
+    <SolidColorBrush x:Key="diff.contextGutter" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="diff.insertedBackground" Color="#E6FFE6"/>
+    <SolidColorBrush x:Key="diff.removedBackground" Color="#FFE6E6"/>
+    <SolidColorBrush x:Key="diff.headerBackground" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="diff.insertedText" Color="#22863A"/>
+    <SolidColorBrush x:Key="diff.removedText" Color="#CB2431"/>
+    <SolidColorBrush x:Key="diff.conflict" Color="#FFDD00"/>
+
+    <!-- Git Graph (87–91) -->
+    <SolidColorBrush x:Key="graph.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="graph.nodeBorder" Color="#333333"/>
+    <SolidColorBrush x:Key="graph.selectedNodeHalo" Color="#0078D433"/>
+    <SolidColorBrush x:Key="graph.connectionLine" Color="#333333"/>
+    <SolidColorBrush x:Key="graph.connectionLineMuted" Color="#AAAAAA"/>
+
+    <!-- Git Status (92–96) -->
+    <SolidColorBrush x:Key="git.branchForeground" Color="#0078D4"/>
+    <SolidColorBrush x:Key="git.modifiedForeground" Color="#E36209"/>
+    <SolidColorBrush x:Key="git.stagedForeground" Color="#22863A"/>
+    <SolidColorBrush x:Key="git.untrackedForeground" Color="#6F42C1"/>
+    <SolidColorBrush x:Key="git.conflictForeground" Color="#E81123"/>
+
+    <!-- Debug (97–101) -->
+    <SolidColorBrush x:Key="debug.breakpointForeground" Color="#E81123"/>
+    <SolidColorBrush x:Key="debug.breakpointBackground" Color="#FFE0E0"/>
+    <SolidColorBrush x:Key="debug.currentLineBackground" Color="#FFF3CD"/>
+    <SolidColorBrush x:Key="debug.stackFrameBackground" Color="#E8F4FD"/>
+    <SolidColorBrush x:Key="debug.stepOverlay" Color="#F7630C"/>
+
+    <!-- Syntax Highlighting — informational bridge (102–109) -->
+    <SolidColorBrush x:Key="syntax.keyword" Color="#AF00DB"/>
+    <SolidColorBrush x:Key="syntax.string" Color="#A31515"/>
+    <SolidColorBrush x:Key="syntax.number" Color="#098658"/>
+    <SolidColorBrush x:Key="syntax.comment" Color="#008000"/>
+    <SolidColorBrush x:Key="syntax.function" Color="#795E26"/>
+    <SolidColorBrush x:Key="syntax.type" Color="#267F99"/>
+    <SolidColorBrush x:Key="syntax.variable" Color="#001080"/>
+    <SolidColorBrush x:Key="syntax.operator" Color="#000000"/>
+
+    <!-- Notification (110–112) -->
+    <SolidColorBrush x:Key="notification.background" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="notification.foreground" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="notification.border" Color="#D4D4D4"/>
+
+    <!-- Badge / Tag (113–115) -->
+    <SolidColorBrush x:Key="badge.background" Color="#0078D4"/>
+    <SolidColorBrush x:Key="badge.foreground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="badge.border" Color="#005A9E"/><!-- Theme identification sentinel -->
+    <sys:String x:Key="_themeVariant">Light</sys:String></ResourceDictionary>

@@ -14,6 +14,9 @@
                 <ResourceInclude Source="avares://aero/Styles/Typography.axaml" />
                 <ResourceInclude Source="avares://aero/Styles/Transitions.axaml" />
                 <ResourceInclude Source="avares://aero/Styles/Icons.axaml" />
+                <!-- Phase 8.2: Theme presets loaded here; ThemeService identifies them via sentinel keys -->
+                <ResourceInclude Source="avares://aero/Styles/ThemeLight.axaml" />
+                <ResourceInclude Source="avares://aero/Styles/ThemeDark.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Converters (app-level) -->

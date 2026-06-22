@@ -10,6 +10,8 @@
 
 ## Token Count Summary
 
+> **Total: 115 tokens** (verified against ThemeLight.axaml / ThemeDark.axaml)
+
 | Area | Count |
 |------|-------|
 | Global | 6 |
@@ -31,7 +33,7 @@
 | Syntax Highlighting | 8 |
 | Notification | 3 |
 | Badge / Tag | 3 |
-| **Total** | **103** |
+| **Total** | **115** |
 
 ---
 

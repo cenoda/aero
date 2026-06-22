@@ -196,10 +196,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Principles: Tile Mode *must* still allow manual adjustment. Mode switch must be instant.
 
 ### 8.2 Theme Engine — 115 Color Tokens + JSON Override [`docs/phases/phase-8/8.2-theme-system/`](docs/phases/phase-8/8.2-theme-system/)
-- [ ] Define **115 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.) — full inventory in [`TOKENS.md`](docs/phases/phase-8/8.2-theme-system/TOKENS.md)
-- [ ] Create Light and Dark presets stored as ResourceDictionary in `src/Styles/`
-- [ ] **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
-- [ ] Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme
+- [x] Define **115 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.) — full inventory in [`TOKENS.md`](docs/phases/phase-8/8.2-theme-system/TOKENS.md)
+- [x] Create Light and Dark presets stored as ResourceDictionary in `src/Styles/`
+- [x] **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
+- [x] Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme
 - [ ] Ctrl+Shift+T or View → Toggle Theme
 
 ### 8.3 Command Palette [`docs/phases/phase-8/8.3-command-palette/`](docs/phases/phase-8/8.3-command-palette/)

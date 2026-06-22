@@ -120,6 +120,9 @@
     <Compile Include="../src/Models/Settings/SettingsModel.cs" />
     <Compile Include="../src/Services/ISettingsService.cs" />
     <Compile Include="../src/Services/SettingsService.cs" />
+
+    <!-- Phase 8.2 — Theme engine -->
+    <Compile Include="../src/Services/ThemeService.cs" />
   </ItemGroup>
 
 </Project>

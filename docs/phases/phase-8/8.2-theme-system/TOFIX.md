@@ -38,7 +38,7 @@ by the implementation plan or low-risk informational items.
 
 ---
 
-### R1.1 TOKENS.md header says "Grand Total: 115 tokens" but actual count is 103 *(priority: medium)*
+### R1.1 ~~TOKENS.md header says "Grand Total: 115 tokens" but actual count is 103~~ *(priority: medium)* ✅
 
 **Description:** `TOKENS.md` line 185 states "Grand Total: 115 tokens" and the README
 repeats "115 semantic color tokens" in several places. However, the actual numbered
@@ -51,23 +51,9 @@ The discrepancy means any test that asserts "103 token keys resolve" will be cor
 against the actual file, but the README and plan doc will say "115" — confusing for
 future readers.
 
-**Required fix:** During implementation, either:
-- (a) Add 12 missing tokens to reach 115 (preferred — more coverage), or
-- (b) Update README and TOKENS.md header to say "103 tokens" consistently.
+**Resolution:** The summary table was arithmetically wrong (missing Syntax Highlighting 8 + Notification 3 + Badge 3). TOKENS.md summary table now includes a verified total line. Both AXAML files confirmed at exactly 115 tokens with matching keys.
 
-If (a), the new tokens should cover gaps identified in the codebase audit:
-- `menu.hoverBackground` / `menu.hoverForeground` (missing from Menu section)
-- `panel.scrollbarTrack` (different from `panel.scrollbarBackground`)
-- `editorLineNumber.background` (gutter bg distinct from `editorGutter.background`)
-- `tab.closeButtonHoverBackground` (tab close button)
-- `button.disabledBackground` / `button.disabledForeground` (disabled state)
-- `input.disabledBackground` / `input.disabledForeground` (disabled state)
-- `scrollbar.background` (currently only 3 scrollbar tokens; add track)
-- `dialog.titleForeground` (dialog title distinct from dialog.foreground)
-- `statusBar.debuggingBackground` / `statusBar.debuggingForeground` (debug mode)
-- `notification.infoBackground` / `notification.warningBackground` (severity variants)
-
-**Status:** [ ] Open
+**Status:** [x] Closed (2026-06-22)
 
 ---
 

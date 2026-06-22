@@ -29,6 +29,11 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Phase 8.2 — Theme Engine: wire up presets and apply persisted theme
+            var themeService = _services.GetRequiredService<ThemeService>();
+            themeService.WireThemeDictionaries();
+            _ = themeService.ApplyThemeAsync();
+
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();
 
@@ -177,6 +182,9 @@ public partial class App : Application
 
         // Phase 8.7 — Workspace persistence & settings
         services.AddSingleton<ISettingsService, SettingsService>();
+
+        // Phase 8.2 — Theme engine
+        services.AddSingleton<ThemeService>();
 
         // ViewModels
         services.AddSingleton<ShellViewModel>();
