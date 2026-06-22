@@ -1,15 +1,15 @@
 # 8.2 — Theme Engine Implementation Plan
 
-**Status:** Draft — pre-implementation (2026-06-22)
+**Status:** ✅ Complete — all items implemented and verified (2026-06-22)
 
 ---
 
 ## M0: Entry Gates
 
-- [ ] `dotnet build src/aero.csproj` succeeds (0 errors)
-- [ ] `dotnet test tests` passes (baseline: 495 passed)
-- [ ] `docs/phases/phase-8/TOFIX.md` has no open blocker items for 8.2
-- [ ] Phase 8.9 Design System is complete (verified ✅)
+- [x] `dotnet build src/aero.csproj` succeeds (0 errors)
+- [x] `dotnet test tests` passes (527 passed: 495 baseline + 23 ThemeService + 9 ThemePreset)
+- [x] `docs/phases/phase-8/TOFIX.md` has no open blocker items for 8.2
+- [x] Phase 8.9 Design System is complete (verified ✅)
 
 ---
 

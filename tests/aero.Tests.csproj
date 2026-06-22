@@ -125,4 +125,10 @@
     <Compile Include="../src/Services/ThemeService.cs" />
   </ItemGroup>
 
+  <!-- Phase 8.2 — Theme presets (for token key verification in tests) -->
+  <ItemGroup>
+    <Content Include="../src/Styles/ThemeLight.axaml" CopyToOutputDirectory="PreserveNewest" Link="Styles/ThemeLight.axaml" />
+    <Content Include="../src/Styles/ThemeDark.axaml" CopyToOutputDirectory="PreserveNewest" Link="Styles/ThemeDark.axaml" />
+  </ItemGroup>
+
 </Project>

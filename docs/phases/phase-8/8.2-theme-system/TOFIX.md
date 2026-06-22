@@ -1,11 +1,10 @@
 # 8.2 — Theme Engine: To Fix
 
-> **Status:** Active — pre-implementation risks recorded (2026-06-22).
-> Resolve all open items before declaring 8.2 complete.
->
-> This file is the persistent code-quality checklist for 8.2 (Theme Engine).
-> Add findings here during and after each implementation/review round;
-> mark each item `[x]` when fixed and note the fix inline.
+> **Status:** ✅ Complete — all items implemented and verified (2026-06-22).
+> All open items have been resolved. This file is the persistent code-quality
+> checklist for 8.2 (Theme Engine).
+> Findings recorded during and after each implementation/review round;
+> each item marked `[x]` when fixed.
 
 ---
 
@@ -190,10 +189,12 @@ file doesn't exist (verified in source: `if (!File.Exists(_overridePath)) return
 *Items below are anticipated based on plan analysis. Add actual findings here as they
 are discovered during coding.*
 
-### R2.1 (Predictive) Syntax tokens 102-109 may cause confusion in JSON override
+### R2.1 Syntax tokens 102-109 may cause confusion in JSON override
 
 The syntax tokens are informational only (TextMate drives highlighting), but if a user
-overrides them in `theme-override.json`, nothing will happen. Consider adding a comment
-in the override example or a README note that these are informational.
+overrides them in `theme-override.json`, nothing will happen. The README and TOKENS.md
+already document this clearly: "These tokens are informational only for the theme author."
 
-**Status:** [ ] Open (will verify during implementation)
+**Status:** [x] Closed (2026-06-22) — Already documented in TOKENS.md note below syntax
+section. No code change needed; informational tokens are intentionally included for
+advanced users who want to inspect/export the full palette.
