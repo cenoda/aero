@@ -14,6 +14,8 @@ using Aero.Services.Build;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using IMessageBus = Aero.Core.IMessageBus;
@@ -54,11 +56,13 @@ public class ShellViewModel : ReactiveObject, IDisposable
 
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
-    [Reactive] public bool IsSidebarVisible { get; set; } = true;
-    [Reactive] public int ActiveSidebarTabIndex { get; set; }
-    [Reactive] public int ActiveBottomTabIndex { get; set; }
-    [Reactive] public bool IsBottomPanelVisible { get; set; }
     [Reactive] public bool IsDarkTheme { get; set; }
+
+    /// <summary>
+    /// Root of the dock layout tree, set by MainWindow after layout creation.
+    /// Used by toggle commands to find and show/hide dockables.
+    /// </summary>
+    public IRootDock? ActiveLayout { get; set; }
 
     // Window state — persisted via ISettingsService (Phase 8.7)
     [Reactive] public double WindowX { get; set; }
@@ -507,32 +511,113 @@ public ShellViewModel(
 
     private void ToggleSidebar()
     {
-        IsSidebarVisible = !IsSidebarVisible;
+        if (ActiveLayout == null) return;
+        var explorer = FindDockable(ActiveLayout, "Explorer");
+        if (explorer?.Owner is IDock ownerDock)
+        {
+            ToggleDockableVisibility(explorer, ownerDock);
+        }
     }
 
     private void ToggleSidebarTab()
     {
-        // Toggle between Explorer (0) and Git (1) tabs
-        ActiveSidebarTabIndex = ActiveSidebarTabIndex == 0 ? 1 : 0;
+        if (ActiveLayout == null) return;
+        var explorer = FindDockable(ActiveLayout, "Explorer");
+        var git = FindDockable(ActiveLayout, "Git");
+        if (explorer?.Owner is not IDock toolDock) return;
+
+        // Cycle: if Explorer is active → switch to Git, otherwise → switch to Explorer
+        var target = toolDock.ActiveDockable?.Id == "Explorer" ? git : explorer;
+        if (target != null) toolDock.ActiveDockable = target;
     }
 
     private void ToggleOutput()
     {
-        // Show bottom panel and switch to Output tab (index 1)
-        IsBottomPanelVisible = true;
-        ActiveBottomTabIndex = 1;
+        if (ActiveLayout == null) return;
+        var output = FindDockable(ActiveLayout, "Output");
+        if (output == null) return;
+
+        // Ensure the dock is visible, then activate the Output tab
+        RestoreIfHidden(output);
+        if (output.Owner is IDock ownerDock)
+            ownerDock.ActiveDockable = output;
     }
 
     private void ToggleProblems()
     {
-        // Show bottom panel and switch to Problems tab (index 0)
-        IsBottomPanelVisible = true;
-        ActiveBottomTabIndex = 0;
+        if (ActiveLayout == null) return;
+        var problems = FindDockable(ActiveLayout, "Problems");
+        if (problems == null) return;
+
+        // Ensure the dock is visible, then activate the Problems tab
+        RestoreIfHidden(problems);
+        if (problems.Owner is IDock ownerDock)
+            ownerDock.ActiveDockable = problems;
     }
 
     private void ToggleBottomPanel()
     {
-        IsBottomPanelVisible = !IsBottomPanelVisible;
+        if (ActiveLayout == null) return;
+        var output = FindDockable(ActiveLayout, "Output");
+        if (output?.Owner is IDock ownerDock)
+        {
+            ToggleDockableVisibility(output, ownerDock);
+        }
+    }
+
+    /// <summary>
+    /// Toggle visibility of a dockable: hide if visible, restore if hidden.
+    /// Uses the factory's HideDockable/RestoreDockable to move the dockable
+    /// between VisibleDockables and HiddenDockables on the root dock.
+    /// </summary>
+    private void ToggleDockableVisibility(IDockable dockable, IDock ownerDock)
+    {
+        if (dockable.Factory == null || ActiveLayout == null) return;
+
+        var factory = dockable.Factory;
+        var isHidden = ActiveLayout.HiddenDockables?.Any(d => d.Id == dockable.Id) == true;
+
+        if (isHidden)
+        {
+            factory.RestoreDockable(dockable);
+        }
+        else
+        {
+            factory.HideDockable(dockable);
+        }
+    }
+
+    /// <summary>
+    /// Restore a dockable if it is currently hidden in the root dock.
+    /// </summary>
+    private void RestoreIfHidden(IDockable dockable)
+    {
+        if (ActiveLayout == null) return;
+        var isHidden = ActiveLayout.HiddenDockables?.Any(d => d.Id == dockable.Id) == true;
+        if (isHidden) dockable.Factory?.RestoreDockable(dockable);
+    }
+
+    private IDockable? FindDockable(IRootDock root, string id)
+    {
+        return FindDockableRecursive(root, id);
+    }
+
+    private static IDockable? FindDockableRecursive(IDock dock, string id)
+    {
+        if (dock is IDockable d && d.Id == id) return d;
+        if (dock.VisibleDockables != null)
+        {
+            foreach (var child in dock.VisibleDockables)
+            {
+                if (child is IDockable cd && cd.Id == id) return cd;
+                if (child is IDock childDock)
+                {
+                    var found = FindDockableRecursive(childDock, id);
+                    if (found != null) return found;
+                }
+            }
+        }
+        return null;
     }
 
     private async Task BuildAsync()
@@ -557,9 +642,17 @@ public ShellViewModel(
             return;
         }
 
-        // Show output panel
-        IsBottomPanelVisible = true;
-        ActiveBottomTabIndex = 1; // Output tab
+        // Show output panel via dock model
+        if (ActiveLayout != null)
+        {
+            var output = FindDockable(ActiveLayout, "Output");
+            if (output != null)
+            {
+                RestoreIfHidden(output);
+                if (output.Owner is IDock ownerDock)
+                    ownerDock.ActiveDockable = output;
+            }
+        }
 
         // Clear previous output and build diagnostics
         _outputViewModel.Lines.Clear();

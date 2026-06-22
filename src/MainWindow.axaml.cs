@@ -58,6 +58,13 @@ public partial class MainWindow : Window
 
         // Now assign layout — this triggers Initialize() with all locators ready.
         DockControl.Layout = layout;
+
+        // Wire the layout root to ShellViewModel so toggle commands can
+        // navigate the dock tree to show/hide panels.
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.ActiveLayout = layout;
+        }
     }
 
     /// <summary>
