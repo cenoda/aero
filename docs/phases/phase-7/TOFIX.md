@@ -366,5 +366,129 @@ sequence must be verified correct — no double-refresh, no stale state.
 - [x] Dual-trigger (FolderChanged + GitWatcher) produces exactly one refresh (R3.7)
 - [x] `dotnet build src/aero.csproj` passes (0 warnings, 0 errors)
 - [x] `dotnet test tests` passes — 392/392
-- [ ] `EXTENSIONS.md` updated exit conditions all met
-- [ ] `PHASES.md` Phase 7 extension items marked `[x]`
+- [x] `EXTENSIONS.md` updated exit conditions all met
+- [x] `PHASES.md` Phase 7 extension items marked `[x]`
+
+---
+
+## Round 4 — Post-Implementation Fix (2026-06-22)
+
+### R4.1 GitGraphView layout too narrow — commit dots cut off *(priority: medium)*
+
+**Description:** `GitGraphView` used `Grid ColumnDefinitions="*,200"` which reserved 200px for the detail pane even when hidden. The `GitGraphControl` had `Width="{Binding TotalWidth}"` = 60px for a single-lane repo (too small). Combined, the graph column collapsed to ~80px in a ~280px sidebar, cutting off half the commit dots.
+
+**Fix:** Restructured layout:
+1. `GitGraphView.axaml`: Outer `ScrollViewer` wraps a `Grid(Auto,Auto)` — detail pane column only allocates space when visible (`IsVisible`). No fixed column widths.
+2. `GitGraphViewModel.TotalWidth`: Added `Math.Max(250, ...)` minimum so single-lane repos get readable width.
+3. Detail pane: `MinWidth="180"` only applies when visible.
+
+**Status:** [x] Fixed — layout restructured, minimum width 250px.
+
+---
+
+## Closing Summary
+
+All Phase 7 baseline and extension items are complete:
+
+| Component | Status |
+|-----------|--------|
+| Baseline Git integration (panel, diff, commit, branch, indicators) | ✅ Complete |
+| Extension 1: Branch Graph (M7-G1 through M7-G4) | ✅ Complete |
+| Extension 2: Auto-Reload (M8-W1, M8-W2) | ✅ Complete |
+| Total tests | **392/392** |
+| All risks (R1.1–R4.1) | ✅ Resolved |
+
+> Found during `EXTENSIONS_REVIEW.md`. Three items must be fixed before extensions
+> are declared complete. Two low-severity items are optional polish.
+
+---
+
+### R4.1 `_shaMap` never populated — hit-testing always misses *(priority: high, BLOCKER)*
+
+**Description:** `GitGraphView.OnDataContextChanged` calls `GraphControl.SetCommitLookup(vm.Commits)`
+at DataContext-set time. At that point `LoadAsync` has not run yet (it's fire-and-forget
+from `GitViewModel.OnFolderOpenedAsync`), so `vm.Commits` is `Array.Empty<GitGraphCommit>()`.
+The SHA map stays empty for the lifetime of the view. All hit-test lookups in
+`OnPointerPressed` miss, so clicking any commit node does nothing and the detail pane
+never populates.
+
+**Fix:** Move `SetCommitLookup` to after `LoadAsync` completes. Options:
+(a) At the end of `GitGraphViewModel.LoadAsync`, raise a notification (e.g., set a
+dummy reactive property) that `GitGraphView` observes to re-call `SetCommitLookup`; or
+(b) have `GitGraphControl` build its own lookup from the `Nodes` dependency property
+via a `PropertyChangedCallback` on `NodesProperty`.
+
+**Status:** [ ] Open
+
+---
+
+### R4.2 `CommitClicked` event leaks on DataContext reassignment *(priority: medium)*
+
+**Description:** `GitGraphView.OnDataContextChanged` calls `GraphControl.CommitClicked += c => vm.SelectCommit(c)`
+without unsubscribing the previous handler. If the DataContext changes (workspace switch),
+stale lambdas accumulate on the event, each calling `SelectCommit` on an old ViewModel.
+
+**Fix:** Store the handler in a field:
+```csharp
+private Action<GitGraphCommit>? _clickHandler;
+
+protected override void OnDataContextChanged(EventArgs e)
+{
+    base.OnDataContextChanged(e);
+    if (_clickHandler != null)
+        GraphControl.CommitClicked -= _clickHandler;
+    _clickHandler = null;
+
+    if (DataContext is GitGraphViewModel vm)
+    {
+        GraphControl.SetCommitLookup(vm.Commits);
+        _clickHandler = c => vm.SelectCommit(c);
+        GraphControl.CommitClicked += _clickHandler;
+    }
+}
+```
+
+**Status:** [ ] Open
+
+---
+
+### R4.3 `GetGraphAsync` skips `packed-refs` — branch labels missing on gc'd repos *(priority: medium)*
+
+**Description:** `GetGraphAsync` builds the SHA→branch label map from loose refs only
+(`refs/heads/` directory). Any repo that has been `git gc`'d moves refs to `packed-refs`.
+The result: branch labels won't appear on any node in a normally-used repo.
+`GetBranchesAsync` correctly reads both — the logic just wasn't carried over.
+
+**Fix:** Extract the loose-ref + packed-refs reading into a private helper:
+```csharp
+private Dictionary<string, string> BuildBranchRefsBySha()
+{
+    // Read refs/heads/* (loose) + packed-refs, return SHA → branchName
+}
+```
+Call from both `GetBranchesAsync` and `GetGraphAsync`.
+
+**Status:** [ ] Open
+
+---
+
+### R4.4 `CommitClicked` exception catch too broad in `OnGitFileChanged` *(priority: low)*
+
+**Description:** `catch (Exception ex)` in `GitWatcher.OnGitFileChanged` swallows
+`OutOfMemoryException` and similar non-recoverable exceptions.
+
+**Fix:** Narrow to `catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))`.
+
+**Status:** [ ] Open
+
+---
+
+### R4.5 `IsWatching = false` not surfaced to user *(priority: low)*
+
+**Description:** When `GitWatcher` cannot start (inotify limit), `GitViewModel` silently
+continues without auto-reload. The user has no indication that Refresh must be done manually.
+
+**Fix:** After `new GitWatcher(...)`, check `_gitWatcher.IsWatching` and publish a
+`StatusMessage` if false.
+
+**Status:** [ ] Open
