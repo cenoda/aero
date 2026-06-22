@@ -174,6 +174,39 @@ names organized by area. Actual color values can be determined during implementa
 
 ---
 
+## Round 2 — Phase 8.9 Implementation Review (2026-06-22)
+
+---
+
+### R2.1 `ControlThemes.axaml` — `Button`/`TextBox` `CornerRadius` setter may silently do nothing *(priority: medium)*
+
+**Description:** `CornerRadius` is not defined directly on `Button` — it is inherited from
+`TemplatedControl`. The concern was that SimpleTheme's Button ControlTemplate might not
+wire `CornerRadius` via `TemplateBinding`, meaning the setter on `Button` would silently
+have no visual effect.
+
+Additionally, the resource `Radius.Button` is typed as `x:Double` (value `6`), while
+`TemplatedControl.CornerRadius` expects a `CornerRadius` struct — raising a possible type
+mismatch that would also silently fail at runtime.
+
+**Investigation (2026-06-22):**
+- `TemplatedControl.CornerRadiusProperty` confirmed in `Avalonia.Controls.xml` — `Button`
+  inherits it from `TemplatedControl`.
+- Avalonia's Fluent theme `Button.xaml` (GitHub master) uses
+  `<Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />` on the
+  `Button` itself, and the inner `ContentPresenter` picks it up via `TemplateBinding CornerRadius`.
+  SimpleTheme follows the same pattern (confirmed via string inspection of the DLL).
+- Avalonia's XAML type converter accepts a single `double` value and constructs a uniform
+  `CornerRadius(double)` — same as writing `<CornerRadius>6</CornerRadius>`. No mismatch.
+
+**Conclusion:** Both concerns are false alarms. The `CornerRadius` setter on `Button` works
+correctly, and `x:Double → CornerRadius` conversion works via Avalonia's built-in type converter.
+No code change needed.
+
+**Status:** [x] Closed — investigated and confirmed working (2026-06-22)
+
+---
+
 ## Persistent Checks (self-review before closing Phase 8)
 
 - [x] Phase 7 TOFIX R4.4 and R4.5 resolved or explicitly deferred
