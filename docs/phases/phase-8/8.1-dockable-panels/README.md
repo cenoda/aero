@@ -30,6 +30,34 @@
 
 **Exit condition (8.1b):** Tile Mode works with auto-tiling, stack/merge behavior, and full keyboard navigation. User can override auto-layout manually.
 
+---
+
+## Architecture Decision: Option A — Constrained Dock.Avalonia (2026-06-22)
+
+**Selected approach:** Constrain Dock.Avalonia's layout model rather than building a separate tiling engine.
+
+**Why Option A:**
+1. Reuses existing Dock.Avalonia infrastructure from 8.1a (faster to implement)
+2. "Manual adjustment" requirement met via unlock mechanism — constraint is default, not absolute
+3. Simpler maintenance — single code path for both modes
+4. Option B (separate tiling engine) is 2-3x work, risks delaying Phase 8
+
+**How it works:**
+- Tile Mode uses Dock.Avalonia's `ProportionalStackPanel` with pre-defined dock node sizes
+- Default layout (configurable in settings):
+  - Sidebar: 250px fixed width
+  - Editor: flex (fills remaining space)
+  - Bottom panel: 150px fixed height
+- User can drag splitters to adjust → layout updates proportionally
+- "Reset to Tile" button restores default proportions
+- Stack/tab behavior uses Dock.Avalonia's native tab grouping
+
+**Implementation notes:**
+- Create `TileLayoutFactory` that produces pre-configured `DockNode` trees
+- Store tile proportions in settings (not hard-coded)
+- Mode switch: swap the `DockController`'s layout root from `FreeformLayout` to `TileLayoutFactory`
+- Manual override: allow proportional resizing; "Reset" button available in View menu
+
 ### 8.1c — Tear-Away Windows (Chrome-style)
 **Scope:**
 - Panels can be dragged out of the main window into standalone OS windows
@@ -48,4 +76,40 @@
 - Integration: Mode switch from Freeform → Tile → Freeform preserves layout
 - Manual: Tear-away panel works across monitor DPI changes
 - Manual: All keyboard shortcuts work in Tile Mode
+
+---
+
+## Implementation Notes
+
+### Dock.Avalonia Layout Serialization API (confirmed 2026-06-22)
+
+**Package:** `Dock.Serializer.SystemTextJson` (11.3.12.1)
+
+**Core API:**
+```csharp
+using Dock.Serializer.SystemTextJson;
+
+// Mark your layout model type
+[DockJsonSerializable]
+public class MyLayoutModel
+{
+    public List<PanelState> Panels { get; set; }
+}
+
+// Serialize to JSON string
+var json = DockSerializer<MyLayoutModel>.Serialize(layout);
+
+// Deserialize back
+var restored = DockSerializer<MyLayoutModel>.Deserialize(json);
+
+// Or use Stream-based APIs
+DockSerializer<MyLayoutModel>.Save(stream, layout);
+var restored = DockSerializer<MyLayoutModel>.Load(stream);
+```
+
+**Notes:**
+- Uses System.Text.Json with source generation (fast, trim-friendly)
+- Requires `[DockJsonSerializable]` attribute on all serializable types
+- Layout model must match Dock.Avalonia's `IRootDock` structure
+- For custom panel content, mark panel view models with `[DockJsonSerializable]` and ensure they implement `IDockable`
 

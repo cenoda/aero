@@ -78,7 +78,18 @@ package source) and confirm:
 Document the confirmed API in the 8.1a README under "Implementation Notes" so the
 implementing agent has a verified starting point.
 
-**Status:** [ ] Open
+**Investigation (2026-06-22):**
+- Inspected `Dock.Settings.dll` (11.3.12.1) — no serialization API found
+- Found separate package: `Dock.Serializer.SystemTextJson` (11.3.12.1)
+- **Confirmed API:**
+  - `DockSerializer<T>.Serialize(T)` → returns `string` (JSON)
+  - `DockSerializer<T>.Deserialize(string)` → returns `T`
+  - `DockSerializer<T>.Save(Stream, T)` — writes JSON to stream
+  - `DockSerializer<T>.Load(Stream)` — reads JSON from stream
+  - Requires `[DockJsonSerializable]` attribute on types
+  - Uses System.Text.Json with source generation
+
+**Status:** [x] Closed — API confirmed, documented above (2026-06-22)
 
 ---
 
@@ -97,13 +108,22 @@ Two architecturally distinct approaches exist:
   manager (e.g., a recursive binary-split model) and use Dock.Avalonia only for Freeform
   Mode. Two independent code paths.
 
-These are significantly different in scope. Option A is lighter but less "real" tiling.
-Option B is more correct but roughly 2–3x the work.
+**Decision (2026-06-22):** **Option A — Constrained Dock.Avalonia**
 
-**Required fix:** Decide Option A or B before 8.1b starts. Document the decision in the
-8.1b README. If the decision is deferred, 8.1b must not start.
+**Rationale:**
+1. Reuses existing Dock.Avalonia infrastructure from 8.1a (faster to implement)
+2. "Manual adjustment" requirement met via unlock mechanism — constraint is default, not absolute
+3. Simpler maintenance — single code path for both modes
+4. Option B is 2-3x work, risks delaying Phase 8
 
-**Status:** [ ] Open — decision required
+**How Option A works:**
+- Tile Mode uses Dock.Avalonia's `ProportionalStackPanel` with pre-defined dock node sizes
+- Default layout: sidebar 250px, editor flex, bottom 150px (configurable in settings)
+- User can drag to adjust → layout updates proportionally
+- "Reset to Tile" button restores default proportions
+- Stack/tab behavior uses Dock.Avalonia's native tab grouping
+
+**Status:** [x] Closed — Option A selected (2026-06-22)
 
 ---
 
@@ -158,7 +178,7 @@ names organized by area. Actual color values can be determined during implementa
 
 - [x] Phase 7 TOFIX R4.4 and R4.5 resolved or explicitly deferred
 - [x] Dock.Avalonia 11.3.12.1 net8.0 fallback on net9.0 runtime validated (smoke test)
-- [ ] Dock.Settings serialization API confirmed and documented in 8.1a README
+- [x] Dock.Settings serialization API confirmed and documented in 8.1a README
 - [ ] 8.1b Tile Mode architecture decision recorded in 8.1b README
 - [ ] 8.1c spike completed; approach documented in 8.1c README
 - [ ] 8.2 color token inventory written before coding starts
