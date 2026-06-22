@@ -28,6 +28,7 @@
         <KeyBinding Gesture="Ctrl+Space" Command="{Binding EditorViewModel.CompletionCommand}"/>
         <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleOutputCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding BuildCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding ToggleThemeCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>
@@ -93,7 +94,7 @@
             <!-- Draggable divider between sidebar and editor -->
             <GridSplitter Grid.Column="1"
                           Width="4"
-                          Background="#CCCCCC"
+                          Background="{DynamicResource panel.border}"
                           ResizeDirection="Columns"
                           ResizeBehavior="PreviousAndNext"/>
 
@@ -112,7 +113,7 @@
                 <!-- Problems panel (Phase 4 M4) -->
                 <GridSplitter Grid.Row="1"
                               Height="4"
-                              Background="#CCCCCC"
+                              Background="{DynamicResource panel.border}"
                               ResizeDirection="Rows"
                               ResizeBehavior="PreviousAndNext"
                               IsVisible="{Binding IsBottomPanelVisible}"/>
@@ -135,8 +136,8 @@
 
 <!-- Status bar -->
                 <Border Grid.Row="3"
-                        Background="#F0F0F0"
-                        BorderBrush="#CCCCCC"
+                        Background="{DynamicResource panel.sectionBackground}"
+                        BorderBrush="{DynamicResource panel.border}"
                         BorderThickness="0,1,0,0"
                         Padding="8,4">
                     <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">

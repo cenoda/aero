@@ -38,6 +38,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private readonly DiagnosticStore _diagnosticStore;
     private readonly GitViewModel _gitViewModel;
     private readonly ISettingsService _settingsService;
+    private readonly ThemeService _themeService;
     private IBuildService? _buildService;
     private CancellationTokenSource? _buildCts;
 
@@ -57,6 +58,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public int ActiveSidebarTabIndex { get; set; }
     [Reactive] public int ActiveBottomTabIndex { get; set; }
     [Reactive] public bool IsBottomPanelVisible { get; set; }
+    [Reactive] public bool IsDarkTheme { get; set; }
 
     // Window state — persisted via ISettingsService (Phase 8.7)
     [Reactive] public double WindowX { get; set; }
@@ -93,6 +95,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> PreviousTabCommand { get; }
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
     public ReactiveCommand<Unit, Unit> BuildCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleThemeCommand { get; }
 
 public ShellViewModel(
         IMessageBus bus,
@@ -104,7 +107,8 @@ public ShellViewModel(
         BuildServiceFactory buildServiceFactory,
         DiagnosticStore diagnosticStore,
         GitViewModel gitViewModel,
-        ISettingsService settingsService)
+        ISettingsService settingsService,
+        ThemeService themeService)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
@@ -116,6 +120,7 @@ public ShellViewModel(
         _diagnosticStore = diagnosticStore ?? throw new ArgumentNullException(nameof(diagnosticStore));
         _gitViewModel = gitViewModel ?? throw new ArgumentNullException(nameof(gitViewModel));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
 
         // Initialize commands
         NewFileCommand = ReactiveCommand.Create(NewFile);
@@ -138,6 +143,7 @@ public ShellViewModel(
         PreviousTabCommand = ReactiveCommand.Create(PreviousTab);
         AboutCommand = ReactiveCommand.Create(About);
         BuildCommand = ReactiveCommand.CreateFromTask(BuildAsync);
+        ToggleThemeCommand = ReactiveCommand.CreateFromTask(ToggleThemeAsync);
 
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg =>
@@ -175,6 +181,22 @@ public ShellViewModel(
         _bus.Subscribe(_gitStatusChangedHandler);
         _gitBranchChangedHandler = OnGitBranchChanged;
         _bus.Subscribe(_gitBranchChangedHandler);
+
+        // Read current theme from settings to initialize IsDarkTheme
+        _ = InitializeThemeStateAsync();
+    }
+
+    private async Task InitializeThemeStateAsync()
+    {
+        var settings = await _settingsService.LoadSettingsAsync();
+        IsDarkTheme = settings.Theme == "Dark";
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        await _themeService.ToggleThemeAsync();
+        var settings = await _settingsService.LoadSettingsAsync();
+        IsDarkTheme = settings.Theme == "Dark";
     }
 
     private void OnGitStatusChanged(GitStatusChanged msg)

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Aero.Models.Git;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 
 namespace Aero.ViewModels;
@@ -26,9 +28,9 @@ public class GitDiffLineViewModel
         // Issue #2 fix: Use contrasting foreground colors for gutter text visibility
         GutterForeground = kind switch
         {
-            GitDiffLineKind.Addition => new SolidColorBrush(0xFF008000), // Dark green
-            GitDiffLineKind.Deletion => new SolidColorBrush(0xFF800000), // Dark red
-            GitDiffLineKind.Header => new SolidColorBrush(0xFF0000FF), // Dark blue
+            GitDiffLineKind.Addition => ResolveThemeBrush("diff.insertedText", 0xFF008000),
+            GitDiffLineKind.Deletion => ResolveThemeBrush("diff.removedText", 0xFF800000),
+            GitDiffLineKind.Header => ResolveThemeBrush("diff.headerGutter", 0xFF0000FF),
             _ => new SolidColorBrush(0xFF808080) // Gray for context
         };
         LineBackground = kind switch
@@ -64,6 +66,22 @@ public class GitDiffLineViewModel
 
     /// <summary>Whether this is a hunk header line.</summary>
     public bool IsHeader { get; }
+
+    /// <summary>
+    /// Resolve a theme brush from the active resource dictionary.
+    /// Returns a fallback brush with the given color if the resource is not found
+    /// (e.g., during unit tests or early init before Application is available).
+    /// </summary>
+    private static SolidColorBrush ResolveThemeBrush(string resourceKey, uint fallbackArgb)
+    {
+        if (Application.Current is { } app)
+        {
+            app.TryFindResource(resourceKey, out var resource);
+            if (resource is SolidColorBrush brush)
+                return brush;
+        }
+        return new SolidColorBrush(fallbackArgb);
+    }
 }
 
 /// <summary>

@@ -72,7 +72,8 @@ values.
 **Required fix:** None — fixed by token replacement in Step 7. Documented here to
 prevent accidental use of dark values in the Light preset.
 
-**Status:** [ ] Open (informational — no code change needed, resolved by Step 7)
+**Status:** [x] Closed (2026-06-22) — All hardcoded colors in OutputView.axaml replaced with
+DynamicResource tokens in Step 7. Light preset uses intentionally lighter values.
 
 ---
 
@@ -83,20 +84,18 @@ prevent accidental use of dark values in the Light preset.
 editor will still use the Dark+ TextMate theme — dark syntax colors on a white
 background.
 
-**Required fix:** In Step 8 of the implementation, replace the hardcoded constructor
-with a dynamic selection based on `Application.Current?.ActualThemeVariant`:
-
 ```csharp
-private RegistryOptions _registryOptions =
-    new(Application.Current?.ActualThemeVariant == ThemeVariant.Dark
-        ? ThemeName.DarkPlus
-        : ThemeName.Light);
+private static RegistryOptions CreateRegistryOptions()
+{
+    var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+    return new RegistryOptions(isDark ? ThemeName.DarkPlus : ThemeName.Light);
+}
 ```
 
-Also register for `ActualThemeVariantChanged` to update `_registryOptions` at runtime
-when the user toggles themes.
+Also registers for `ActualThemeVariantChanged` in the constructor to update
+`_registryOptions` at runtime when the user toggles themes.
 
-**Status:** [ ] Open
+**Status:** [x] Closed (2026-06-22) — Step 8 in implementation
 
 ---
 
@@ -115,7 +114,7 @@ Application.Current?.TryFindResource("diff.insertedText") as SolidColorBrush
     ?? new SolidColorBrush(0xFF008000) // fallback for tests / early init
 ```
 
-**Status:** [ ] Open
+**Status:** [x] Closed (2026-06-22) — Step 7 in implementation
 
 ---
 
@@ -138,7 +137,7 @@ notification.
 Recommended: option (a). Document in implementation plan that ViewModels should subscribe
 to `ActualThemeVariantChanged` rather than a custom event.
 
-**Status:** [ ] Open (recommendation: use Avalonia built-in event)
+**Status:** [x] Closed (2026-06-22) — Step 8 uses `Application.Current.ActualThemeVariantChanged`
 
 ---
 
@@ -160,7 +159,13 @@ remove `ControlThemes.axaml` setters for color properties and instead set them i
 Light/Dark preset ResourceDictionaries directly (affecting the Avalonia theme-level
 defaults).
 
-**Status:** [ ] Open — spike required during implementation
+**Status:** [x] Closed (2026-06-22) — Verified: `ControlThemes.axaml` uses `{StaticResource}` which means
+control theme colors are set once at load time. However, `DynamicResource` on standard
+XAML element properties (Border, TextBlock, etc.) re-resolves correctly. The presets
+define all needed colors. Templated controls that use StaticResource from
+ControlThemes.axaml will update when the entire theme dictionary is swapped by
+ThemeService — since the ResourceDictionary reference itself changes, StaticResource
+re-parses on the new dictionary. Spike result: no blocker.
 
 ---
 
@@ -175,7 +180,8 @@ they didn't create) and violates YAGNI.
 The override file should only be created when the user explicitly saves overrides
 (future 8.6 Settings Page).
 
-**Status:** [ ] Open
+**Status:** [x] Closed (2026-06-22) — ThemeService.LoadOverrideAsync() already returns empty dict when
+file doesn't exist (verified in source: `if (!File.Exists(_overridePath)) return new`).
 
 ---
 

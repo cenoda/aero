@@ -6,13 +6,13 @@
              x:Class="Aero.Views.OutputView"
              x:DataType="vm:OutputViewModel">
 
-    <Border Background="#1E1E1E"
-            BorderBrush="#3C3C3C"
+    <Border Background="{DynamicResource panel.background}"
+            BorderBrush="{DynamicResource panel.border}"
             BorderThickness="0,1,0,0">
         <DockPanel>
             <!-- Header toolbar -->
             <Border DockPanel.Dock="Top"
-                    Background="#2D2D30"
+                    Background="{DynamicResource editor.background}"
                     Padding="8,4">
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <!-- Command input -->
@@ -55,7 +55,7 @@
                             <TextBlock Text="{Binding}"
                                     FontFamily="Consolas,Menlo,monospace"
                                     FontSize="12"
-                                    Foreground="#D4D4D4"
+                                    Foreground="{DynamicResource editor.foreground}"
                                     Margin="8,1"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

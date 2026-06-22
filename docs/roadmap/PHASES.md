@@ -200,7 +200,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Create Light and Dark presets stored as ResourceDictionary in `src/Styles/`
 - [x] **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
 - [x] Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme
-- [ ] Ctrl+Shift+T or View → Toggle Theme
+- [x] Ctrl+Shift+T or View → Toggle Theme
 
 ### 8.3 Command Palette [`docs/phases/phase-8/8.3-command-palette/`](docs/phases/phase-8/8.3-command-palette/)
 - [ ] Define `ICommandRegistry` with command metadata (shared with 8.8)

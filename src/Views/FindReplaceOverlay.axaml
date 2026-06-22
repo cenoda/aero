@@ -12,8 +12,8 @@
         <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}"/>
     </UserControl.KeyBindings>
 
-    <Border Background="#E8E8E8"
-            BorderBrush="#CCCCCC"
+    <Border Background="{DynamicResource findReplace.background}"
+            BorderBrush="{DynamicResource findReplace.border}"
             BorderThickness="1"
             Padding="8"
             CornerRadius="4">

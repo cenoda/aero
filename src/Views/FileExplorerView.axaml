@@ -6,15 +6,15 @@
              x:Class="Aero.Views.FileExplorerView"
              x:DataType="vm:FileExplorerViewModel">
 
-    <Border Background="#FAFAFA"
-            BorderBrush="#CCCCCC"
+    <Border Background="{DynamicResource panel.background}"
+            BorderBrush="{DynamicResource panel.border}"
             BorderThickness="0,0,1,0">
         <DockPanel>
              <!-- Header: title + refresh button.
                   Phosphor Icons (Phase 8.5) — 8 embedded vector glyphs. -->
             <Border DockPanel.Dock="Top"
-                    Background="#F0F0F0"
-                    BorderBrush="#CCCCCC"
+                    Background="{DynamicResource panel.sectionBackground}"
+                    BorderBrush="{DynamicResource panel.border}"
                     BorderThickness="0,0,0,1"
                     Padding="8,6">
                 <Grid ColumnDefinitions="*,Auto">
@@ -35,8 +35,8 @@
 
             <!-- Status / hint row -->
             <Border DockPanel.Dock="Bottom"
-                    Background="#F0F0F0"
-                    BorderBrush="#CCCCCC"
+                    Background="{DynamicResource panel.sectionBackground}"
+                    BorderBrush="{DynamicResource panel.border}"
                     BorderThickness="0,1,0,0"
                     Padding="8,4">
                 <TextBlock Text="{Binding StatusText}"
@@ -59,7 +59,7 @@
                          IsIndeterminate="True"
                          IsVisible="{Binding IsLoading}"
                          Height="2"
-                         Foreground="#0078D4"
+                         Foreground="{DynamicResource global.accent}"
                          Margin="0,2,0,0"/>
 
             <!-- The tree. ItemsSource binds the root collection; TreeDataTemplate
@@ -104,7 +104,7 @@
                             <TextBlock Text="{Binding GitStatusGlyph}"
                                        VerticalAlignment="Center"
                                        FontWeight="Bold"
-                                       Foreground="#4CAF50"
+                                       Foreground="{DynamicResource git.stagedForeground}"
                                        Margin="2,0,0,0"/>
                             <TextBlock Text="{Binding Name}"
                                        VerticalAlignment="Center"

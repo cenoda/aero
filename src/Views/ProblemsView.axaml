@@ -7,14 +7,14 @@
              x:Class="Aero.Views.ProblemsView"
              x:DataType="vm:ProblemsViewModel">
 
-    <Border Background="#FAFAFA"
-            BorderBrush="#CCCCCC"
+    <Border Background="{DynamicResource panel.background}"
+            BorderBrush="{DynamicResource panel.border}"
             BorderThickness="0,1,0,0">
         <DockPanel>
             <!-- Header -->
             <Border DockPanel.Dock="Top"
-                    Background="#F0F0F0"
-                    BorderBrush="#CCCCCC"
+                    Background="{DynamicResource panel.sectionBackground}"
+                    BorderBrush="{DynamicResource panel.border}"
                     BorderThickness="0,0,0,1"
                     Padding="8,6">
                 <TextBlock Text="Problems"

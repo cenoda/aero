@@ -23,7 +23,7 @@
                         <TextBlock Text="{Binding GitStatusGlyph}"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Foreground="#4CAF50"/>
+                                   Foreground="{DynamicResource git.stagedForeground}"/>
                         <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
                         <Button Content="×"
                                 Command="{Binding #EditorTabControl.DataContext.CloseTabCommand}"

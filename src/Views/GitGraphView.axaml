@@ -45,8 +45,8 @@
               <ItemsControl ItemsSource="{Binding Detail.BranchLabels}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="sys:String">
-                    <Border Background="#333" CornerRadius="3" Padding="6,2" Margin="0,2">
-                      <TextBlock Text="{Binding}" FontSize="11" Foreground="White" />
+                    <Border Background="{DynamicResource badge.background}" CornerRadius="3" Padding="6,2" Margin="0,2">
+                      <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource badge.foreground}" />
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

@@ -6,7 +6,9 @@ using System.Reactive.Disposables;
 using Aero.Core;
 using Aero.Languages;
 using Aero.ViewModels;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
@@ -26,7 +28,14 @@ public partial class EditorView : UserControl
     private CompositeDisposable? _reactiveSubscriptions;
 
     // One shared TextMate registry/theme for the editor panel.
-    private readonly RegistryOptions _registryOptions = new(ThemeName.DarkPlus);
+    // Updated dynamically when the Avalonia theme variant changes.
+    private RegistryOptions _registryOptions = CreateRegistryOptions();
+
+    private static RegistryOptions CreateRegistryOptions()
+    {
+        var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        return new RegistryOptions(isDark ? ThemeName.DarkPlus : ThemeName.Light);
+    }
 
     // Track TextMate installations per TextEditor so they are disposed when the
     // editor control goes away (tab close) instead of leaking across open/close.
@@ -43,6 +52,17 @@ public partial class EditorView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        // Subscribe to theme variant changes to update the TextMate registry
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged += OnThemeVariantChanged;
+        }
+    }
+
+    private void OnThemeVariantChanged(object? sender, EventArgs e)
+    {
+        _registryOptions = CreateRegistryOptions();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
