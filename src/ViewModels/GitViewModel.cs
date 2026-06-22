@@ -49,6 +49,9 @@ public class GitViewModel : ReactiveObject, IDisposable
     [Reactive] public string? ErrorMessage { get; set; }
     [Reactive] public GitBranchInfo? SelectedBranch { get; set; }
 
+    /// <summary>ViewModel for the branch graph tab.</summary>
+    [Reactive] public GitGraphViewModel GitGraphViewModel { get; set; } = new();
+
     /// <summary>Staged changes (ready to commit).</summary>
     public ObservableCollection<GitFileStatusViewModel> StagedChanges { get; } = new();
 
@@ -113,6 +116,9 @@ public class GitViewModel : ReactiveObject, IDisposable
 
         HasGitRepository = true;
         await RefreshStatusInternalAsync();
+
+        // Load branch graph data (M7-G3)
+        _ = GitGraphViewModel.LoadAsync(_gitService);
 
         // Start GitWatcher for auto-reload on external git operations (M8-W2)
         var gitDir = Path.Combine(path, ".git");

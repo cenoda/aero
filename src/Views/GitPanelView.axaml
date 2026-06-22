@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Aero.ViewModels"
              xmlns:git="using:Aero.Models.Git"
+             xmlns:views="using:Aero.Views"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="400"
              x:Class="Aero.Views.GitPanelView"
              x:DataType="vm:GitViewModel">
@@ -19,8 +20,10 @@
       </StackPanel>
     </Border>
 
-    <!-- Staged / Unstaged Changes -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="4">
+    <!-- Tab Control: Changes | Graph -->
+    <TabControl Grid.Row="1">
+      <TabItem Header="Changes">
+        <Grid ColumnDefinitions="*,*" Margin="4">
       
       <!-- Staged Changes (Left) -->
       <Border Grid.Column="0" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
@@ -90,6 +93,11 @@
         </Grid>
       </Border>
     </Grid>
+      </TabItem>
+      <TabItem Header="Graph">
+        <views:GitGraphView DataContext="{Binding GitGraphViewModel}" />
+      </TabItem>
+    </TabControl>
 
     <!-- Commit Box -->
     <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}" Padding="8">
