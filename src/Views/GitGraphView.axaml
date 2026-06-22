@@ -5,57 +5,56 @@
              xmlns:sys="using:System"
              x:Class="Aero.Views.GitGraphView"
              x:DataType="vm:GitGraphViewModel">
-  <Grid ColumnDefinitions="*,200">
-    <ScrollViewer Grid.Column="0" MinWidth="200"
-                  HorizontalScrollBarVisibility="Auto"
-                  VerticalScrollBarVisibility="Auto">
+  <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Auto">
+    <Grid ColumnDefinitions="Auto,Auto">
       <views:GitGraphControl x:Name="GraphControl"
                              Nodes="{Binding Nodes}"
                              Lanes="{Binding Lanes}"
                              SelectedCommit="{Binding SelectedCommit}"
                              Width="{Binding TotalWidth}"
                              Height="{Binding TotalHeight}" />
-    </ScrollViewer>
 
-    <!-- Commit Detail Pane -->
-    <Border Grid.Column="1" IsVisible="{Binding Detail.IsVisible}"
-            Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}"
-            Padding="8" Margin="4,0,0,0">
-      <ScrollViewer>
-        <StackPanel Spacing="6">
-          <TextBlock Text="{Binding Detail.ShortSha}" FontWeight="Bold"
-                     FontFamily="Consolas, Menlo, monospace" FontSize="13" />
-          <Separator />
-          <StackPanel>
-            <TextBlock Text="Author" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <TextBlock Text="{Binding Detail.Author}" FontSize="12" />
+      <!-- Commit Detail Pane -->
+      <Border Grid.Column="1" IsVisible="{Binding Detail.IsVisible}"
+              Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}"
+              Padding="8" Margin="4,0,0,0" MinWidth="180">
+        <ScrollViewer>
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding Detail.ShortSha}" FontWeight="Bold"
+                       FontFamily="Consolas, Menlo, monospace" FontSize="13" />
+            <Separator />
+            <StackPanel>
+              <TextBlock Text="Author" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Text="{Binding Detail.Author}" FontSize="12" />
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Text="Date" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Text="{Binding Detail.Date}" FontSize="12" />
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Text="Message" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Text="{Binding Detail.Message}" TextWrapping="Wrap" FontSize="12" />
+            </StackPanel>
+            <StackPanel IsVisible="{Binding Detail.BranchLabels.Count}">
+              <TextBlock Text="Branches" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <ItemsControl ItemsSource="{Binding Detail.BranchLabels}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="sys:String">
+                    <Border Background="#333" CornerRadius="3" Padding="6,2" Margin="0,2">
+                      <TextBlock Text="{Binding}" FontSize="11" Foreground="White" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
           </StackPanel>
-          <StackPanel>
-            <TextBlock Text="Date" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <TextBlock Text="{Binding Detail.Date}" FontSize="12" />
-          </StackPanel>
-          <StackPanel>
-            <TextBlock Text="Message" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <TextBlock Text="{Binding Detail.Message}" TextWrapping="Wrap" FontSize="12" />
-          </StackPanel>
-          <StackPanel IsVisible="{Binding Detail.BranchLabels.Count}">
-            <TextBlock Text="Branches" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <ItemsControl ItemsSource="{Binding Detail.BranchLabels}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="sys:String">
-                  <Border Background="#333" CornerRadius="3" Padding="6,2" Margin="0,2">
-                    <TextBlock Text="{Binding}" FontSize="11" Foreground="White" />
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </StackPanel>
-      </ScrollViewer>
-    </Border>
-  </Grid>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+  </ScrollViewer>
 </UserControl>
