@@ -21,5 +21,7 @@
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
         <!-- Material.Icons.Avalonia paused — see docs/phases/phase-2/TOFIX.md
              Round 3 R3.1. Will be re-added when the icon library decision is made. -->
+        <!-- Phase 8.9 Control Themes — layered after SimpleTheme so overrides win -->
+        <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
     </Application.Styles>
 </Application>

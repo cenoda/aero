@@ -1,0 +1,64 @@
+<Styles xmlns="https://github.com/avaloniaui"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Phase 8.9 Design System: Control Themes
+    ========================================
+    Centralized control-style setters applying structural design tokens
+    (spacing, radius, borders, typography) to all UI elements.
+
+    All values come from {StaticResource} references to the stub dictionaries
+    (Spacing.axaml, CornerRadius.axaml, Borders.axaml, Typography.axaml).
+    No hard-coded pixel values — see those files for the actual token values.
+
+    Load order in App.axaml:
+      1. Resource dictionaries (tokens available)
+      2. SimpleTheme (base styles)
+      3. ControlThemes.axaml (overrides)
+  -->
+
+  <!-- Button — rounded 6px, consistent padding -->
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Button}" />
+    <Setter Property="Padding" Value="{StaticResource Button.PaddingThickness}" />
+    <Setter Property="MinHeight" Value="{StaticResource Button.MinHeight}" />
+  </Style>
+
+  <!-- TextBox / input fields — rounded 6px, 1px border -->
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Input}" />
+    <Setter Property="Padding" Value="{StaticResource Input.Padding}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.Thickness}" />
+  </Style>
+
+  <!-- Panel borders (sidebar, bottom panel, tool windows) -->
+  <Style Selector="Border.panel-border">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Panel}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.Thickness}" />
+  </Style>
+
+  <!-- Dialog borders (modal windows, overlays) -->
+  <Style Selector="Border.dialog-border">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Dialog}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.Thickness}" />
+  </Style>
+
+  <!-- TabItem — consistent padding.
+       CornerRadius top-only is deferred to Phase 8.2: it requires a ControlTemplate
+       override that targets the inner Border and interacts with tab color tokens. -->
+  <Style Selector="TabItem">
+    <Setter Property="Padding" Value="{StaticResource Tab.PaddingThickness}" />
+  </Style>
+
+  <!-- Base TextBlock — Inter font family, body size.
+       Individual controls can override FontSize more specifically if needed. -->
+  <Style Selector="TextBlock">
+    <Setter Property="FontSize" Value="{StaticResource FontSize.Body}" />
+    <Setter Property="FontFamily" Value="Inter" />
+  </Style>
+
+  <!-- ScrollBar thumb radius — deferred.
+       ScrollBar does not expose CornerRadius on its thumb directly.
+       A full ControlTemplate override is needed, which risks friction with
+       SimpleTheme. Thumb radius is cosmetic only; skipping for Phase 8.9.
+       Revisit in Phase 8.2 when the theme engine applies color tokens. -->
+</Styles>

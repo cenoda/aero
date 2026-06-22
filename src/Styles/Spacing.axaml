@@ -16,4 +16,9 @@
   <x:Double x:Key="List.Item.Height">32</x:Double>
   <Thickness x:Key="Tab.Padding">8,4</Thickness>
   <Thickness x:Key="StatusBar.Padding">8,4</Thickness>
+  <!-- Control-theme Thickness aliases (consumed by ControlThemes.axaml) -->
+  <Thickness x:Key="Button.PaddingThickness">12,0,12,0</Thickness>
+  <Thickness x:Key="Input.Padding">8,6,8,6</Thickness>
+  <Thickness x:Key="Tab.PaddingThickness">12,6,12,6</Thickness>
+  <Thickness x:Key="StatusBar.PaddingThickness">8,4,8,4</Thickness>
 </ResourceDictionary>

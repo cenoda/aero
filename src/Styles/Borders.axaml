@@ -2,5 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Phase 8.9 Design System: Border System -->
   <x:Double x:Key="Border.Width">1</x:Double>
+  <Thickness x:Key="Border.Thickness">1</Thickness>
   <!-- Border style (solid) is applied via Style setters in each control theme -->
 </ResourceDictionary>
