@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -80,21 +83,38 @@ public class FileExplorerNodeViewModel : ReactiveObject
     public bool IsPlaceholder { get; private init; }
 
     /// <summary>
-    /// Small text glyph shown to the left of the file name in the tree.
-    /// Derived from <see cref="IconKind"/> so the VM remains the source of
-    /// truth — the view just renders whatever this returns. When icons are
-    /// restored, swap the binding in the view to <see cref="IconKind"/>.
+    /// Icon resource key (e.g. <c>"Icon.Folder"</c>, <c>"Icon.Code"</c>) derived
+    /// from <see cref="IconKind"/>. Handles both legacy keys (pre-8.5) and new
+    /// <see cref="Aero.Services.IconResolver"/> keys.
     /// </summary>
     public string Glyph => IconKind switch
     {
-        "Folder" => "▸",
-        "FileDocument" => "•",
-        "MicrosoftVisualStudio" => "◆",
-        "LanguageCsharp" => "#",
-        "Nodejs" => "⬡",
-        "Placeholder" => " ",
-        _ => "•",
+        "Folder" => "Icon.Folder",
+        "MicrosoftVisualStudio" or "Icon.Project" => "Icon.Project",
+        "LanguageCsharp" or "Icon.Code" => "Icon.Code",
+        "Nodejs" => "Icon.Config",
+        "FileDocument" or "Placeholder" => "Icon.Unknown",
+        _ => IconKind, // Pass through Icon.XXX keys from IconResolver
     };
+
+    /// <summary>
+    /// Resolved <see cref="Geometry"/> for the current <see cref="Glyph"/> key.
+    /// Used by XAML bindings that cannot resolve resource keys dynamically.
+    /// </summary>
+    public Geometry? GlyphGeometry
+    {
+        get
+        {
+            if (Application.Current is { } app)
+            {
+                app.TryFindResource(Glyph, out var resource);
+                if (resource is Geometry g)
+                    return g;
+            }
+
+            return null;
+        }
+    }
 
     /// <summary>Children. Always non-null; empty for files or unloaded directories.</summary>
     public ObservableCollection<FileExplorerNodeViewModel> Children { get; } = new();

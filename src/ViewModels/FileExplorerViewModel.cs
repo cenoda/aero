@@ -674,25 +674,9 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
     private static string IconFor(FileSystemEntry entry, IReadOnlyList<ProjectInfo> projects)
     {
+        _ = projects; // Retained for future multi-root workspace detection
         if (entry.Kind == FileSystemEntryKind.Directory)
             return "Folder";
-
-        // Highlight recognized project files with their own icon. ProjectInfo
-        // matches by full path so this stays O(projects) per file.
-        foreach (var p in projects)
-        {
-            if (string.Equals(p.Path, entry.FullPath, StringComparison.Ordinal))
-            {
-                return p.Kind switch
-                {
-                    ProjectKind.Solution => "MicrosoftVisualStudio",
-                    ProjectKind.CSharpProject => "LanguageCsharp",
-                    ProjectKind.NodeProject => "Nodejs",
-                    _ => "FileDocument",
-                };
-            }
-        }
-
-        return "FileDocument";
+        return IconResolver.GetIconKey(entry.FullPath);
     }
 }

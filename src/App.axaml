@@ -12,6 +12,7 @@
                 <ResourceInclude Source="avares://aero/Styles/Shadows.axaml" />
                 <ResourceInclude Source="avares://aero/Styles/Typography.axaml" />
                 <ResourceInclude Source="avares://aero/Styles/Transitions.axaml" />
+                <ResourceInclude Source="avares://aero/Styles/Icons.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

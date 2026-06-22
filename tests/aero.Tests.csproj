@@ -19,6 +19,9 @@
     <!-- AvaloniaEdit needed for TextDocument -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.*" />
 
+    <!-- Avalonia core needed for GlyphGeometry (Application, Geometry) -->
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+
     <!-- CliWrap for ProcessRunner -->
     <PackageReference Include="CliWrap" Version="3.*" />
 
@@ -107,6 +110,9 @@
     <Compile Include="../src/ViewModels/DiffTabViewModel.cs" />
     <Compile Include="../src/ViewModels/GitGraphViewModel.cs" />
     <Compile Include="../src/ViewModels/GitGraphCommitDetailViewModel.cs" />
+
+    <!-- Phase 8.5 — IconResolver -->
+    <Compile Include="../src/Services/IconResolver.cs" />
 
     <!-- Phase 8.7 — Settings models & service -->
     <Compile Include="../src/Models/Settings/WorkspaceState.cs" />

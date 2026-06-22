@@ -78,7 +78,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Text glyphs (current)** | Lightweight built-in symbols rendered as text in the file tree. | Stable on Avalonia 11.3 with no extra dependency; adopted as the Phase 8 solution per Phase 8.5 decision. 8 distinct glyphs for file types. |
+| **Phosphor Icons (embedded PathIcon)** | 8 vector icons from MIT-licensed Phosphor set. Embedded as `StreamGeometry` in `src/Styles/Icons.axaml`. | No NuGet. Vector crisp. Monochrome. Attribution: MIT — Copyright (c) 2023 Phosphor Icons. |
 | **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | Deferred to Avalonia 12 upgrade (Phase 9+). Current compatible versions were not stable with Avalonia 11.3; newer versions require Avalonia 12. See `docs/phases/phase-8/8.5-icon-decision/`. |
 
 ## TESTING

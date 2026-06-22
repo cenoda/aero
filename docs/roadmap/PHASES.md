@@ -212,10 +212,10 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Empty state on first launch (no recent folders)
 
 ### 8.5 Icon Decision & Integration [`docs/phases/phase-8/8.5-icon-decision/`](docs/phases/phase-8/8.5-icon-decision/)
-- [x] Resolve TOFIX R3.1 — **commit to text glyphs for Phase 8** (no new icon package)
-- [ ] Apply consistent file-type glyphs to tree (8 types: folder, code, text, image, config, markup, project, unknown)
-- [ ] Apply tab glyphs in editor tabs
-- [ ] Update `docs/LIBRARIES.md` with the decision
+- [x] Resolve TOFIX R3.1 — **Phosphor Icons (8 embedded PathIcon vectors, no NuGet)**; deferred to Avalonia 12 for full icon library
+- [x] Apply consistent file-type glyphs to tree (8 types: folder, code, text, image, config, markup, project, unknown)
+- [x] Apply tab glyphs in editor tabs
+- [x] Update `docs/LIBRARIES.md` with the decision
 
 ### 8.6 Settings Page [`docs/phases/phase-8/8.6-settings-page/`](docs/phases/phase-8/8.6-settings-page/)
 - [ ] Single dialog: Font, Theme, Tab Size, Editor options, **Layout Mode selector** (Tile/Freeform)

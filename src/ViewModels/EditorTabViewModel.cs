@@ -1,5 +1,9 @@
 using System;
 using Aero.Models.Editor;
+using Aero.Services;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using DocMsg = Aero.Core;
@@ -94,4 +98,24 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
 
     /// <summary>Whether the document has unsaved changes.</summary>
     public bool IsDirty => _document.IsDirty;
+
+    /// <summary>File-type icon resource key for the tab header.</summary>
+    public string Glyph => IconResolver.GetIconKey(FilePath);
+
+    /// <summary>
+    /// Resolved <see cref="Geometry"/> for the current <see cref="Glyph"/> key.
+    /// Used by XAML bindings that cannot resolve resource keys dynamically.
+    /// </summary>
+    public Geometry GlyphGeometry
+    {
+        get
+        {
+            object? resource = null;
+            if (Application.Current is { } app)
+                app.TryFindResource(Glyph, out resource);
+            return resource is Geometry g ? g : _emptyGeometry;
+        }
+    }
+
+    private static readonly Geometry _emptyGeometry = Geometry.Parse("M0,0");
 }

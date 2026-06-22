@@ -253,7 +253,7 @@ public class FileExplorerViewModelTests : IDisposable
 
         await _vm.LoadFolderAsync(root);
 
-        Assert.Equal("MicrosoftVisualStudio", _vm.RootNodes[0].IconKind);
+        Assert.Equal("Icon.Project", _vm.RootNodes[0].IconKind);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class FileExplorerViewModelTests : IDisposable
 
         await _vm.LoadFolderAsync(root);
 
-        Assert.Equal("LanguageCsharp", _vm.RootNodes[0].IconKind);
+        Assert.Equal("Icon.Project", _vm.RootNodes[0].IconKind);
     }
 
     [Fact]
@@ -275,7 +275,7 @@ public class FileExplorerViewModelTests : IDisposable
 
         await _vm.LoadFolderAsync(root);
 
-        Assert.Equal("Nodejs", _vm.RootNodes[0].IconKind);
+        Assert.Equal("Icon.Config", _vm.RootNodes[0].IconKind);
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public class FileExplorerViewModelTests : IDisposable
 
         await _vm.LoadFolderAsync(root);
 
-        Assert.Equal("FileDocument", _vm.RootNodes[0].IconKind);
+        Assert.Equal("Icon.Text", _vm.RootNodes[0].IconKind);
     }
 
     [Fact]
