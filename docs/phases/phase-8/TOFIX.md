@@ -2,10 +2,60 @@
 
 > **Status:** Active — pre-implementation risks recorded (2026-06-22).
 > Resolve all open items before declaring Phase 8 complete.
->
-> This file is the persistent code-quality checklist for Phase 8 (Core UI Polish).
-> Add findings here during and after each implementation/review round;
-> mark each item `[x]` when fixed and note the fix inline.
+
+---
+
+## Round 4 — Review Findings (2026-06-22)
+
+---
+
+### R4.1 `DockObject` does not exist in 11.3.12.1 *(priority: high, BLOCKER for M1)*
+
+**Description:** The 8.1a plan's M1 code examples show `ExplorerTool : DockObject, ITool`.
+`DockObject` is not present in `Dock.Model.dll` or `Dock.Avalonia.dll` at 11.3.12.1.
+It appears in older Dock documentation from pre-11.x. The available base type in
+`Dock.Avalonia.dll` is `ManagedDockableBase` (confirmed in binary inspection).
+
+**Required fix:**
+1. In M0.5 spike, verify `ManagedDockableBase`'s public surface — is it abstract? Can it
+   be subclassed? Does it implement `ITool`/`IDocument` or just `IDockable`?
+2. If `ManagedDockableBase` is usable, use it as the base class for `ExplorerTool`, etc.
+3. If `ManagedDockableBase` is `internal` or doesn't fit, implement `ITool`/`IDocument`
+   directly with `INotifyPropertyChanged` property notification.
+4. Remove `DockObject` references from M1 code examples (already done in plan update).
+
+**Status:** [ ] Open — resolved in M0.5 spike
+
+---
+
+### R4.2 `Dock.Serializer.Newtonsoft` is an unused extra dependency *(priority: low)*
+
+**Description:** `aero.csproj` contains both `Dock.Serializer.Newtonsoft` and
+`Dock.Serializer.SystemTextJson`. The 8.1a plan only uses `Dock.Serializer.SystemTextJson`.
+`Dock.Serializer.Newtonsoft` pulls in Newtonsoft.Json as a transitive dependency and is
+never referenced. It was not catalogued in `docs/LIBRARIES.md`.
+
+**Required fix:** Remove `<PackageReference Include="Dock.Serializer.Newtonsoft" ...>`
+from `src/aero.csproj` in M7 cleanup.
+
+**Status:** [ ] Open — remove in M7
+
+---
+
+### R4.3 M1 snippet `InitializeLayout = true` conflicts with manually-set Layout *(priority: medium)*
+
+**Description:** The M1 code snippet showed `DockControl.InitializeLayout = true` alongside
+manually assigning `DockControl.Layout = layout`. Setting both creates a race condition:
+`InitializeLayout` tells Dock to build its own default layout, which would overwrite
+the layout you just assigned.
+
+**Required fix:**
+1. Set `DockControl.InitializeFactory = true` (wires the factory) ✅
+2. Do NOT set `DockControl.InitializeLayout = true` (that's for Dock's own default)
+3. Verify correct init sequence in M0.5 spike
+4. Plan already updated to reflect this
+
+**Status:** [ ] Closed — plan updated (2026-06-22)
 
 ---
 
