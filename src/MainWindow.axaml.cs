@@ -19,6 +19,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Closing += OnClosing;
+
+        PositionChanged += (_, args) =>
+        {
+            if (DataContext is ShellViewModel shell)
+            {
+                shell.WindowX = args.Point.X;
+                shell.WindowY = args.Point.Y;
+            }
+        };
     }
 
     /// <summary>

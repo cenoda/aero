@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Aero.Core;
 using Aero.Languages;
 using Aero.Services;
@@ -43,12 +44,15 @@ public partial class App : Application
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
 
-            // Optional startup folder: `aero /path/to/folder` opens that folder
-            // immediately (useful for manual/automated smoke tests). This is
-            // additive to the File → Open Folder picker flow implemented in M3.
+            // CLI args take precedence over workspace restore
             if (desktop.Args is { Length: > 0 } args && System.IO.Directory.Exists(args[0]))
             {
                 bus.Publish(new FolderOpened(System.IO.Path.GetFullPath(args[0])));
+            }
+            else
+            {
+                // Workspace restore — skip when CLI arg is present
+                _ = RestoreWorkspaceAsync(shell, mainWindow, bus);
             }
 
             // Dispose the DI container on application exit so all IDisposable
@@ -64,6 +68,58 @@ public partial class App : Application
     private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
     {
         (_services as IDisposable)?.Dispose();
+    }
+
+    private async System.Threading.Tasks.Task RestoreWorkspaceAsync(
+        ShellViewModel shell,
+        MainWindow mainWindow,
+        IMessageBus bus)
+    {
+        try
+        {
+            var settings = _services?.GetRequiredService<ISettingsService>();
+            if (settings == null) return;
+
+            var ws = await settings.LoadWorkspaceStateAsync();
+
+            if (ws?.Window is { } win)
+            {
+                shell.WindowWidth = win.Width;
+                shell.WindowHeight = win.Height;
+                shell.IsWindowMaximized = win.IsMaximized;
+                mainWindow.Position = new Avalonia.PixelPoint((int)win.X, (int)win.Y);
+                mainWindow.Width = win.Width;
+                mainWindow.Height = win.Height;
+                mainWindow.WindowState = win.IsMaximized
+                    ? Avalonia.Controls.WindowState.Maximized
+                    : Avalonia.Controls.WindowState.Normal;
+            }
+
+            if (ws?.LastFolderPath is { } folder && System.IO.Directory.Exists(folder))
+            {
+                bus.Publish(new FolderOpened(folder));
+
+                foreach (var fp in ws.OpenFilePaths.Where(System.IO.File.Exists))
+                {
+                    try { await shell.EditorViewModel.OpenFileAsync(fp); }
+                    catch (Exception ex)
+                    {
+                        bus.Publish(new StatusMessage(
+                            $"Failed to restore {fp}: {ex.Message}"));
+                    }
+                }
+
+                if (ws.ActiveTabIndex >= 0
+                    && ws.ActiveTabIndex < shell.EditorViewModel.Tabs.Count)
+                    shell.EditorViewModel.ActivateTab(
+                        shell.EditorViewModel.Tabs[ws.ActiveTabIndex]);
+            }
+        }
+        catch (Exception ex)
+        {
+            bus.Publish(new StatusMessage(
+                $"Workspace restore failed: {ex.Message}"));
+        }
     }
 
     public static ServiceProvider BuildServices()
