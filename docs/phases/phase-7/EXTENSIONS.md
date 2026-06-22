@@ -5,7 +5,7 @@
 > **Extends:** Phase 7 baseline (Git Integration), which is complete (362/362 tests, all exit conditions met)
 
 This document records the two features added to Phase 7 **after** the baseline was declared
-complete. Phase 7 was intentionally not closed so these could be absorbed before moving on.
+complete. Phase 7 is now complete, and these features are formally integrated as extensions into the core Phase 7 functionality.
 If a similar situation arises in a future phase, this file is the precedent.
 
 ---

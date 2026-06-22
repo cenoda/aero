@@ -27,7 +27,7 @@ Key deliverables:
 
 This phase is intentionally **basic**: status, stage, unstage, commit, branch display,
 and diff viewing. Advanced Git operations (rebase, cherry-pick, stash, merge, etc.)
-are **out of scope** (see §10).
+were initially out of scope; however, `docs/phases/phase-7/EXTENSIONS.md` now defines them as an extension track for this phase (§10).
 
 ---
 
