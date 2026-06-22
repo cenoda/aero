@@ -77,6 +77,14 @@ public class LibGit2SharpServiceTests : IDisposable
         return path;
     }
 
+    private void CreateBareRemoteFromCurrentRepo(string bareRemotePath)
+    {
+        RunGit("init", "--bare", bareRemotePath);
+        RunGit("remote", "add", "origin", bareRemotePath);
+        RunGit("push", "-u", "origin", "master");
+        RunGit("fetch", "origin");
+    }
+
     private LibGit2SharpService CreateService()
     {
         return new LibGit2SharpService(_gitDir, _tempDir);
@@ -426,5 +434,100 @@ public class LibGit2SharpServiceTests : IDisposable
         var headCommit = graph[0];
         // On 'master' or 'main' depending on git version
         Assert.NotEmpty(headCommit.BranchLabels);
+    }
+
+    [Fact]
+    public async Task GetBranchesAsync_WithOriginRemote_ReturnsDistinctLocalAndRemoteMaster()
+    {
+        // Arrange
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        var bareRemote = Path.Combine(Path.GetTempPath(), $"aero-git-remote-{Guid.NewGuid():N}.git");
+        try
+        {
+            CreateBareRemoteFromCurrentRepo(bareRemote);
+
+            using var sut = CreateService();
+
+            // Act
+            var branches = await sut.GetBranchesAsync(CancellationToken.None);
+
+            // Assert
+            Assert.Contains(branches, b => b.Name == "master" && !b.IsRemote && b.CanonicalName == "refs/heads/master");
+            Assert.Contains(branches, b => b.Name == "origin/master" && b.IsRemote && b.CanonicalName == "refs/remotes/origin/master");
+            Assert.Equal(1, branches.Count(b => b.Name == "origin/master"));
+        }
+        finally
+        {
+            try { Directory.Delete(bareRemote, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task GetBranchesAsync_IgnoresOriginHeadSymbolicRef()
+    {
+        // Arrange
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        var bareRemote = Path.Combine(Path.GetTempPath(), $"aero-git-remote-{Guid.NewGuid():N}.git");
+        try
+        {
+            CreateBareRemoteFromCurrentRepo(bareRemote);
+
+            using var sut = CreateService();
+
+            // Act
+            var branches = await sut.GetBranchesAsync(CancellationToken.None);
+
+            // Assert
+            Assert.DoesNotContain(branches, b => b.Name == "origin/HEAD");
+        }
+        finally
+        {
+            try { Directory.Delete(bareRemote, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task GetGraphAsync_WhenLocalAndRemotePointToSameSha_IncludesBothLabels()
+    {
+        // Arrange
+        RunGit("init");
+        RunGit("config", "user.email", "test@test.com");
+        RunGit("config", "user.name", "test");
+        CreateFile("README.md", "# Test");
+        RunGit("add", ".");
+        RunGit("commit", "-m", "Initial commit");
+
+        var bareRemote = Path.Combine(Path.GetTempPath(), $"aero-git-remote-{Guid.NewGuid():N}.git");
+        try
+        {
+            CreateBareRemoteFromCurrentRepo(bareRemote);
+
+            using var sut = CreateService();
+
+            // Act
+            var graph = await sut.GetGraphAsync(5, CancellationToken.None);
+
+            // Assert
+            Assert.NotEmpty(graph);
+            var head = graph[0];
+            Assert.Contains("master", head.BranchLabels);
+            Assert.Contains("origin/master", head.BranchLabels);
+        }
+        finally
+        {
+            try { Directory.Delete(bareRemote, recursive: true); } catch { /* best effort */ }
+        }
     }
 }
