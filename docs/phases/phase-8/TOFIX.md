@@ -170,7 +170,7 @@ That research must happen as part of finalizing 8.9, not mid-implementation of 8
 8.2 README (or a separate `TOKENS.md` in `8.2-theme-system/`). At minimum list all token
 names organized by area. Actual color values can be determined during implementation.
 
-**Status:** [ ] Open — inventory required before 8.2
+**Status:** [x] Resolved — 115-token inventory written in `8.2-theme-system/TOKENS.md`
 
 ---
 

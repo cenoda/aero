@@ -166,7 +166,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 |-----------------------------|-------------------------------|
 | Flat, angular, clunky | Rounded, clean, smooth |
 | Forced single layout | User-configurable orchestration environment |
-| 15 theme colors | **80–100 color tokens, fully overridable** via JSON |
+| 15 theme colors | **115 color tokens, fully overridable** via JSON |
 | No design system | Unified spacing/radius/shadow/transition (Apple/Rider inspired) |
 >
 > ### Philosophy: User Choice, Not Lock-In
@@ -185,7 +185,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > ---
 >
 > **Entry condition:** Phase 7 is complete.
-> **Exit condition:** Panels are dockable in two modes; theme has 80–100 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
+> **Exit condition:** Panels are dockable in two modes; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
 
 ### 8.1 Dockable Panels — Layout Modes [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
 - [ ] **8.1a Freeform Mode** — wire existing panels into Dock.Avalonia (draggable, resizable, hideable, rearrangeable)
@@ -195,8 +195,8 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] Mode switching in settings; no restart required.
 - [ ] Principles: Tile Mode *must* still allow manual adjustment. Mode switch must be instant.
 
-### 8.2 Theme Engine — 80–100 Color Tokens + JSON Override [`docs/phases/phase-8/8.2-theme-system/`](docs/phases/phase-8/8.2-theme-system/)
-- [ ] Define **80–100 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.)
+### 8.2 Theme Engine — 115 Color Tokens + JSON Override [`docs/phases/phase-8/8.2-theme-system/`](docs/phases/phase-8/8.2-theme-system/)
+- [ ] Define **115 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.) — full inventory in [`TOKENS.md`](docs/phases/phase-8/8.2-theme-system/TOKENS.md)
 - [ ] Create Light and Dark presets stored as ResourceDictionary in `src/Styles/`
 - [ ] **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
 - [ ] Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme

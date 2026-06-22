@@ -1,14 +1,21 @@
-# 8.2 — Theme Engine (80–100 Color Tokens + JSON Override)
+# 8.2 — Theme Engine (115 Color Tokens + JSON Override)
 
-**Goal:** Light and Dark themes with 80–100 semantic color tokens, fully overridable by the user via JSON.
+**Goal:** Light and Dark themes with 115 semantic color tokens, fully overridable by the user via JSON.
+
+> 📋 **Complete token inventory:** See [`TOKENS.md`](TOKENS.md) for the full list of all 115 tokens organized by area, with descriptions and naming rules.
 
 **Scope:**
-- Define **80–100 semantic color tokens** covering:
-  - Editor: background, foreground, line numbers, selection, find highlight, inline hints, bracket match
-  - Panels: sidebar background, status bar, panel headers, tab active/inactive, button/hover, scrollbar
-  - Git: diff inserted/removed/modified, branch indicator
-  - Debug: breakpoint, current line, step overlay
-  - Border/divider colors, shadow colors, overlay backgrounds
+- Define **115 semantic color tokens** covering:
+  - Global: accent, error, warning
+  - Window: background, foreground, border, shadow
+  - Editor: background, foreground, line numbers, selection, find highlight, bracket match, indent guides, gutter
+  - Tabs: active/inactive background/foreground, top accent border
+  - Panels: sidebar background, status bar, panel headers, section backgrounds, hover/active states, scrollbar
+  - Status Bar, Menu, Button, Input, Scrollbar, Dialog, Find/Replace
+  - Git: diff gutter/background/text (10 tokens), graph canvas (5), status indicators (5)
+  - Debug: breakpoints, current line, stack frame, step overlay
+  - Syntax: bridge tokens for TextMate palette
+  - Notifications, Badges/Tags
 - Create **Light** and **Dark** presets stored as `ResourceDictionary` files in `src/Styles/`
 - **User JSON override** — `~/.aero/theme-override.json` lets the user customize every single color token (VS Code `workbench.colorCustomizations` style)
 - Switch via `App.Current.RequestedThemeVariant`; status bar shows current theme
@@ -19,7 +26,7 @@
 - **8.9 Design System** — must be completed first (defines color token naming convention and base ResourceDictionary structure)
 
 **Exit condition:**
-- 80–100 semantic color tokens defined and applied across all panels and editor
+- 115 semantic color tokens defined and applied across all panels and editor
 - Light and Dark presets switch consistently
 - `~/.aero/theme-override.json` overrides any subset of tokens
 - Theme switching is instant with no restart

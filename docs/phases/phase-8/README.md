@@ -30,7 +30,7 @@ Core principle: **Tile Mode must still allow manual window adjustment** (unlike 
 ## Exit Condition
 
 - Existing panels are wired into Dock.Avalonia (draggable, resizable, hideable)
-- Light/Dark theme switch works via 80–100 semantic color tokens with JSON override
+- Light/Dark theme switch works via 115 semantic color tokens with JSON override
 - Command Palette (Ctrl+Shift+P) opens and searches registered commands
 - Welcome page shows when no files are open
 - Icon library decision resolved and applied to file tree + tabs
@@ -43,7 +43,7 @@ Core principle: **Tile Mode must still allow manual window adjustment** (unlike 
 | # | Folder | Scope |
 |---|--------|-------|
 | 8.1 | [`8.1-dockable-panels/`](8.1-dockable-panels/) | Tile Mode / Freeform Mode / Tear-away windows via Dock.Avalonia. Mode switchable in settings. |
-| 8.2 | [`8.2-theme-system/`](8.2-theme-system/) | Light/Dark with 80–100 semantic color tokens + JSON override — no custom theme editor |
+| 8.2 | [`8.2-theme-system/`](8.2-theme-system/) | Light/Dark with 115 semantic color tokens + JSON override — no custom theme editor |
 | 8.3 | [`8.3-command-palette/`](8.3-command-palette/) | Ctrl+Shift+P, FuzzySharp on registered commands only |
 | 8.4 | [`8.4-welcome-page/`](8.4-welcome-page/) | Recent projects + quick actions as a landing tab |
 | 8.5 | [`8.5-icon-decision/`](8.5-icon-decision/) | Resolve TOFIX R3.1 — pick icon library or commit to custom |
@@ -65,7 +65,7 @@ Phase 8 sub-phases have dependencies — the order below minimizes rework:
 1.  8.9  Design System         ← Foundation: spacing, radius, shadows, typography, color naming
 2.  8.7  Workspace Persistence ← Shared ISettingsService for 8.4, 8.6
 3.  8.5  Icon Decision          ← Parallel with 8.7 (text glyphs commit for Phase 8)
-4.  8.2  Theme Engine           ← Depends on 8.9 naming convention; 80-100 tokens + JSON override
+4.  8.2  Theme Engine           ← Depends on 8.9 naming convention; 115 tokens + JSON override
 5.  8.1a Dockable Panels (Freeform) ← Depends on 8.9, 8.5; wire existing panels into Dock.Avalonia
 6.  8.3  Command Palette        ← Depends on DialogHost, 8.9, 8.2; shared CommandRegistry
 7.  8.8  Keybinding Display     ← Shares CommandRegistry with 8.3; can be parallel with 8.3
