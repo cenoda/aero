@@ -2,6 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aero.ViewModels"
         xmlns:views="using:Aero.Views"
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:dockTools="using:Aero.Docking.ToolViewModels"
+        xmlns:docModels="using:Aero.Docking.DocumentViewModels"
         x:Class="Aero.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -31,6 +34,26 @@
         <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding ToggleThemeCommand}"/>
     </Window.KeyBindings>
 
+    <Window.DataTemplates>
+        <!-- Tool DataTemplates -->
+        <DataTemplate DataType="dockTools:ExplorerTool">
+            <views:FileExplorerView DataContext="{Binding $parent[Window].DataContext.FileExplorerViewModel}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:GitTool">
+            <views:GitPanelView DataContext="{Binding $parent[Window].DataContext.GitViewModel}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:ProblemsTool">
+            <views:ProblemsView DataContext="{Binding $parent[Window].DataContext.ProblemsViewModel}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:OutputTool">
+            <views:OutputView DataContext="{Binding $parent[Window].DataContext.OutputViewModel}"/>
+        </DataTemplate>
+        <!-- Document DataTemplate -->
+        <DataTemplate DataType="docModels:EditorDocument">
+            <views:EditorView DataContext="{Binding $parent[Window].DataContext.EditorViewModel}"/>
+        </DataTemplate>
+    </Window.DataTemplates>
+
     <DockPanel>
         <!-- Menu bar -->
         <Menu DockPanel.Dock="Top">
@@ -53,7 +76,7 @@
                 <MenuItem Header="_Find..." Command="{Binding FindCommand}" InputGesture="Ctrl+F"/>
                 <MenuItem Header="_Replace..." Command="{Binding ReplaceCommand}" InputGesture="Ctrl+H"/>
             </MenuItem>
-<MenuItem Header="_View">
+            <MenuItem Header="_View">
                 <MenuItem Header="Toggle _Sidebar" Command="{Binding ToggleSidebarCommand}"/>
                 <MenuItem Header="Toggle _Git Panel" Command="{Binding ToggleSidebarTabCommand}"/>
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
@@ -68,109 +91,45 @@
             </MenuItem>
         </Menu>
 
-        <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <!-- Sidebar: fixed default width, MinWidth lets the user collapse to a sliver. -->
-                <ColumnDefinition Width="250" MinWidth="0"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*" MinWidth="200"/>
-            </Grid.ColumnDefinitions>
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource panel.sectionBackground}"
+                BorderBrush="{DynamicResource panel.border}"
+                BorderThickness="0,1,0,0"
+                Padding="8,4">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                <!-- Cursor position -->
+                <TextBlock Grid.Column="0"
+                          Text="{Binding EditorViewModel.CursorPosition}"
+                          Margin="0,0,16,0"/>
 
-<!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
-                 (parent DataContext), not child ViewModels. -->
-            <Grid Grid.Column="0"
-                  IsVisible="{Binding IsSidebarVisible}">
-                <TabControl SelectedIndex="{Binding ActiveSidebarTabIndex}">
-                    <TabItem Header="Explorer">
-                        <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
-                    </TabItem>
-                    <TabItem Header="Git">
-                        <views:GitPanelView DataContext="{Binding GitViewModel}"/>
-                    </TabItem>
-                </TabControl>
+                <!-- Language -->
+                <TextBlock Grid.Column="1"
+                          Text="{Binding EditorViewModel.Language}"
+                          Margin="0,0,16,0"/>
+
+                <!-- Branch (visible when Git repository is open) -->
+                <TextBlock Grid.Column="2"
+                          Text="{Binding GitViewModel.CurrentBranch}"
+                          Foreground="Green"
+                          FontWeight="SemiBold"
+                          Margin="0,0,16,0"
+                          IsVisible="{Binding GitViewModel.HasGitRepository}"/>
+
+                <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
+                <TextBlock Grid.Column="3"
+                          Text="UTF-8"
+                          Margin="0,0,16,0"/>
+
+                <!-- TODO(phase-3): Detect line ending from file content -->
+                <TextBlock Grid.Column="4"
+                          Text="Lf"/>
             </Grid>
+        </Border>
 
-            <!-- Draggable divider between sidebar and editor -->
-            <GridSplitter Grid.Column="1"
-                          Width="4"
-                          Background="{DynamicResource panel.border}"
-                          ResizeDirection="Columns"
-                          ResizeBehavior="PreviousAndNext"/>
+        <!-- Main editor area with DockControl -->
+        <dock:DockControl x:Name="DockControl"/>
 
-            <!-- Editor + bottom panel + status bar -->
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Editor panel with tabs -->
-                <views:EditorView Grid.Row="0"
-                               DataContext="{Binding EditorViewModel}"/>
-
-                <!-- Problems panel (Phase 4 M4) -->
-                <GridSplitter Grid.Row="1"
-                              Height="4"
-                              Background="{DynamicResource panel.border}"
-                              ResizeDirection="Rows"
-                              ResizeBehavior="PreviousAndNext"
-                              IsVisible="{Binding IsBottomPanelVisible}"/>
-
-                <!-- Bottom panel with TabControl (Problems + Output tabs) -->
-                <!-- Wrap in a Grid so IsVisible binds against ShellViewModel (parent DataContext),
-                     not child ViewModels. Use TabControl for Problems/Output tabs. -->
-                <TabControl Grid.Row="2"
-                          SelectedIndex="{Binding ActiveBottomTabIndex}"
-                          IsVisible="{Binding IsBottomPanelVisible}"
-                          MinHeight="100"
-                          MaxHeight="300">
-                    <TabItem Header="Problems">
-                        <views:ProblemsView DataContext="{Binding ProblemsViewModel}"/>
-                    </TabItem>
-                    <TabItem Header="Output">
-                        <views:OutputView DataContext="{Binding OutputViewModel}"/>
-                    </TabItem>
-                </TabControl>
-
-<!-- Status bar -->
-                <Border Grid.Row="3"
-                        Background="{DynamicResource panel.sectionBackground}"
-                        BorderBrush="{DynamicResource panel.border}"
-                        BorderThickness="0,1,0,0"
-                        Padding="8,4">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
-                        <!-- Cursor position -->
-                        <TextBlock Grid.Column="0"
-                                  Text="{Binding EditorViewModel.CursorPosition}"
-                                  Margin="0,0,16,0"/>
-
-                        <!-- Language -->
-                        <TextBlock Grid.Column="1"
-                                  Text="{Binding EditorViewModel.Language}"
-                                  Margin="0,0,16,0"/>
-
-                        <!-- Branch (visible when Git repository is open) -->
-                        <TextBlock Grid.Column="2"
-                                  Text="{Binding GitViewModel.CurrentBranch}"
-                                  Foreground="Green"
-                                  FontWeight="SemiBold"
-                                  Margin="0,0,16,0"
-                                  IsVisible="{Binding GitViewModel.HasGitRepository}"/>
-
-                        <!-- TODO(phase-3): Detect encoding from BOM/file analysis -->
-                        <TextBlock Grid.Column="3"
-                                  Text="UTF-8"
-                                  Margin="0,0,16,0"/>
-
-                        <!-- TODO(phase-3): Detect line ending from file content -->
-                        <TextBlock Grid.Column="4"
-                                  Text="Lf"/>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Grid>
     </DockPanel>
 
 </Window>

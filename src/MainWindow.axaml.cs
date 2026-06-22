@@ -1,5 +1,6 @@
 using System;
 using Aero.Core;
+using Aero.Docking;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
@@ -28,6 +29,23 @@ public partial class MainWindow : Window
                 shell.WindowY = args.Point.Y;
             }
         };
+
+        // Initialize DockControl with the default layout
+        InitializeDockControl();
+    }
+
+    private void InitializeDockControl()
+    {
+        if (DockControl == null) return;
+
+        // Create the default layout
+        var layout = AeroDockFactory.CreateDefaultLayout();
+
+        // Assign layout to DockControl
+        DockControl.Layout = layout;
+
+        // Initialize the factory (do NOT set InitializeLayout = true)
+        DockControl.InitializeFactory = true;
     }
 
     /// <summary>
