@@ -1,7 +1,7 @@
 # Phase 8.1a — To Fix
 
 > **Status:** M0.5 Resolved (2026-06-23) — All critical/high issues fixed.
-> **Review Update:** 2026-06-23 (implementation review pass: updated item status/evidence)
+> **Review Round 4:** 2026-06-23 (implementation review pass: updated item status/evidence)
 > These are deviations from the plan, unknowns resolved during M0.5, and items
 > that must be addressed in later milestones.
 
@@ -287,6 +287,106 @@ trace required to diagnose null-factory/null-layout/empty-root cases is now pres
 - [ ] Optional enhancement: include `InitializeFactory` in state snapshot logs
 
 **Status:** [x] Resolved (2026-06-23)
+
+---
+
+### T0.15 `InitializeFactory=False` + `InitializeLayout=False` still unverified *(priority: medium)*
+
+**Description:** The DockControl XAML still has `InitializeFactory="False"` and
+`InitializeLayout="False"`. While `Factory` is now explicitly assigned (resolving
+T0.2), these flags control whether Dock.Avalonia sets up internal locators
+(`ContextLocator`, `HostWindowLocator`). The plan (§2.5) explicitly calls these
+"hypotheses" — they were never verified as correct.
+
+The plan noted:
+> "If `InitializeFactory` is false at that point, locators (`ContextLocator`,
+> `HostWindowLocator`) are not set up, and rendering/drag-and-drop may fail
+> silently."
+
+**Impact:** Low for M0.5 (static spike with hardcoded content). **Medium for M1+**
+when panels have real ViewModels and need close buttons, drag-to-rearrange, or
+floatable windows. Missing locator setup would cause silent failures that look
+exactly like v1 symptoms.
+
+**Required fix:**
+- [ ] Verify in M1 that `InitializeFactory="True"` (or removing the attribute
+  entirely, since True is the default) does not break the now-working spike
+- [ ] Test drag-to-rearrange and close-button behavior in M1 to confirm locators
+  are functional
+- [ ] If `InitializeFactory="True"` causes regressions, document the correct flag
+  combination in the plan §2.5
+
+**Status:** [ ] Open — test in M1
+
+---
+
+### T0.16 Layout re-created on every toggle — orphaned layouts accumulate *(priority: low)*
+
+**Description:** `ToggleSpikeCommand` calls `AssignSpikeLayout()` **every time** the
+user toggles spike on (see `ShellViewModel.cs` line 168–171):
+```csharp
+if (IsSpikeActive && _mainWindow != null)
+{
+    _mainWindow.AssignSpikeLayout();
+}
+```
+Each call creates a new `IRootDock` via `SpikeDockFactory.CreateSpikeLayout()`. The
+old layout is replaced on `DockSpikeControl.Layout` but never disposed. Over multiple
+toggles, orphaned layouts accumulate in memory. Additionally, `Factory.AddDockable()`
+registers each dockable in the factory's internal state, which grows unbounded.
+
+**Impact:** Negligible for M0.5 (a few toggles). Would become visible only after
+hundreds of toggles. Not a blocking issue.
+
+**Required fix:**
+- [ ] In M1 or later: add a guard flag (`_layoutAssigned`) so layout is only created
+  on first toggle-on; subsequent toggles just show/hide the existing layout
+- [ ] If layout must be recreated, call `Factory.RemoveDockable()` or equivalent
+  cleanup before reassigning
+
+**Status:** [ ] Open — fix in M1
+
+---
+
+### T0.17 No guard against rapid double-toggle *(priority: low)*
+
+**Description:** `ToggleSpikeCommand` is a synchronous `ReactiveCommand.Create()`
+with no throttle. If `Ctrl+Shift+D` is pressed twice rapidly, two
+`AssignSpikeLayout()` calls could overlap. `AssignSpikeLayout()` is not idempotent
+— it creates a new layout each time. DockControl receiving two rapid Layout
+assignments could enter an inconsistent state manifesting as a blank/glitched
+DockControl.
+
+**Impact:** Very low probability during normal use. Would waste debug time if it
+happens (symptom is identical to "library doesn't render").
+
+**Required fix:**
+- [ ] Either add `CanExecute` guard on `ToggleSpikeCommand` (e.g. `_isAssigning`)
+- [ ] Or make `AssignSpikeLayout()` idempotent: skip if layout is already assigned
+  (ties into T0.16 fix)
+
+**Status:** [ ] Open — fix alongside T0.16
+
+---
+
+### T0.18 Toggle OFF leaves old layout assigned but hidden *(priority: low)*
+
+**Description:** When the user toggles spike OFF, the DockControl becomes invisible
+but its `Layout` property still holds the last assigned `IRootDock`. There is no
+cleanup or logging on the OFF path — `AssignSpikeLayout()` is only called when
+toggling ON. The orphaned layout stays attached to the (invisible) DockControl,
+worsening the accumulation from T0.16.
+
+**Impact:** Same as T0.16 — negligible for light use. Compounds with T0.16.
+
+**Required fix:**
+- [ ] On toggle OFF, either set `DockSpikeControl.Layout = null` or just let it
+  stay hidden (the Layout being attached to an invisible control is harmless)
+- [ ] At minimum, add a `[Dock]` log line on the OFF path acknowledging the layout
+  is being hidden (T0.9 already covers the toggle log, which fires on both ON and
+  OFF, so this is partially addressed)
+
+**Status:** [ ] Open — fix alongside T0.16
 
 ---
 
