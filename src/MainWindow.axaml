@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aero.ViewModels"
         xmlns:views="using:Aero.Views"
+        xmlns:dock="using:Dock.Avalonia.Controls"
         x:Class="Aero.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -116,10 +117,11 @@
                 <Grid Grid.Row="0">
                     <views:EditorView DataContext="{Binding EditorViewModel}"
                               IsVisible="{Binding !IsSpikeActive}"/>
-                    <!-- M0.5: Dock spike XAML — minimal test -->
-                    <ContentControl IsVisible="{Binding IsSpikeActive}">
-                        <TextBlock Text="Dock Spike Active - Press Ctrl+Shift+D to toggle" Margin="16"/>
-                    </ContentControl>
+                    <!-- M0.5: Dock spike — layout created in C# (SpikeDockFactory) -->
+                    <dock:DockControl x:Name="DockSpikeControl"
+                                  IsVisible="{Binding IsSpikeActive}"
+                                  InitializeFactory="False"
+                                  InitializeLayout="False"/>
                 </Grid>
 
                 <!-- Problems panel (Phase 4 M4) -->

@@ -1,8 +1,10 @@
 using System;
 using Aero.Core;
+using Aero.Docking;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
+using Dock.Model.Core;
 
 namespace Aero;
 
@@ -50,6 +52,22 @@ public partial class MainWindow : Window
 
         _confirmDeleteHandler = OnConfirmDelete;
         _bus.Subscribe(_confirmDeleteHandler);
+
+        // M0.5: Initialize the Dock spike control with C#-created layout
+        InitializeDockSpike();
+    }
+
+    /// <summary>
+    /// M0.5: Initialize the Dock spike control with a C#-created layout.
+    /// This avoids the XAML compiler error with nested generic types.
+    /// </summary>
+    private void InitializeDockSpike()
+    {
+        if (DockSpikeControl == null) return;
+
+        var layout = SpikeDockFactory.CreateSpikeLayout();
+        DockSpikeControl.Layout = layout;
+        System.Diagnostics.Debug.WriteLine("[Dock] M0.5: spike layout assigned");
     }
 
     /// <summary>
