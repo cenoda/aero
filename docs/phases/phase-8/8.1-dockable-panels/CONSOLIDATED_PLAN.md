@@ -174,3 +174,121 @@ AeroRootDock
 ```
 
 **Proportion constants:** Left=0.22, Right=0.78, Editor=0.72, Bottom=0.28
+
+
+## Hide/Show Semantics (M4)
+
+The four `Reactive` booleans on `ShellViewModel` remain the source of truth:
+
+| Action | Grid Mode (unchanged) | Freeform Mode (M4) |
+|--------|----------------------|-------------------|
+| Hide sidebar | `IsSidebarVisible = false` | Remove left `IToolDock` from parent `VisibleDockables`; remember index |
+| Show sidebar | `IsSidebarVisible = true` | Re-insert at remembered index, restore Proportion |
+| Switch sidebar tab | `ActiveSidebarTabIndex = 1` | `leftToolDock.ActiveDockable = leftToolDock.VisibleDockables[1]` |
+| Toggle Output | `IsBottomPanelVisible = true; ActiveBottomTabIndex = 1` | Ensure bottom `IToolDock` is in `VisibleDockables`; set `ActiveDockable = outputTool` |
+| Toggle Problems | `IsBottomPanelVisible = true; ActiveBottomTabIndex = 0` | Same pattern, target ProblemsTool |
+
+---
+
+## Logging Strategy (From M1)
+
+Channel: `Debug.WriteLine` with `[Dock]` prefix + `StatusMessage` for Info level.
+
+| Site | Level | Message |
+|------|-------|---------|
+| `AeroDockFactory.CreateDefaultLayout()` | Debug | Tree dump (type, id, proportion per child) |
+| `InitializeDockControl()` | Info | `[Dock] init: begin / factory assigned / layout built / ViewModels wired / layout assigned` |
+| `WireViewModels()` | Debug | `[Dock] Wired {Type}.Context -> {ContextType}` per dockable |
+| `OnClosing()` (M5) | Debug | `[Dock] Persisting layout to {path}` |
+| `LayoutPersistenceService.Load()` (M5) | Info | `[Dock] Layout loaded (N bytes)` or fallback reason |
+
+---
+
+## Scope Boundaries (Not Doing)
+
+| Out of Scope | Reason | Future Phase |
+|-------------|--------|-------------|
+| **Tile Mode (8.1b)** | Different layout engine entirely | 8.1b |
+| **Tear-Away Windows (8.1c)** | Requires OS window management | 8.1c |
+| **IDockingService abstraction** | Premature — only one concrete impl | 8.1b |
+| **Option B {Binding Context}** | Unverified, adds risk | Future cleanup |
+| **Remove ShellViewModel booleans** | Used by tests, persistence, Grid fallback | Keep forever |
+| **DialogHost.Avalonia** | Incompatible with Avalonia 11.3 | Avalonia 12 |
+
+---
+
+## Files to Create
+
+| File | Milestone | Purpose |
+|------|-----------|---------|
+| `src/Docking/LayoutMode.cs` | M1 | `enum LayoutMode { Grid, Freeform }` |
+| `src/Docking/AeroDockFactory.cs` | M1 | `IFactory` implementation |
+| `src/Docking/Model/AeroRootDock.cs` | M1 | `IRootDock` impl |
+| `src/Docking/Model/AeroToolDock.cs` | M1 | `IToolDock` impl |
+| `src/Docking/Model/AeroDocumentDock.cs` | M1 | `IDocumentDock` impl |
+| `src/Docking/Model/AeroProportionalDock.cs` | M1 | `IProportionalDock` impl |
+| `src/Docking/Model/AeroProportionalDockSplitter.cs` | M1 | Splitter impl |
+| `src/Docking/ToolViewModels/ExplorerTool.cs` | M1 | Explorer `ITool` wrapper |
+| `src/Docking/ToolViewModels/GitTool.cs` | M1 | Git `ITool` wrapper |
+| `src/Docking/ToolViewModels/ProblemsTool.cs` | M1 | Problems `ITool` wrapper |
+| `src/Docking/ToolViewModels/OutputTool.cs` | M1 | Output `ITool` wrapper |
+| `src/Docking/DocumentViewModels/EditorDocument.cs` | M1 | Editor `IDocument` wrapper |
+| `src/Services/LayoutPersistenceService.cs` | M5 | Layout save/restore |
+
+## Files to Modify
+
+| File | Milestone | Changes |
+|------|-----------|---------|
+| `src/App.axaml` | M0.5 | Add Dock.Avalonia.Themes.Simple StyleInclude |
+| `src/MainWindow.axaml` | M0.5 | Add "Dock spike" tab for PoC |
+| | M1 | Replace spike with `<DockControl>` + DataTemplates |
+| `src/MainWindow.axaml.cs` | M1 | Add `InitializeDockControl()`, `WireViewModels()`, `SyncDockVisibility()` |
+| | M3 | Respect `LayoutMode` — skip Dock init when Grid |
+| `src/App.axaml.cs` | M1 | Ensure Initialize() called after DataContext set (already correct) |
+| `src/ViewModels/ShellViewModel.cs` | M3 | Add `LayoutMode` property, mode-switch command |
+| | M4 | Rewrite toggles to call `SyncDockVisibility()` |
+| | M6 | Change default to `Freeform` |
+| `src/Services/SettingsService.cs` | M5 | Add layout persistence to workspace state |
+
+## Files NOT to Modify
+
+- `src/ViewModels/EditorViewModel.cs` — Tab management unchanged
+- `src/ViewModels/FileExplorerViewModel.cs` — File tree logic unchanged
+- `src/ViewModels/GitViewModel.cs` — Git operations unchanged
+- `src/ViewModels/ProblemsViewModel.cs` — Diagnostic display unchanged
+- `src/ViewModels/OutputViewModel.cs` — Build output unchanged
+- `src/Services/DocumentManager.cs` — Document lifecycle unchanged
+- `src/Views/*.axaml` — All View files unchanged (DataContext from Context injection)
+
+---
+
+## Agent Contributions
+
+| Agent | Key Contribution |
+|-------|-----------------|
+| **Minimax** | Simple milestone breakdown, proportion 0.25/0.75 |
+| **Deepseek** | Most detailed file lists, risk likelihood/impact scoring |
+| **Claude** | `SyncDockVisibility()` pattern, files NOT to modify |
+| **Hy3** | Simple logging (Console.WriteLine with `[Dock]` prefix) |
+| **Blackbox** | Refined proportions 0.22/0.78, observability-first M0.5 |
+| **Opus** | **LayoutMode switch** — the architectural breakthrough, scope boundaries |
+| **Qwen** | Confirmed consensus on all major decisions |
+
+---
+
+## Rollback Strategy
+
+```bash
+# Tag each milestone
+git tag v2-m0          # Baseline
+git tag v2-m0.5        # PoC
+git tag v2-m1          # Factory + models
+git tag v2-m2          # ViewModels wired
+git tag v2-m3          # LayoutMode switch
+git tag v2-m4          # Toggle parity
+git tag v2-m5          # Persistence
+git tag v2-m6          # Default flip
+
+# Rollback to any point:
+git reset --hard v2-m{N}
+```
