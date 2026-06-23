@@ -1,11 +1,16 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Aero.Core;
 using Aero.Docking;
+using Aero.Docking.DocumentViewModels;
+using Aero.Docking.ToolViewModels;
 using Aero.Services;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
 using Dock.Model.Controls;
+using Dock.Model.Core;
 
 namespace Aero;
 
@@ -76,6 +81,44 @@ public partial class MainWindow : Window
         if (DataContext is ShellViewModel shell)
         {
             shell.ActiveLayout = layout;
+
+            // Wire ViewModels to dock tools/documents so DataTemplates can bind.
+            // Dock.Avalonia's visual tree doesn't include the Window as parent,
+            // so $parent[Window].DataContext.* bindings don't resolve.
+            WireViewModels(layout, shell);
+        }
+    }
+
+    /// <summary>
+    /// Walk the dock tree and set ViewModel on each tool/document so
+    /// DataTemplates bind directly to the correct ViewModel.
+    /// </summary>
+    private static void WireViewModels(IDock dock, ShellViewModel shell)
+    {
+        if (dock.VisibleDockables == null) return;
+        foreach (var child in dock.VisibleDockables)
+        {
+            switch (child)
+            {
+                case ExplorerTool explorer:
+                    explorer.ViewModel = shell.FileExplorerViewModel;
+                    break;
+                case GitTool git:
+                    git.ViewModel = shell.GitViewModel;
+                    break;
+                case ProblemsTool problems:
+                    problems.ViewModel = shell.ProblemsViewModel;
+                    break;
+                case OutputTool output:
+                    output.ViewModel = shell.OutputViewModel;
+                    break;
+                case EditorDocument editor:
+                    editor.ViewModel = shell.EditorViewModel;
+                    break;
+            }
+            // Recurse into nested docks
+            if (child is IDock childDock)
+                WireViewModels(childDock, shell);
         }
     }
 

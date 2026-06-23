@@ -12,6 +12,9 @@ public class GitTool : ManagedDockableBase, ITool
         Title = "Git";
     }
 
+    /// <summary>The actual GitViewModel bound to this tool's view.</summary>
+    public object? ViewModel { get; set; }
+
     /// <inheritdoc />
     public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
     /// <inheritdoc />

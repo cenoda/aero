@@ -5,6 +5,43 @@
 
 ---
 
+## Round 6 — Runtime Findings (2026-06-23)
+
+---
+
+### R6.1 DataTemplate `$parent[Window]` bindings don't resolve through Dock control tree *(priority: high, BLOCKER)*
+
+**Description:** DataTemplates used `$parent[Window].DataContext.FileExplorerViewModel`
+to reach ShellViewModel from within docked panels. Dock.Avalonia renders panel content
+through its own control hierarchy — the Window is NOT in the visual parent chain of
+docked content. This causes the binding to silently fail → null DataContext → empty panels.
+
+**Required fix (already applied):**
+1. Added `ViewModel` property to each tool/document type (ExplorerTool, GitTool,
+   ProblemsTool, OutputTool, EditorDocument)
+2. Changed DataTemplates to bind `{Binding ViewModel}` instead of `$parent[Window]`
+3. Added `WireViewModels()` in MainWindow.axaml.cs that walks the dock tree after
+   layout creation and sets each tool/document's ViewModel to the corresponding
+   ShellViewModel property
+
+**Status:** [x] Closed — fixed (2026-06-23)
+
+---
+
+### R6.2 Missing `Dock.Avalonia.Themes.Simple` package *(priority: high, BLOCKER)*
+
+**Description:** Dock.Avalonia requires a separate theme package to render dock panels.
+Without it, DockControl renders as empty space (white window). The package
+`Dock.Avalonia.Themes.Simple` was not listed as a dependency in `aero.csproj`.
+
+**Required fix (already applied):**
+- Added `Dock.Avalonia.Themes.Simple 11.3.12.1` to `aero.csproj`
+- Added `<dockSimple:DockSimpleTheme />` to `App.axaml` Styles
+
+**Status:** [x] Closed — fixed (2026-06-23)
+
+---
+
 ## Round 5 — M1/M2 Implementation Findings (2026-06-23)
 
 ---
@@ -42,7 +79,7 @@ public override IDictionary<IDockable, IDockableControl> ToolControls => _toolCo
 
 Apply to all 10 dictionary/list property overrides in `AeroDockFactory`.
 
-**Status:** [ ] Open — fix in M7 cleanup or earlier if issues appear
+**Status:** [ ] Open — fix in M7 cleanup or earlier if issues appear (deliberate reduction — no runtime issues observed during M1–M7)
 
 ---
 
@@ -60,7 +97,7 @@ public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
 public override int GetHashCode() => Id?.GetHashCode() ?? 0;
 ```
 
-**Status:** [ ] Open — add during M4/M7 if runtime issues appear
+**Status:** [ ] Open — add during M4/M7 if runtime issues appear (deliberate reduction — no identity mismatch issues observed; Dock uses string ID comparison internally)
 
 ---
 
@@ -98,7 +135,15 @@ never referenced. It was not catalogued in `docs/LIBRARIES.md`.
 **Required fix:** Remove `<PackageReference Include="Dock.Serializer.Newtonsoft" ...>`
 from `src/aero.csproj` in M7 cleanup.
 
-**Status:** [ ] Open — remove in M7
+**Status:** [x] Closed — deliberate reduction (2026-06-23)
+**Resolution:** `Dock.Serializer.SystemTextJson` cannot be used as a drop-in replacement
+without `[DockJsonSerializable]` source-gen setup on all Aero model types — it fails with
+`JsonException: A possible object cycle was detected` when serializing the layout tree
+(which has `Owner → Dock → VisibleDockables → [dockables] → Owner` back-references).
+`Dock.Serializer.Newtonsoft` handles cycles automatically. Since `Newtonsoft.Json` is
+already a hard project dependency (via the LSP layer: `StreamJsonRpc`), keeping
+`Dock.Serializer.Newtonsoft` adds **no new transitive dependency**. STJ migration
+deferred — do not re-add without wiring `[DockJsonSerializable]` on all model types.
 
 ---
 

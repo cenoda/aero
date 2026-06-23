@@ -38,20 +38,20 @@
     <Window.DataTemplates>
         <!-- Tool DataTemplates -->
         <DataTemplate DataType="dockTools:ExplorerTool">
-            <views:FileExplorerView DataContext="{Binding $parent[Window].DataContext.FileExplorerViewModel}"/>
+            <views:FileExplorerView DataContext="{Binding ViewModel}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:GitTool">
-            <views:GitPanelView DataContext="{Binding $parent[Window].DataContext.GitViewModel}"/>
+            <views:GitPanelView DataContext="{Binding ViewModel}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:ProblemsTool">
-            <views:ProblemsView DataContext="{Binding $parent[Window].DataContext.ProblemsViewModel}"/>
+            <views:ProblemsView DataContext="{Binding ViewModel}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:OutputTool">
-            <views:OutputView DataContext="{Binding $parent[Window].DataContext.OutputViewModel}"/>
+            <views:OutputView DataContext="{Binding ViewModel}"/>
         </DataTemplate>
         <!-- Document DataTemplate -->
         <DataTemplate DataType="docModels:EditorDocument">
-            <views:EditorView DataContext="{Binding $parent[Window].DataContext.EditorViewModel}"/>
+            <views:EditorView DataContext="{Binding ViewModel}"/>
         </DataTemplate>
     </Window.DataTemplates>
 
