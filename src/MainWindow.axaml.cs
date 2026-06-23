@@ -76,10 +76,22 @@ public partial class MainWindow : Window
     /// <summary>
     /// M0.5: Assign layout on first toggle (Issue 9: after template is applied).
     /// Called from ShellViewModel when IsSpikeActive changes.
+    ///
+    /// Issue T0.16/17: Idempotent — skips if a layout is already assigned.
+    /// Repeated toggles on/off no longer accumulate orphaned layouts.
     /// </summary>
     internal void AssignSpikeLayout()
     {
         if (DockSpikeControl == null) return;
+
+        // T0.16/17: Idempotent guard. If a layout is already assigned, the existing
+        // tree is reused. Rapid double-toggles no longer stack new IRootDock instances.
+        if (DockSpikeControl.Layout != null)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "[Dock] AssignSpikeLayout: skipping — layout already assigned");
+            return;
+        }
 
         // Issue 4: Log DockControl state before assignment
         System.Diagnostics.Debug.WriteLine($"[Dock] Before layout assign:");
@@ -95,6 +107,27 @@ public partial class MainWindow : Window
         if (DockSpikeControl.Layout is Dock.Model.Core.IDock root)
         {
             System.Diagnostics.Debug.WriteLine($"[Dock]   Root children: {root.VisibleDockables?.Count ?? 0}");
+        }
+    }
+
+    /// <summary>
+    /// T0.18: Clear the dock layout when the spike is toggled off so the (invisible)
+    /// DockControl does not keep an orphan IRootDock attached. This releases the
+    /// factory's dockable references and allows GC of the spike tree.
+    /// </summary>
+    internal void ClearSpikeLayout()
+    {
+        if (DockSpikeControl == null) return;
+
+        if (DockSpikeControl.Layout != null)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Dock] ClearSpikeLayout: detaching {DockSpikeControl.Layout.GetType().Name}");
+            DockSpikeControl.Layout = null;
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("[Dock] ClearSpikeLayout: nothing to clear");
         }
     }
 

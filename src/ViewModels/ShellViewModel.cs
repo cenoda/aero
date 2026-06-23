@@ -159,15 +159,25 @@ public ShellViewModel(
 
         // M0.5: Dock spike toggle
         // Issue 9: Assign layout on first toggle (after template is applied)
-        ToggleSpikeCommand = ReactiveCommand.Create(() => 
-        { 
-            IsSpikeActive = !IsSpikeActive; 
+        // T0.17: ToggleSpikeCommand has no throttling; rapid presses rely on
+        // AssignSpikeLayout's idempotent guard. ClearSpikeLayout on the OFF path
+        // releases the orphan layout (T0.18) so subsequent ON toggles reuse the
+        // factory's dockable state without stacking IRootDock instances.
+        ToggleSpikeCommand = ReactiveCommand.Create(() =>
+        {
+            IsSpikeActive = !IsSpikeActive;
             // Issue 3: Log toggle
             System.Diagnostics.Debug.WriteLine($"[Dock] IsSpikeActive: {IsSpikeActive}");
-            // Issue 9: Assign layout when toggled on (not during Initialize)
-            if (IsSpikeActive && _mainWindow != null)
+            if (_mainWindow == null) return;
+            if (IsSpikeActive)
             {
                 _mainWindow.AssignSpikeLayout();
+            }
+            else
+            {
+                // T0.18: detach the layout on toggle off to avoid accumulating
+                // orphan IRootDock instances on the (invisible) DockControl.
+                _mainWindow.ClearSpikeLayout();
             }
         });
 

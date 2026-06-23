@@ -16,10 +16,34 @@ The v1 implementation compiled cleanly, wired all five tools correctly, and stil
 | v1 Anti-Pattern | v2 Response |
 |----------------|------------|
 | Grid replaced in a single cutover | `LayoutMode` switch keeps Grid alive through M5 |
-| Factory + models + wiring in one commit | M0.5 proves rendering works in pure XAML before any C# |
+| Factory + models + wiring in one commit | M0.5 proves rendering works before any custom model code |
 | No logging | `[Dock]`-prefixed debug output from M1 |
 | "Assumed the plan works" | Each milestone has an explicit pass/fail gate |
 | Theme URI guessed | M0.5 verifies the exact URI against installed package |
+
+### 0.1 M0.5 Spike Scope Correction (T0.12)
+
+The original M0.5 plan claimed a "pure-XAML spike with inline concrete model types
+(`<rxctl:RootDock>`, `<rxctl:ToolDock>`, etc.)". The Avalonia XAML compiler rejects
+this with **AVLN2000** because the concrete model types are generic
+(`Dock.Model.ReactiveUI.RootDock`, `ToolDock`, etc.) and nested generics in markup
+extensions do not resolve inline.
+
+The spike therefore uses a **C# factory** (`SpikeDockFactory.CreateSpikeLayout()`)
+that calls `Dock.Model.ReactiveUI.Factory.Create*` methods programmatically. This
+**conflates two variables** in M0.5: (1) does Dock.Avalonia render in this app, and
+(2) does the programmatic factory API produce a valid layout. If the spike fails,
+the two paths must be checked separately:
+
+1. **Verify rendering** by simplifying `SpikeDockFactory` to a one-line layout
+   (`Factory.CreateRootDock()` with a single `Tool` containing a `TextBlock`) —
+   confirms (1) independently.
+2. **Verify the factory API** by inspecting Dock's example apps and tests for
+   the canonical factory pattern — confirms (2) independently.
+
+The "pure-XAML" gate is replaced by a **"C# factory, no custom model classes"**
+gate: spike uses only `Dock.Model.ReactiveUI.Factory` and concrete types; no
+custom `AeroRootDock`/`AeroToolDock` subclasses appear until M1.
 
 ---
 
@@ -81,6 +105,8 @@ private void WireViewModels(AeroRootDock layout, ShellViewModel shell)
 | `IFactory` | `Dock.Model.Core` | Implemented by `AeroDockFactory`. Methods return interface types. |
 | `FactoryBase` | `Dock.Model` | Abstract base class. Extend this instead of implementing from scratch. Note: v1/v2 docs previously called this `Factory` — the actual installed type is `FactoryBase`. |
 | `IDockable` | `Dock.Model.Core` | Base interface. Has `Id`, `Title`, `Context`, `Proportion`, `Dock`, `Owner`, `Factory`, `IsVisible`. |
+| `DockableBase` | `Dock.Model.ReactiveUI` | **Abstract** base class for custom dockables. Subclass this only if you need custom properties beyond what `Tool`/`Document` provide. (Replaces v1's planned `DockObject` base — that type does not exist in Dock 11.3 — see TOFIX T0.7.) |
+| `Tool`, `Document` | `Dock.Model.ReactiveUI.Controls` | Concrete dockable types from `Dock.Model.ReactiveUI`. Use these directly when no custom properties are needed; subclass `DockableBase` only if required. |
 | `IRootDock` | `Dock.Model.Controls` | Top-level container. Has `Window`, `Windows`, `IsFocusableRoot`. |
 | `IProportionalDock` | `Dock.Model.Controls` | Adds `Orientation` to `IDockable`. Proportions via `IDockable.Proportion` (inherited). |
 | `IProportionalDockSplitter` | `Dock.Model.Controls` | Splitter between proportional children. Has `CanResize`. |

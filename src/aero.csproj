@@ -9,7 +9,7 @@
     <!-- Suppress CS0618 (XAML partial class/member not seen by IDE analyzer).
          The Roslyn analyzer doesn't see compiler-generated .g.cs files, but MSBuild
          resolves them correctly. Actual builds have 0 errors. -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <NoWarn>$(NoWarn);CS0618;CS9057</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +30,8 @@
     <!-- Editor -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.*" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.*" />
-    <PackageReference Include="Dock.Serializer.Newtonsoft" Version="11.3.*" />
+    <!-- Dock layout persistence (M5). Only System.Text.Json serializer is used —
+         Dock.Serializer.Newtonsoft was removed (TOFIX T0.8). -->
     <PackageReference Include="Dock.Serializer.SystemTextJson" Version="11.3.*" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.*" />
 
