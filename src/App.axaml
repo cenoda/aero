@@ -1,6 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="using:Aero.Converters"
+             xmlns:dockSimple="using:Dock.Avalonia.Themes.Simple"
              x:Class="Aero.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -26,6 +27,7 @@
 
     <Application.Styles>
         <StyleInclude Source="avares://Avalonia.Themes.Simple/SimpleTheme.xaml" />
+        <dockSimple:DockSimpleTheme />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
         <!-- Phosphor Icons embedded via src/Styles/Icons.axaml (Phase 8.5).
              Material.Icons.Avalonia deferred to Avalonia 12 upgrade. -->
