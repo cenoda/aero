@@ -34,10 +34,10 @@ public interface IProcessRunnerService
 
 ## Checklist
 
-- [x] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
-- [x] **Output panel** — stdout/stderr 실시간 스트리밍
-- [x] Ctrl+` 로 패널 토글
-- [x] 실행 중 취소 버튼 (CancellationToken)
+- [x] **ProcessRunner** — execute commands via `CliWrap` (dotnet, git, etc.)
+- [x] **Output panel** — real-time stdout/stderr streaming
+- [x] Toggle panel with Ctrl+`
+- [x] Cancel button during execution (CancellationToken)
 
 ## Related Documents
 

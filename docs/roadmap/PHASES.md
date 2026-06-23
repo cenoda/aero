@@ -7,9 +7,9 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Avalonia project scaffold
 - [x] Basic window with title
 - [x] Create directory skeleton (Models/, Services/, ViewModels/, Views/, Agent/, etc.)
-- [x] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection 세팅
+- [x] Core infrastructure: ReactiveUI + Microsoft.Extensions.DependencyInjection setup
 - [x] Add AvaloniaEdit NuGet package
-- [x] DI 컨테이너 구성 (Program.cs에 서비스 등록)
+- [x] DI container configuration (register services in Program.cs)
 
 ## Phase 1: The Editor
 - [x] **TextBuffer** — AvaloniaEdit's built-in piece-table (TextDocument)
@@ -87,15 +87,15 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] **Problems panel** — list all diagnostics in workspace (M4)
 - [x] **Code completion** — Ctrl+Space triggers LSP completions (M5)
 
-## Phase 5: Output Panel (가짜 터미널) ✅
-> ⚠️ 진짜 인터랙티브 터미널(PTY)은 Phase 9.5로 이동. OS마다 PTY 구현이 달라 난이도가 매우 높음.
-> 지금은 명령 실행 결과를 텍스트로 보여주는 Output Panel로 대체한다.
+## Phase 5: Output Panel (Fake Terminal) ✅
+> ⚠️ Real interactive terminal (PTY) moved to Phase 9.5. PTY implementation varies by OS and is very high difficulty.
+> Currently replaced by the Output Panel which displays command execution results as text.
 > Implementation details: [`docs/phases/phase-5/IMPLEMENTATION_PLAN.md`](../phases/phase-5/IMPLEMENTATION_PLAN.md).
 
-- [x] **ProcessRunner** — `CliWrap`으로 커맨드 실행 (dotnet, git 등)
-- [x] **Output panel** — stdout/stderr 실시간 스트리밍
-- [x] Ctrl+` 로 패널 토글
-- [x] 실행 중 취소 버튼 (CancellationToken)
+- [x] **ProcessRunner** — execute commands via `CliWrap` (dotnet, git, etc.)
+- [x] **Output panel** — real-time stdout/stderr streaming
+- [x] Toggle panel with Ctrl+`
+- [x] Cancel button during execution (CancellationToken)
 - [x] Bottom panel refactored to host Problems + Output as sibling tabs
 
 ## Phase 6: Multi-language Build System ✅
@@ -262,14 +262,14 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] **Rename symbol** — via LSP
 - [ ] **Format document** — via LSP
 
-### Phase 9.5: 진짜 터미널 (선택 사항)
-> ⚠️ 난이도 높음. IDE 나머지가 다 완성된 후 도전할 것.
+### Phase 9.5: Real Terminal (Optional)
+> ⚠️ High difficulty. Attempt only after the rest of the IDE is complete.
 
-- [ ] **Pty.Net** — OS별 PTY 연결 (Linux/Mac/Windows)
-- [ ] **VtNetCore** — VT100/xterm 이스케이프 코드 파싱
-- [ ] **TerminalRenderer** — Avalonia 캔버스에 직접 렌더링
-- [ ] 인터랙티브 쉘 (bash / cmd / powershell)
-- [ ] 여러 터미널 탭
+- [ ] **Pty.Net** — OS-specific PTY connection (Linux/Mac/Windows)
+- [ ] **VtNetCore** — VT100/xterm escape code parsing
+- [ ] **TerminalRenderer** — direct rendering on Avalonia canvas
+- [ ] Interactive shell (bash / cmd / powershell)
+- [ ] Multiple terminal tabs
 
 ## Phase 10: Plugin System
 - [ ] **IPlugin interface** — Initialize(), Shutdown(), metadata
@@ -282,7 +282,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ## AGENT TRACK: Multi-Agent AI Orchestration
 
 ### Phase A1: Agent Foundation
-> ⚠️ Phase 8 (Core UI Polish — especially dockable panels) 완료 후 시작할 것. 그 전에 시작하면 레이아웃 완성 후 전부 재작업해야 함.
+> ⚠️ Start only after Phase 8 (Core UI Polish — especially dockable panels) is complete. Starting earlier means redoing everything after the layout is finalized.
 
 - [ ] **IAgent interface** — Id, Name, Kind (CLI/API/Local), Role (Frontend/Backend)
 - [ ] **AgentRegistry** — discover/register/unregister agents

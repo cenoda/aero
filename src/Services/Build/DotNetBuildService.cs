@@ -42,7 +42,7 @@ public class DotNetBuildService : IBuildService
         "ошибка",      // Russian
         "エラー",       // Japanese
         "错误",        // Chinese (Simplified)
-        "오류",        // Korean
+        "error",       // Korean
     };
 
     public DotNetBuildService(IProcessRunner processRunner)
