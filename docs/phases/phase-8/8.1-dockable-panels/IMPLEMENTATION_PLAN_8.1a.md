@@ -31,6 +31,7 @@ All must be true before M0.5 starts:
 - [x] `dotnet test tests` — 527 passed
 - [x] `src/Docking/` does not exist (clean baseline after v1 revert)
 - [x] Dock.Avalonia packages installed: `Dock.Avalonia 11.3.*`, `Dock.Avalonia.Themes.Simple 11.3.*`, `Dock.Serializer.SystemTextJson 11.3.*`
+- [ ] `Dock.Model.ReactiveUI` added to `aero.csproj` — provides concrete model types (`RootDock`, `ProportionalDock`, `ToolDock`, `DocumentDock`, `Tool`, `Document`) that ship as instantiable classes, not just interfaces. **Required before M0.5 inline XAML can compile.** Since Aero already uses ReactiveUI, this is the natural fit. Document in `LIBRARIES.md` per AGENTS.md §5.
 - [x] No Dock references in `App.axaml` or `MainWindow.axaml`
 
 ---
@@ -78,7 +79,7 @@ private void WireViewModels(AeroRootDock layout, ShellViewModel shell)
 | Interface/Class | Namespace | Notes |
 |----------------|-----------|-------|
 | `IFactory` | `Dock.Model.Core` | Implemented by `AeroDockFactory`. Methods return interface types. |
-| `Factory` | `Dock.Model` | Abstract base class. Extend this instead of implementing from scratch. |
+| `FactoryBase` | `Dock.Model` | Abstract base class. Extend this instead of implementing from scratch. Note: v1/v2 docs previously called this `Factory` — the actual installed type is `FactoryBase`. |
 | `IDockable` | `Dock.Model.Core` | Base interface. Has `Id`, `Title`, `Context`, `Proportion`, `Dock`, `Owner`, `Factory`, `IsVisible`. |
 | `IRootDock` | `Dock.Model.Controls` | Top-level container. Has `Window`, `Windows`, `IsFocusableRoot`. |
 | `IProportionalDock` | `Dock.Model.Controls` | Adds `Orientation` to `IDockable`. Proportions via `IDockable.Proportion` (inherited). |
@@ -173,6 +174,8 @@ MainWindow.axaml.cs: InitializeDockControl(ShellViewModel shell)
 
 **Hypothesis (verify in M0.5):** Setting `DockControl.Layout` triggers internal initialization that reads `InitializeFactory`. If `InitializeFactory` is false at that point, locators (`ContextLocator`, `HostWindowLocator`) are not set up, and rendering/drag-and-drop may fail silently. M0.5 will test this ordering with a minimal XAML spike; the actual working sequence is pinned only after M0.5 passes.
 
+> **⚠️ Init-sequence risk is higher than the original Low rating suggested.** The entire init sequence (§2.5) is unverified. Bump the corresponding risk in §7 to Medium likelihood. If M0.5 fails, init ordering is the first hypothesis to test.
+
 ### 2.6 Theme Include (Unverified — Resolve in M0.5)
 
 The `Dock.Avalonia.Themes.Simple` 11.3.12.1 package contains:
@@ -185,6 +188,8 @@ The `Dock.Avalonia.Themes.Simple` 11.3.12.1 package contains:
 - Programmatic: `Application.Styles.Add(new DockSimpleTheme())`
 
 M0.5 step 1 resolves this experimentally. The URI body (`DockSimpleTheme.axaml`) is confirmed; the mechanism is not. **Do not commit a guessed mechanism.**
+
+> **Additional M0.5 note:** The spike XAML also needs the `Dock.Model.ReactiveUI.Controls` namespace for concrete types (see §1 entry gate). This means two `xmlns:` declarations, not one — `Dock.Avalonia.Controls` for `DockControl` and `Dock.Model.ReactiveUI.Controls` for concrete model types.
 
 ---
 
@@ -236,47 +241,58 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 
 **Steps (order matters — verify before include):**
 
-1. **Verify the theme include mechanism** (§2.6 is unsettled). Inspect the installed package:
+1. **Verify the theme include mechanism** (§2.6 is unsettled). Also verify `Dock.Model.ReactiveUI` is installed and provides concrete types. Inspect the installed packages:
    ```bash
-   # Find the embedded resource path
+   # Find the theme embedded resource path
    unzip -l ~/.nuget/packages/dock.avalonia.themes.simple/11.3.12.1/lib/net8.0/*.dll 2>/dev/null | grep -i theme
+   # Verify concrete model types exist in Dock.Model.ReactiveUI
+   unzip -l ~/.nuget/packages/dock.model.reactiveui/*/lib/net8.0/*.dll 2>/dev/null | grep -i "RootDock\|ToolDock\|DocumentDock"
    ```
-   Then try the include in `App.axaml`. If `<StyleInclude>` doesn't render the `ControlTheme`, try `<ResourceInclude>` or programmatic `Application.Styles.Add()`. **This step produces the verified mechanism committed in step 2.**
+   Then try the theme include in `App.axaml`. If `<StyleInclude>` doesn't render the `ControlTheme`, try `<ResourceInclude>` or programmatic `Application.Styles.Add()`. **This step produces the verified mechanism committed in step 2.**
 
 2. **Add the verified theme include** to `App.axaml` (mechanism determined in step 1).
 
-3. **Add the inline XAML spike** to `MainWindow.axaml` in the editor area. The spike is a hand-written `<DockControl>` with static content — **no factory, no model classes, no code-behind**:
+3. **Add the inline XAML spike** to `MainWindow.axaml` in the editor area. The spike uses a `<DockControl>` with **concrete model types from `Dock.Model.ReactiveUI`** — the interfaces (`IRootDock`, `IToolDock`, etc.) ship in `Dock.Model` but are not instantiable. Two xmlns declarations are required: one for the control (`Dock.Avalonia.Controls`) and one for the concrete model types (`Dock.Model.ReactiveUI.Controls`):
    ```xml
-   <dock:DockControl x:Name="DockSpike" InitializeFactory="True" InitializeLayout="False">
+   <dock:DockControl x:Name="DockSpike"
+                     xmlns:dock="using:Dock.Avalonia.Controls"
+                     xmlns:rxctl="using:Dock.Model.ReactiveUI.Controls"
+                     InitializeFactory="False" InitializeLayout="False">
        <dock:DockControl.Layout>
-           <dock:RootDock>
-               <dock:ProportionalDock Orientation="Horizontal">
-                   <dock:ProportionalDock Orientation="Vertical" Proportion="0.3">
-                       <dock:ToolDock Alignment="Left">
-                           <dock:Tool Id="tool-a" Title="Tool A">
+           <rxctl:RootDock>
+               <rxctl:ProportionalDock Orientation="Horizontal">
+                   <rxctl:ProportionalDock Orientation="Vertical" Proportion="0.3">
+                       <rxctl:ToolDock Alignment="Left">
+                           <rxctl:Tool Id="tool-a" Title="Tool A">
                                <TextBlock Text="Tool A content" Margin="8"/>
-                           </dock:Tool>
-                           <dock:Tool Id="tool-b" Title="Tool B">
+                           </rxctl:Tool>
+                           <rxctl:Tool Id="tool-b" Title="Tool B">
                                <TextBlock Text="Tool B content" Margin="8"/>
-                           </dock:Tool>
-                       </dock:ToolDock>
-                   </dock:ProportionalDock>
-                   <dock:ProportionalDockSplitter/>
-                   <dock:ProportionalDock Orientation="Vertical" Proportion="0.7">
-                       <dock:DocumentDock>
-                           <dock:Document Id="doc-a" Title="Doc A">
+                           </rxctl:Tool>
+                       </rxctl:ToolDock>
+                   </rxctl:ProportionalDock>
+                   <rxctl:ProportionalDockSplitter/>
+                   <rxctl:ProportionalDock Orientation="Vertical" Proportion="0.7">
+                       <rxctl:DocumentDock>
+                           <rxctl:Document Id="doc-a" Title="Doc A">
                                <TextBlock Text="Doc A content" Margin="8"/>
-                           </dock:Document>
-                       </dock:DocumentDock>
-                   </dock:ProportionalDock>
-               </dock:ProportionalDock>
-           </dock:RootDock>
+                           </rxctl:Document>
+                       </rxctl:DocumentDock>
+                   </rxctl:ProportionalDock>
+               </rxctl:ProportionalDock>
+           </rxctl:RootDock>
        </dock:DockControl.Layout>
    </dock:DockControl>
    ```
-   > **Note:** This XAML tests whether `<dock:Tool>` and `<dock:Document>` work as inline content holders in 11.3. If they don't (e.g. the library requires factory-created instances), M0.5 catches that here — before any C# is written.
+   > **Why `InitializeFactory="False"`:** For a pure-XAML spike where you just want the static layout to render, `False` is the safer default — it asks the control to render what's there without invoking factory machinery. Try this first; if rendering works, you've also confirmed the factory path is independent of basic rendering. If rendering fails, flip to `True` as a hypothesis.
+   > **Note:** This XAML tests whether the concrete ReactiveUI types work as inline content holders in 11.3. If they don't (e.g. the library requires factory-created instances), M0.5 catches that here — before any C# is written.
+   > **Note:** `xmlns` declarations above are for illustration — move them to the root `<Window>` tag if Avalonia XAML scoping requires it.
 
-4. **Add a View menu item** or keyboard shortcut to toggle `IsSpikeActive` so the spike is visible on demand.
+4. **Add `IsSpikeActive` plumbing** to `ShellViewModel`:
+   - Add `[Reactive] public bool IsSpikeActive { get; set; }` (default `false`)
+   - Add `ToggleSpikeCommand` bound to a View menu item or keyboard shortcut (e.g. `Ctrl+Shift+D`)
+   - This property is **removed in M3 step 5** when the spike is replaced by the real DockControl
+   - The XAML binding `IsVisible="{Binding IsSpikeActive}"` on the spike ContentControl and `IsVisible="{Binding !IsSpikeActive}"` on EditorView now resolve correctly
 
 5. **Build and run.** Click to show the spike tab.
 
@@ -313,7 +329,7 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 
 **Steps:**
 1. Create all model classes implementing `INotifyPropertyChanged`
-2. Create `AeroDockFactory : Factory` with `CreateDefaultLayout()` building the tree from §2.4
+2. Create `AeroDockFactory : FactoryBase` with `CreateDefaultLayout()` building the tree from §2.4
 3. Add `Application.DataTemplates` in `App.axaml` (see §2.1)
 4. Replace M0.5 inline XAML with `<dock:DockControl x:Name="DockSpike"/>`
 5. Wire factory + layout in `MainWindow.axaml.cs` (see §2.5)
@@ -338,7 +354,7 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 2. `EnumerateDockables()` recursively walks `IRootDock` via `IDock.Dockables`
 3. Each tool's `Context` is set to the corresponding ShellViewModel property
 
-> **Known M2 condition:** During M2, the spike DockControl contains an EditorDocument wired to EditorViewModel. The existing Grid layout also hosts an EditorView wired to the same EditorViewModel. Two AvaloniaEdit instances on one document model is allowed in MVVM, but focus/caret behavior with two editors on one VM is not something this codebase has exercised. Clicking a file in the spike's Explorer will also open it in the Grid editor. **This is a known condition resolved by M3** when only one mode is visible at a time.
+> **Known M2 condition:** During M2, the spike DockControl contains an EditorDocument wired to EditorViewModel. The existing Grid layout also hosts an EditorView wired to the same EditorViewModel. Two AvaloniaEdit instances on one document model is allowed in MVVM, but focus/caret behavior with two editors on one VM is not something this codebase has exercised. Clicking a file in the spike's Explorer will also open it in the Grid editor. **This is a known condition resolved by M3** when only one mode is visible at a time.\n>\n> **⚠️ Escape valve:** If M2 hangs or crashes due to dual-editor state (two AvaloniaEdit instances on one VM), **roll forward to M3 immediately** rather than debugging in M2. M3 makes Grid and Freeform mutually exclusive, eliminating the dual-editor condition. Spending time debugging a condition that M3 resolves is wasted effort.
 
 **Verification:**
 - Spike area: Explorer tree expands, Git shows changes, Problems lists diagnostics, Output shows build log
@@ -366,6 +382,7 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 3. In `MainWindow.axaml`: Grid (existing) + DockControl, controlled by `IsVisible`
 4. On mode switch: if switching to Freeform and dock not initialized, call `InitializeDockControl()`
 5. Remove the M0.5/M1/M2 spike — DockControl now fills the editor region
+   > **Also remove `IsSpikeActive`** from `ShellViewModel` (added in M0.5 step 4) and delete the spike XAML from `MainWindow.axaml`. The spike served its purpose and is no longer needed.
 
 **Verification:**
 - App starts in Grid mode (unchanged behavior)
@@ -421,11 +438,14 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 **Steps:**
 1. Implement `LayoutPersistenceService`: save path `~/.aero/layout.json`
 2. Serialization via `DockSerializer<IRootDock>` with `System.Text.Json`
+   > **⚠️ Hypothesis:** Using `IRootDock` (interface) as the type parameter may require `[JsonDerivedType]` discriminators or a concrete root type for polymorphic deserialization. **Try `DockSerializer<IRootDock>` first;** if System.Text.Json source-gen fails, fall back to `DockSerializer<AeroRootDock>` (concrete) or a wrapper `LayoutEnvelope` type. Document whichever works.
 3. Atomic write: `.tmp` file then `File.Move(overwrite: true)`
 4. Corrupt file handling: try/catch → delete → return null → fallback to default
 5. Schema version field in JSON for forward-compat
 6. Register in DI (singleton)
 7. Save on `MainWindow.OnClosing`; load only when `LayoutMode == Freeform`
+   > **OnClosing integration:** The existing `MainWindow.OnClosing` already runs `await shell.CheckDirtyBeforeExitAsync()` then `await shell.SaveWorkspaceStateAsync()`. Add layout save **after** `SaveWorkspaceStateAsync`, in the same try/catch — a layout save failure should not block the close.
+   > **WorkspaceState vs LayoutPersistenceService:** `WorkspaceState` serializes window position, open files, and recent folders. `LayoutPersistenceService` adds dock arrangement to a separate file (`~/.aero/layout.json`). Two persisters, two failure modes. This split is intentional: workspace state is stable and tested; layout persistence is new and experimental. If layout persistence proves reliable, it could be folded into `WorkspaceState` in a future phase.
 
 **Verification:**
 - Launch → Freeform → rearrange → close → relaunch → preserved
@@ -443,7 +463,14 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 
 **Steps:**
 1. Change `LayoutMode` default from `Grid` to `Freeform`
-2. Create `manual_test_phase8_1a.sh` with smoke checklist
+2. Create `manual_test_phase8_1a.sh` — the script must exercise these smoke items (follow the pattern from existing `manual_test_*.sh` scripts):
+   - App launches without errors (exit 0)
+   - All 5 panels render visible content (Explorer, Git, Editor, Problems, Output)
+   - All 5 View menu toggles fire and return to expected state (sidebar hide/show, bottom panel hide/show, output tab)
+   - Layout persists across restart: rearrange panels → close → relaunch → verify arrangement
+   - Mode switch round-trip: Freeform → Grid → Freeform, all content still visible
+   - All keybindings fire: `Ctrl+Shift+E` (Explorer), `Ctrl+`` ` (Output), etc.
+   - Script prints PASS/FAIL for each item with exit code 0 (all pass) or 1 (any fail)
 3. Update `docs/roadmap/PHASES.md` — mark 8.1a complete
 4. Record scope reductions in `docs/TOFIX.md`
 5. Clean up unused imports and debug code
@@ -464,7 +491,7 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 
 | File | Milestone | Purpose |
 |------|-----------|---------|
-| `src/Docking/AeroDockFactory.cs` | M1 | `Factory` subclass — creates all dock model types |
+| `src/Docking/AeroDockFactory.cs` | M1 | `FactoryBase` subclass — creates all dock model types |
 | `src/Docking/LayoutMode.cs` | M3 | `enum LayoutMode { Grid, Freeform }` — deferred from M1 (YAGNI until M3) |
 | `src/Docking/Model/AeroRootDock.cs` | M1 | `IRootDock` implementation |
 | `src/Docking/Model/AeroProportionalDock.cs` | M1 | `IProportionalDock` implementation |
@@ -490,13 +517,16 @@ Each item above is a deliberate reduction per plan-rules §7. Do not re-add with
 | `src/MainWindow.axaml.cs` | M3 | Wire LayoutMode switch |
 | `src/MainWindow.axaml.cs` | M4 | Add `SyncDockVisibility()`, `FindDockable()` |
 | `src/MainWindow.axaml.cs` | M5 | Wire layout persistence on close |
-| `src/ViewModels/ShellViewModel.cs` | M3 | Add `LayoutMode` property, `IsFreeformMode` computed |
+| `src/ViewModels/ShellViewModel.cs` | M0.5 | Add `IsSpikeActive` property + `ToggleSpikeCommand` (removed in M3) |
+| `src/ViewModels/ShellViewModel.cs` | M3 | Add `LayoutMode` property, `IsFreeformMode` computed, remove `IsSpikeActive` |
 | `src/ViewModels/ShellViewModel.cs` | M4 | Rewrite toggle commands to operate per mode |
 | `src/ViewModels/ShellViewModel.cs` | M6 | Change default to Freeform |
 | `src/App.axaml.cs` | M5 | Register `LayoutPersistenceService` in DI |
+| `src/aero.csproj` | M0.5 | Add `Dock.Model.ReactiveUI` package reference |
 
 ### Files NOT to Modify
 
+- `src/ViewModels/ShellViewModel.cs` — `IsSpikeActive` is **temporary** (M0.5–M3 only); `LayoutMode` added in M3; toggle commands rewritten in M4; default changed in M6
 - `src/ViewModels/EditorViewModel.cs` — tab management unchanged
 - `src/ViewModels/FileExplorerViewModel.cs` — file tree logic unchanged
 - `src/ViewModels/GitViewModel.cs` — git operations unchanged
@@ -526,12 +556,15 @@ Channel: `System.Diagnostics.Debug.WriteLine` with `[Dock]` prefix. Info-level m
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
+| Concrete model types missing from installed packages | High | Critical (blocks M0.5) | Add `Dock.Model.ReactiveUI` to entry gate; document in `LIBRARIES.md` |
 | Theme URI wrong | Medium | Critical | M0.5 verifies by inspecting package; spike empty → STOP |
 | Dock.Avalonia 11.3 undocumented behavior | Medium | High | M0.5 is purely XAML against exact installed version |
+| Init sequence (§2.5) is hypothesis | Medium | High | M0.5 is the experiment; pin the verified ordering in §2.5 only after M0.5 passes |
+| DockSerializer<IRootDock> unverified polymorphic serialization | Medium | High | Try `DockSerializer<IRootDock>` first; fall back to concrete type or wrapper |
 | Grid replacement breaks keybindings | Medium | Medium | LayoutMode switch keeps Grid alive; M4 wires per mode |
 | Layout JSON corrupts on shutdown | Medium | High | M5 try/catch + version check; atomic write; delete corrupt |
-| Context injection too late for initial render | Low | Critical | WireViewModels runs strictly before Layout assignment |
 | Toggle commands drift between modes | Medium | Medium | Reactive booleans remain canonical; mode code pushes to dock |
+| M2 dual-editor state hangs or crashes | Medium | Medium | If M2 hangs/crashes due to two AvaloniaEdit instances on one VM, **roll forward to M3 immediately** rather than debugging in M2. M3 makes modes mutually exclusive. |
 
 ---
 

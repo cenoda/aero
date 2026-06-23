@@ -32,8 +32,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. |
-| **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
+| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. || **Dock.Model.ReactiveUI** | Concrete dock model types (`RootDock`, `ToolDock`, `DocumentDock`, etc.) flavored for ReactiveUI. | The `Dock.Model` package only ships interfaces (`IRootDock`, `IToolDock`). You need this to get instantiable classes. Since Aero uses ReactiveUI, this is the natural fit. Added in Phase 8.1a as an entry gate. || **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
 
 
 
