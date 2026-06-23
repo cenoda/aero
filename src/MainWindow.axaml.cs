@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using Aero.Core;
 using Aero.Docking;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
+using Dock.Model.Controls;
 using Dock.Model.Core;
 
 namespace Aero;
@@ -97,6 +99,19 @@ public partial class MainWindow : Window
 
         var layout = AeroDockFactory.CreateDefaultLayout();
 
+        // M2: Wire real ViewModels into Context before assigning Layout.
+        // This must happen BEFORE Layout is assigned so that DataTemplate resolution
+        // picks up the Context immediately when the DockControl renders.
+        if (DataContext is ShellViewModel shell)
+        {
+            WireViewModels(layout, shell);
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "[Dock] AssignSpikeLayout: DataContext is not ShellViewModel — skipping WireViewModels");
+        }
+
         // T1.4: use layout's factory as safety net (plan §2.5 step 4)
         DockSpikeControl.Factory = layout.Factory ?? AeroDockFactory.Factory;
 
@@ -135,6 +150,57 @@ public partial class MainWindow : Window
         else
         {
             System.Diagnostics.Debug.WriteLine("[Dock] ClearSpikeLayout: nothing to clear");
+        }
+    }
+
+    /// <summary>
+    /// M2: Walk the dock layout tree and inject real ViewModels into each dockable's Context.
+    /// Called after layout is built, before Layout is assigned to DockControl.
+    /// This replaces the "M2-pending" placeholders set in AeroDockFactory (T1.1).
+    /// </summary>
+    private static void WireViewModels(IRootDock layout, ShellViewModel shell)
+    {
+        foreach (var dockable in EnumerateDockables(layout))
+        {
+            switch (dockable)
+            {
+                case Docking.ToolViewModels.ExplorerTool t:
+                    t.Context = shell.FileExplorerViewModel;
+                    break;
+                case Docking.ToolViewModels.GitTool t:
+                    t.Context = shell.GitViewModel;
+                    break;
+                case Docking.ToolViewModels.ProblemsTool t:
+                    t.Context = shell.ProblemsViewModel;
+                    break;
+                case Docking.ToolViewModels.OutputTool t:
+                    t.Context = shell.OutputViewModel;
+                    break;
+                case Docking.DocumentViewModels.EditorDocument d:
+                    d.Context = shell.EditorViewModel;
+                    break;
+            }
+            System.Diagnostics.Debug.WriteLine(
+                $"[Dock] Wired {dockable.GetType().Name}.Context " +
+                $"-> {dockable.Context?.GetType().Name ?? "null"}");
+        }
+    }
+
+    /// <summary>
+    /// M2: Recursively enumerate all IDockable instances in the layout tree.
+    /// Walks VisibleDockables on each IDock encountered.
+    /// </summary>
+    private static IEnumerable<IDockable> EnumerateDockables(IDockable root)
+    {
+        yield return root;
+
+        if (root is IDock dock && dock.VisibleDockables != null)
+        {
+            foreach (var child in dock.VisibleDockables)
+            {
+                foreach (var descendant in EnumerateDockables(child))
+                    yield return descendant;
+            }
         }
     }
 
