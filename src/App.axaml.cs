@@ -10,6 +10,7 @@ using Aero.ViewModels;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Dock.Avalonia.Themes.Simple;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aero;
@@ -33,6 +34,9 @@ public partial class App : Application
             var themeService = _services.GetRequiredService<ThemeService>();
             themeService.WireThemeDictionaries();
             _ = themeService.ApplyThemeAsync();
+
+            // Phase 8.1a: Add Dock theme programmatically (ControlTheme, not ResourceDictionary)
+            Styles.Add(new DockSimpleTheme());
 
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();

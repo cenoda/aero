@@ -60,6 +60,10 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public bool IsBottomPanelVisible { get; set; }
     [Reactive] public bool IsDarkTheme { get; set; }
 
+    // M0.5: Dock spike toggle for Phase 8.1a
+    [Reactive] public bool IsSpikeActive { get; set; }
+    public ReactiveCommand<Unit, Unit> ToggleSpikeCommand { get; }
+
     // Window state — persisted via ISettingsService (Phase 8.7)
     [Reactive] public double WindowX { get; set; }
     [Reactive] public double WindowY { get; set; }
@@ -144,6 +148,9 @@ public ShellViewModel(
         AboutCommand = ReactiveCommand.Create(About);
         BuildCommand = ReactiveCommand.CreateFromTask(BuildAsync);
         ToggleThemeCommand = ReactiveCommand.CreateFromTask(ToggleThemeAsync);
+
+        // M0.5: Dock spike toggle
+        ToggleSpikeCommand = ReactiveCommand.Create(() => { IsSpikeActive = !IsSpikeActive; });
 
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg =>

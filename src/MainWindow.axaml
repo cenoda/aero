@@ -29,6 +29,8 @@
         <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleOutputCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding BuildCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding ToggleThemeCommand}"/>
+        <!-- M0.5: Dock spike toggle -->
+        <KeyBinding Gesture="Ctrl+Shift+D" Command="{Binding ToggleSpikeCommand}"/>
     </Window.KeyBindings>
 
     <DockPanel>
@@ -59,6 +61,9 @@
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
                 <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
+                <Separator/>
+                <!-- M0.5: Dock spike for Phase 8.1a -->
+                <MenuItem Header="Toggle Dock _Spike" Command="{Binding ToggleSpikeCommand}" InputGesture="Ctrl+Shift+D"/>
             </MenuItem>
             <MenuItem Header="_Build">
                 <MenuItem Header="_Build" Command="{Binding BuildCommand}" InputGesture="Ctrl+Shift+B"/>
@@ -107,8 +112,15 @@
                 </Grid.RowDefinitions>
 
                 <!-- Editor panel with tabs -->
-                <views:EditorView Grid.Row="0"
-                               DataContext="{Binding EditorViewModel}"/>
+                <!-- M0.5: Dock spike replaces EditorView when IsSpikeActive is true -->
+                <Grid Grid.Row="0">
+                    <views:EditorView DataContext="{Binding EditorViewModel}"
+                              IsVisible="{Binding !IsSpikeActive}"/>
+                    <!-- M0.5: Dock spike XAML — minimal test -->
+                    <ContentControl IsVisible="{Binding IsSpikeActive}">
+                        <TextBlock Text="Dock Spike Active - Press Ctrl+Shift+D to toggle" Margin="16"/>
+                    </ContentControl>
+                </Grid>
 
                 <!-- Problems panel (Phase 4 M4) -->
                 <GridSplitter Grid.Row="1"
