@@ -172,8 +172,14 @@ public sealed class FileSystemService : IFileSystemService
 
     // --- helpers ---------------------------------------------------------
 
-    private static FileSystemEntry ToEntry(string fullPath, FileSystemEntryKind kind) =>
-        new(Path.GetFileName(fullPath), fullPath, kind);
+    private static FileSystemEntry ToEntry(string fullPath, FileSystemEntryKind kind)
+    {
+        // Path.GetFileName returns empty for paths with trailing separators (e.g., "/test/" -> "").
+        // Trim trailing separators before extracting the name.
+        var normalized = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var name = Path.GetFileName(normalized);
+        return new FileSystemEntry(name, fullPath, kind);
+    }
 
     private static string NormalizePath(string path) => Path.GetFullPath(path);
 
