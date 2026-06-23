@@ -5,6 +5,87 @@
 
 ---
 
+## Round 8 — File/Folder Open Blank Panels (2026-06-23)
+
+---
+
+### R8.1 File Explorer shows "No folder open" when opening folder *(priority: critical, BLOCKER)*
+
+**Description:** When opening a file or folder, the panels show blank/loading state instead of the file tree content. The status bar shows "No folder open" even after opening a folder.
+
+**Root cause:** `InitializeDockControl()` was called in the MainWindow constructor BEFORE `DataContext` was set (in App.axaml.cs line 52), so `WireViewModels()` couldn't access the ShellViewModel to wire up the Context properties on dock tools.
+
+**Debug output showed:**
+```
+[FileExplorerViewModel] Received FolderOpened: /home/cenoda/aero/
+[FileExplorerViewModel] LoadFolderAsync complete: 17 entries
+```
+This proved the ViewModel WAS receiving messages and loading data, but the UI wasn't displaying it because Context wasn't wired.
+
+**Fixes applied (2026-06-23):**
+1. `MainWindow.axaml.cs` — Changed `InitializeDockControl()` to take a `ShellViewModel` parameter
+2. `MainWindow.axaml.cs` — Moved the call to `Initialize()` which runs AFTER DataContext is set
+3. This ensures `WireViewModels()` has access to the ShellViewModel when wiring Context
+
+**Status:** [x] Closed — fixed (2026-06-23)
+**Verification:** Debug log shows all tools wired correctly:
+```
+[MainWindow] Wired ExplorerTool.Context
+[MainWindow] Wired GitTool.Context
+[MainWindow] Wired EditorDocument.Context
+[MainWindow] Wired ProblemsTool.Context
+[MainWindow] Wired OutputTool.Context
+[FileExplorerViewModel] LoadFolderAsync complete: 17 entries
+```
+
+---
+
+## Round 7 — Build Warnings Cleanup (2026-06-23)
+
+---
+
+### R7.1 26 compiler warnings + 4 AXLN build errors in Docking model classes *(priority: high, BLOCKER)*
+
+**Description:** After the 8.1a implementation, the build produced 26 warnings and 4
+Avalonia AXLN errors from the Docking model layer:
+
+| Category | Count | Files | Warning |
+|----------|-------|-------|---------|
+| Member hiding (no `new`) | 4 | `AeroDockWindow.cs` | CS0108 — `Id`, `Title`, `Owner`, `Factory` hide `ManagedDockableBase` |
+| Method hiding (no `new`/`override`) | 1 | `AeroDockWindow.cs` | CS0114 — `OnClose()` hides `ManagedDockableBase.OnClose()` |
+| Nullability return mismatch | 16 | `AeroProportionalDock.cs`, `AeroToolDock.cs`, `AeroRootDock.cs` | CS8766 — `ICommand?` vs `ICommand` in `IDock` interface |
+| Nullability setter mismatch | 5 | `AeroDocumentDock.cs` | CS8767 — `ICommand?` setter vs `ICommand` in `IDocumentDock` interface |
+| Unused event | 1 | `AeroRootDock.cs` | CS0067 — `NoOpCommand.CanExecuteChanged` never raised |
+| Type not found in AXAML | 4 | `MainWindow.axaml` | AVLN2000 — `aero:LayoutMode` resolves to `Aero` but enum lives in `Aero.Docking` |
+| Analyzer version mismatch | 1 | `aero.csproj` | CS9057 — `Dock.Serializer.SystemTextJson` analyzer references Roslyn 5.0 (we run 4.12) |
+
+**Root cause:** Dock.Avalonia 11.3.12.1 interfaces (`IDock`, `IDocumentDock`) declare
+command properties as non-nullable `ICommand`, but our implementations used `ICommand?`.
+`ManagedDockableBase` has non-virtual `Id`, `Title`, `Owner`, `Factory` — our re-declarations
+hid them without `new`. The `LayoutMode` enum was in `Aero.Docking` but AXAML mapped
+`aero:` to the root `Aero` namespace.
+
+**Fixes applied (2026-06-23):**
+1. `AeroDockWindow.cs` — Added `new` to `Id`, `Title`, `Owner`, `Factory`, `OnClose`
+2. `AeroProportionalDock.cs`, `AeroToolDock.cs`, `AeroRootDock.cs` — Changed `ICommand?`
+   → `ICommand` on `GoBack`, `GoForward`, `Navigate`, `Close` (and `ShowWindows`,
+   `ExitWindows` on RootDock)
+3. `AeroRootDock.cs` — Changed `NoOpCommand.CanExecuteChanged` from auto-event to
+   empty add/remove (suppresses CS0067 without breaking `ICommand` contract)
+4. `AeroDocumentDock.cs` — Added `#pragma warning disable CS8767` around the class
+   (setter nullability mismatch is a false positive from Dock.Model being compiled
+   without nullable context)
+5. `MainWindow.axaml` — Added `xmlns:docking="using:Aero.Docking"` and changed
+   `{x:Static aero:LayoutMode.*}` → `{x:Static docking:LayoutMode.*}`
+6. `aero.csproj` — Added `CS9057` to `<NoWarn>` (Dock.Serializer.SystemTextJson
+   analyzer references a newer Roslyn version; not fixable on our side)
+
+**Status:** [x] Closed — fixed (2026-06-23)
+**Verification:** `dotnet build src/aero.csproj` — 0 warnings, 0 errors;
+`dotnet test tests` — 545 passed, 0 failed.
+
+---
+
 ## Round 6 — Runtime Findings (2026-06-23)
 
 ---
@@ -64,40 +145,25 @@ HostWindowLocator, DockableLocator) that drag-and-drop requires.
 
 ---
 
-### R5.2 AeroDockFactory model property dictionaries are new instances on every access *(priority: low)*
+### R5.2 ~~AeroDockFactory model property dictionaries are new instances on every access~~ *(priority: low)* ✅
 
 **Description:** `AeroDockFactory` overrides `ToolControls`, `DocumentControls`, etc. as
-properties returning `new Dictionary<>()` on every access. Dock.Avalonia may call these
-repeatedly during layout operations, creating new dictionaries each time and losing state.
+properties returning `new Dictionary<>()` on every access.
 
-**Required fix:** Store dictionaries as fields in the factory, return the same instance:
-
-```csharp
-private readonly Dictionary<IDockable, IDockableControl> _toolControls = new();
-public override IDictionary<IDockable, IDockableControl> ToolControls => _toolControls;
-```
-
-Apply to all 10 dictionary/list property overrides in `AeroDockFactory`.
-
-**Status:** [ ] Open — fix in M7 cleanup or earlier if issues appear (deliberate reduction — no runtime issues observed during M1–M7)
+**Status:** [x] Closed — fixed in commit (2026-06-23)
+**Resolution:** All dictionary/list property overrides now return field-backed singletons.
 
 ---
 
-### R5.3 Model classes lack Equals/GetHashCode overrides *(priority: low)*
+### R5.3 ~~Model classes lack Equals/GetHashCode overrides~~ *(priority: low)* ✅
 
 **Description:** Dock.Avalonia uses `IDockable` identity (likely `Id` string) to track
-dockables. Our model classes rely on reference equality. If Dock compares dockables by
-value or uses them as dictionary keys, mismatches may occur.
+dockables. Our model classes relied on reference equality.
 
-**Required fix:** Override `Equals` and `GetHashCode` on all Aero* model classes using
-the `Id` property:
-
-```csharp
-public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
-public override int GetHashCode() => Id?.GetHashCode() ?? 0;
-```
-
-**Status:** [ ] Open — add during M4/M7 if runtime issues appear (deliberate reduction — no identity mismatch issues observed; Dock uses string ID comparison internally)
+**Status:** [x] Closed — fixed in commit (2026-06-23)
+**Resolution:** Added `Equals`/`GetHashCode` overrides using `Id` to all Aero* model classes
+(AeroRootDock, AeroProportionalDock, AeroProportionalDockSplitter, AeroToolDock,
+AeroDocumentDock, AeroDockWindow) and tool/document types.
 
 ---
 
