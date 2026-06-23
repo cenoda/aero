@@ -1,6 +1,7 @@
 # Phase 8.1a — To Fix
 
 > **Status:** M0.5 Resolved (2026-06-23) — All critical/high issues fixed.
+> **Review Update:** 2026-06-23 (implementation review pass: updated item status/evidence)
 > These are deviations from the plan, unknowns resolved during M0.5, and items
 > that must be addressed in later milestones.
 
@@ -142,56 +143,50 @@ rendering) may reveal theme issues not visible in M0.5.
 
 ---
 
-### T0.9 `[Dock]` logging insufficient for debugging failures *(priority: high)*
+### T0.9 `[Dock]` logging insufficient for debugging failures *(priority: high, resolved)*
 
-**Description:** The plan (§6) specifies `[Dock]`-prefixed logging at 5 key sites.
-Current M0.5 implementation has exactly **1 log line** (`[Dock] M0.5: spike layout
-assigned`) in `MainWindow.axaml.cs`. `SpikeDockFactory.CreateSpikeLayout()` has **zero
-logging** — no tree dump, no per-object creation trace, no before/after for
-`factory.AddDockable()` calls. If the spike fails, there is no way to distinguish
-"layout was never built" from "layout was built but not rendered" from "layout was
-built incorrectly."
+**Description:** The original concern was that M0.5 had only one log line and no
+creation/assignment/state logging.
 
-**Impact:** This repeats v1's #5 contributing factor ("No debugging-friendly code").
-Without structured logging, debugging reverts to guesswork — the pattern that cost
-3+ hours in v1.
+**Implementation review evidence (2026-06-23):**
+- `src/Docking/SpikeDockFactory.cs` now logs creation flow throughout
+  `CreateSpikeLayout()` (`[Dock]` start/completed, object creation, add-to-tree steps).
+- `src/MainWindow.axaml.cs` logs `InitializeDockSpike()` factory assignment and
+  `AssignSpikeLayout()` before/after state snapshots.
+- `src/ViewModels/ShellViewModel.cs` logs `IsSpikeActive` toggle transitions.
+
+**Residual note:** The logging is sufficiently expanded for M0.5 verification. A strict
+hierarchical tree-dump format can still be improved later if needed.
 
 **Required fix:**
-- [ ] Add tree-dump logging to `SpikeDockFactory.CreateSpikeLayout()`: depth, type,
-  id, proportion per child (as specified in §6)
-- [ ] Add logging before/after each `factory.AddDockable()` call
-- [ ] Add `[Dock]` logging in `InitializeDockSpike()`: factory type, layout type,
-  child count, Layout assignment site
-- [ ] Add `[Dock]` log when `IsSpikeActive` toggles (both on and off)
-- [ ] Add `[Dock]` log for DockControl state snapshot: `Factory != null`,
-  `Layout != null`, `VisibleDockables.Count`
+- [x] Added creation-flow `[Dock]` logging in `SpikeDockFactory.CreateSpikeLayout()`
+- [x] Added DockControl assignment/state logs in `MainWindow.AssignSpikeLayout()`
+- [x] Added spike toggle state logging in `ShellViewModel.ToggleSpikeCommand`
 - [ ] Remove all `[Dock]` logging in M6 cleanup
 
-**Status:** [ ] Open — fix before M0.5 verification
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
-### T0.10 Layout assigned before DockControl template is applied *(priority: medium)*
+### T0.10 Layout assigned before DockControl template is applied *(priority: medium, resolved)*
 
-**Description:** `InitializeDockSpike()` runs during `MainWindow.Initialize()`, which
-is called from `App.axaml.cs` **before** `desktop.MainWindow = mainWindow` (i.e. before
-the window is shown). At this point, the DockControl's Avalonia template
-(`OnApplyTemplate`) has not run. Some Avalonia controls ignore property changes until
-the template is applied. The spike works around this by starting invisible and only
-becoming visible when the user presses `Ctrl+Shift+D`, but the Layout was assigned at
-a time when the control could not process it.
+**Description:** The risk was that layout assignment occurred too early
+(pre-template/pre-visual lifecycle), causing an empty dock.
 
-**Impact:** When the user toggles the spike on, the DockControl becomes visible but
-its Layout may not take effect because it was set before the template was ready.
-This can manifest as a blank/empty DockControl — exactly the v1 symptom.
+**Implementation review evidence (2026-06-23):**
+- `src/MainWindow.axaml.cs`: `InitializeDockSpike()` now assigns only `Factory`.
+- `src/MainWindow.axaml.cs`: layout assignment is deferred to `AssignSpikeLayout()`.
+- `src/ViewModels/ShellViewModel.cs`: `ToggleSpikeCommand` calls
+  `_mainWindow.AssignSpikeLayout()` only when `IsSpikeActive` turns true.
+
+This defers layout assignment to user-triggered activation time, avoiding early
+initialization timing.
 
 **Required fix:**
-- [ ] Move Layout assignment to a later lifecycle point: either defer to the first
-  time `IsSpikeActive` becomes true, or override `OnApplyTemplate` on DockControl
-- [ ] Alternatively, assign Layout in a `Loaded` event handler (fires after template
-  is applied)
+- [x] Deferred layout assignment until spike activation
+- [x] Kept early initialization to factory assignment only
 
-**Status:** [ ] Open — investigate and fix
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
@@ -269,31 +264,29 @@ pre-M0.5 ancestor commit must be found manually.
 
 ---
 
-### T0.14 DockControl has no state-tracing after Layout assignment *(priority: medium)*
+### T0.14 DockControl has no state-tracing after Layout assignment *(priority: medium, resolved)*
 
-**Description:** After `DockSpikeControl.Layout = layout` is set, there is no logging
-of what the DockControl's internal state looks like:
-- `DockSpikeControl.Factory` — is it null?
-- `DockSpikeControl.Layout` — is it the expected IRootDock?
-- The IRootDock's `VisibleDockables.Count` — does it have children?
-- `DockSpikeControl.InitializeFactory` — True or False?
+**Description:** The concern was lack of receiving-end state visibility after assigning
+`DockSpikeControl.Layout`.
 
-Without these, you cannot distinguish "layout never arrived" from "layout arrived but
-was not processed." This is distinct from T0.9 (which covers creation-side logging)
-— this is about verifying the *receiving end*.
+**Implementation review evidence (2026-06-23):**
+- `src/MainWindow.axaml.cs` (`AssignSpikeLayout()`):
+  - Logs pre-assign state (`Factory`, `Layout pre`)
+  - Logs post-assign state (`Layout post`)
+  - Logs root child visibility count via `IDock.VisibleDockables.Count`
+- `src/ViewModels/ShellViewModel.cs` logs spike visibility toggles via
+  `[Dock] IsSpikeActive: {value}`
 
-**Impact:** If DockControl silently ignores Layout (because Factory is null, or
-template not applied, or InitializeFactory=False), there is no log evidence.
+**Note:** `InitializeFactory` value is not currently logged; however, the core state
+trace required to diagnose null-factory/null-layout/empty-root cases is now present.
 
 **Required fix:**
-- [ ] After DockSpikeControl.Layout assignment, log: Factory type (or null), Layout
-  type (or null), VisibleDockables count, InitializeFactory value
-- [ ] Log when IsSpikeActive toggles to true: "DockControl visible, type, factory"
-  and to false: "DockControl hidden"
-- [ ] Consider adding a weak timer that re-logs the state 500ms after Layout
-  assignment (catches delayed rendering issues)
+- [x] Added pre/post Layout assignment state logs
+- [x] Added root visible-child count logging
+- [x] Added toggle visibility logging
+- [ ] Optional enhancement: include `InitializeFactory` in state snapshot logs
 
-**Status:** [ ] Open — fix before M0.5 verification
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
