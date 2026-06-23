@@ -1,6 +1,7 @@
 using System;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Dock.Model.ReactiveUI;
 using Dock.Model.ReactiveUI.Controls;
 using Avalonia.Controls;
 using Alignment = Dock.Model.Core.Alignment;
@@ -9,7 +10,7 @@ namespace Aero.Docking;
 
 /// <summary>
 /// M0.5: Creates a minimal dock layout for the spike test.
-/// Uses concrete types from Dock.Model.ReactiveUI (RootDock, ToolDock, DocumentDock, Tool, Document).
+/// Uses Dock.Model.ReactiveUI.Factory to create and manage dockables.
 /// </summary>
 public static class SpikeDockFactory
 {
@@ -18,79 +19,65 @@ public static class SpikeDockFactory
     /// </summary>
     public static IRootDock CreateSpikeLayout()
     {
-        var root = new RootDock();
+        // Use ReactiveUI Factory to create dockables
+        var factory = new Factory();
+
+        var root = factory.CreateRootDock();
 
         // Horizontal proportional dock: left (30%) | splitter | right (70%)
-        var proportional = new ProportionalDock
-        {
-            Orientation = Orientation.Horizontal
-        };
+        var proportional = factory.CreateProportionalDock();
+        proportional.Orientation = Orientation.Horizontal;
 
         // Left: ToolDock with two tools
-        var leftProportional = new ProportionalDock
-        {
-            Orientation = Orientation.Vertical,
-            Proportion = 0.3
-        };
+        var leftProportional = factory.CreateProportionalDock();
+        leftProportional.Orientation = Orientation.Vertical;
+        leftProportional.Proportion = 0.3;
 
-        var leftToolDock = new ToolDock
-        {
-            Alignment = Alignment.Left,
-            IsExpanded = true
-        };
+        var leftToolDock = factory.CreateToolDock();
+        leftToolDock.Alignment = Alignment.Left;
+        leftToolDock.IsExpanded = true;
 
-        var toolA = new Tool
-        {
-            Id = "tool-a",
-            Title = "Tool A",
-            CanClose = true
-        };
+        var toolA = factory.CreateTool();
+        toolA.Id = "tool-a";
+        toolA.Title = "Tool A";
+        toolA.CanClose = true;
 
-        var toolB = new Tool
-        {
-            Id = "tool-b",
-            Title = "Tool B",
-            CanClose = true
-        };
+        var toolB = factory.CreateTool();
+        toolB.Id = "tool-b";
+        toolB.Title = "Tool B";
+        toolB.CanClose = true;
 
-        leftToolDock.VisibleDockables.Add(toolA);
-        leftToolDock.VisibleDockables.Add(toolB);
-        leftProportional.VisibleDockables.Add(leftToolDock);
+        // Use factory to add dockables
+        factory.AddDockable(leftToolDock, toolA);
+        factory.AddDockable(leftToolDock, toolB);
+        factory.AddDockable(leftProportional, leftToolDock);
 
         // Splitter
-        var splitter = new ProportionalDockSplitter
-        {
-            CanResize = true
-        };
+        var splitter = factory.CreateProportionalDockSplitter();
+        splitter.CanResize = true;
 
         // Right: DocumentDock with one document
-        var rightProportional = new ProportionalDock
-        {
-            Orientation = Orientation.Vertical,
-            Proportion = 0.7
-        };
+        var rightProportional = factory.CreateProportionalDock();
+        rightProportional.Orientation = Orientation.Vertical;
+        rightProportional.Proportion = 0.7;
 
-        var documentDock = new DocumentDock
-        {
-            CanCreateDocument = false
-        };
+        var documentDock = factory.CreateDocumentDock();
+        documentDock.CanCreateDocument = false;
 
-        var docA = new Document
-        {
-            Id = "doc-a",
-            Title = "Doc A",
-            CanClose = true
-        };
+        var docA = factory.CreateDocument();
+        docA.Id = "doc-a";
+        docA.Title = "Doc A";
+        docA.CanClose = true;
 
-        documentDock.VisibleDockables.Add(docA);
-        rightProportional.VisibleDockables.Add(documentDock);
+        factory.AddDockable(documentDock, docA);
+        factory.AddDockable(rightProportional, documentDock);
 
         // Build tree
-        proportional.VisibleDockables.Add(leftProportional);
-        proportional.VisibleDockables.Add(splitter);
-        proportional.VisibleDockables.Add(rightProportional);
+        factory.AddDockable(proportional, leftProportional);
+        factory.AddDockable(proportional, splitter);
+        factory.AddDockable(proportional, rightProportional);
 
-        root.VisibleDockables.Add(proportional);
+        factory.AddDockable(root, proportional);
 
         return root;
     }
