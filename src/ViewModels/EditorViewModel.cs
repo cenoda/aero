@@ -340,6 +340,14 @@ public class EditorViewModel : ReactiveObject, IDisposable
         IsFindReplaceVisible = true;
     }
 
+    /// <summary>Request focus to the editor. Used after toggling off dock spike.</summary>
+    public event Action? FocusEditorRequested;
+
+    public void FocusEditor()
+    {
+        FocusEditorRequested?.Invoke();
+    }
+
     /// <summary>Hide the find/replace overlay.</summary>
     public void HideFindReplace()
     {

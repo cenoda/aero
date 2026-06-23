@@ -165,9 +165,12 @@ public ShellViewModel(
         // factory's dockable state without stacking IRootDock instances.
         ToggleSpikeCommand = ReactiveCommand.Create(() =>
         {
+            // BUGFIX: Add detailed logging to diagnose toggle failure
+            System.Diagnostics.Debug.WriteLine("[Dock] ToggleSpikeCommand EXECUTED");
+            System.Diagnostics.Debug.WriteLine($"[Dock]   _mainWindow is null: {_mainWindow == null}");
+            System.Diagnostics.Debug.WriteLine($"[Dock]   IsSpikeActive before: {IsSpikeActive}");
             IsSpikeActive = !IsSpikeActive;
-            // Issue 3: Log toggle
-            System.Diagnostics.Debug.WriteLine($"[Dock] IsSpikeActive: {IsSpikeActive}");
+            System.Diagnostics.Debug.WriteLine($"[Dock]   IsSpikeActive after: {IsSpikeActive}");
             if (_mainWindow == null) return;
             if (IsSpikeActive)
             {

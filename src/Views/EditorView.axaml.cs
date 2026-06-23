@@ -89,6 +89,12 @@ public partial class EditorView : UserControl
             _findReplaceHandler = null;
         }
 
+        // BUGFIX: Unsubscribe from previous ViewModel's FocusEditorRequested
+        if (DataContext is EditorViewModel previousVmForFocus)
+        {
+            previousVmForFocus.FocusEditorRequested -= OnFocusEditorRequested;
+        }
+
         if (DataContext is EditorViewModel vm)
         {
             _reactiveSubscriptions = new CompositeDisposable();
@@ -97,6 +103,9 @@ public partial class EditorView : UserControl
             vm.WhenAnyValue(x => x.ActiveTab)
               .Subscribe(tab => ResubscribeEditor(tab))
               .DisposeWith(_reactiveSubscriptions);
+
+            // BUGFIX: Subscribe to FocusEditorRequested to restore focus after dock spike toggle
+            vm.FocusEditorRequested += OnFocusEditorRequested;
 
             // Execute find/replace operations against the live editor control
             _findReplaceHandler = OnFindReplaceRequested;
@@ -303,6 +312,21 @@ public partial class EditorView : UserControl
                 ExecuteReplaceAll(vm, args.SearchText, args.ReplaceText, comparison, args.WholeWord);
                 break;
         }
+    }
+
+    /// <summary>
+    /// BUGFIX: Restore focus to editor after dock spike toggle off.
+    /// </summary>
+    private void OnFocusEditorRequested()
+    {
+        // Use dispatcher to ensure focus is set after the visual state updates
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_activeEditor != null)
+            {
+                _activeEditor.Focus();
+            }
+        });
     }
 
     private void ExecuteFindNext(EditorViewModel vm, string searchText,

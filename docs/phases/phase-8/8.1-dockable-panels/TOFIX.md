@@ -706,6 +706,20 @@ Drag-to-rearrange and close-button behavior is still unverified (requires M3+).
 
 ---
 
+### T2.4 Toggle doesn't work + editor unscrollable after toggle off *(priority: high, open)*
+
+**Description:** User reported two issues:
+1. Ctrl+Shift+D or View menu toggle doesn't activate the dock spike
+2. After toggling off, the main editor becomes unscrollable
+
+**Root cause analysis (Attempt 1-2):**
+- Added detailed logging — issue persists
+- Added focus restoration — issue persists
+
+**Status:** [ ] Open — created ISSUE-005 for deeper investigation
+
+---
+
 ### Round 7 — M2 Verification Summary (2026-06-23)
 
 | Check | Result |

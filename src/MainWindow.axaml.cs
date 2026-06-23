@@ -80,7 +80,13 @@ public partial class MainWindow : Window
     /// </summary>
     internal void AssignSpikeLayout()
     {
+        // BUGFIX: Add detailed logging to diagnose toggle failure
+        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout CALLED");
+        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
+
         if (DockSpikeControl == null) return;
+
+        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl.Layout before: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
 
         if (DockSpikeControl.Layout != null)
         {
@@ -139,6 +145,10 @@ public partial class MainWindow : Window
     /// </summary>
     internal void ClearSpikeLayout()
     {
+        // BUGFIX: Add detailed logging
+        System.Diagnostics.Debug.WriteLine("[Dock] ClearSpikeLayout CALLED");
+        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
+
         if (DockSpikeControl == null) return;
 
         if (DockSpikeControl.Layout != null)
@@ -146,6 +156,15 @@ public partial class MainWindow : Window
             System.Diagnostics.Debug.WriteLine(
                 $"[Dock] ClearSpikeLayout: detaching {DockSpikeControl.Layout.GetType().Name}");
             DockSpikeControl.Layout = null;
+            // BUGFIX: Clear InitializeFactory to ensure clean re-init
+            DockSpikeControl.InitializeFactory = false;
+            DockSpikeControl.InitializeLayout = false;
+            // BUGFIX: Ensure focus returns to editor after toggling off
+            // The DockControl might have focus even when invisible, blocking editor scroll
+            if (DataContext is ViewModels.ShellViewModel shell)
+            {
+                shell.EditorViewModel.FocusEditor();
+            }
         }
         else
         {
