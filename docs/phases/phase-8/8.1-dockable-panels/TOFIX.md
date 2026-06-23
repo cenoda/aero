@@ -1,9 +1,10 @@
 # Phase 8.1a — To Fix
 
-> **Status:** M0.5 Resolved (2026-06-23) — All critical/high/medium issues fixed.
+> **Status:** M1 Resolved (2026-06-23) — All M1 review items addressed in commit `0942630`.
 > **Review Round 5:** 2026-06-23 (TOFIX cleanup pass — addressed T0.5/T0.7/T0.8/T0.11/T0.12/T0.13/T0.16/T0.17/T0.18)
-> **M1 Review:** 2026-06-23 (Round 6 — addressed T1.2/T1.3/T1.4/T1.5; opened T1.1/T1.6/T1.7).
-> **Remaining open items:** T0.15 (M1 `InitializeFactory` verification), T1.1/T1.6/T1.7 (M1 wiring + structural cleanup), T0.15 follow-up.
+> **M1 Review:** 2026-06-23 (Round 6 — opened T1.1–T1.7).
+> **M1 Fixes:** 2026-06-23 (Round 7 — resolved T1.1, T1.2, T1.3, T1.4, T1.5, T1.7; T1.6 deferred to M2).
+> **Remaining open items:** T0.15 (M1 `InitializeFactory` flag verification, deferred to M2 with real ViewModels), T1.6 (dual-editor hazard, monitor during M2).
 > These are deviations from the plan, unknowns resolved during M0.5/M1, and items
 > that must be addressed in later milestones.
 
