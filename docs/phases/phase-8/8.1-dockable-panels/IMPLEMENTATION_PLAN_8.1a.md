@@ -39,7 +39,7 @@ All must be true before M0.5 starts:
 
 ### 2.1 DataTemplate Strategy: Option A (Direct Context Injection)
 
-**Chosen unanimously by all agents. Verified working in v1 post-mortem logs.**
+**Rationale:** The v1 post-mortem logs confirmed Context injection worked — all five tools had their Context set correctly (`[Dock] Wired ExplorerTool.Context` etc. appeared in debug output). The rendering failure was elsewhere. Option A repeats the one thing that was proven to work.
 
 The Views (`FileExplorerView`, `GitPanelView`, etc.) remain unchanged. `DataTemplate`s registered in `App.axaml` map each tool/document type to its View. The `Context` property on each `IDockable` is set from code-behind in `WireViewModels()` — no `{Binding}` gymnastics, no `$parent[Window].DataContext`.
 
@@ -141,7 +141,9 @@ internal static class DockProportions
 }
 ```
 
-### 2.5 Initialization Sequence
+### 2.5 Initialization Sequence (Hypotheses — Verify in M0.5)
+
+> **⚠️ The ordering below is our best inference from the Dock.Avalonia API surface and session notes (`aero-phase8-m2-notes.md`). The specifics of what `OnPropertyChanged` does internally are not public — they are hypotheses to be confirmed in M0.5 when we first assign a layout to `DockControl`. If M0.5 rendering fails, the init sequence is the first thing to investigate.**
 
 ```
 App.axaml.cs: OnFrameworkInitializationCompleted()
@@ -160,35 +162,29 @@ MainWindow.axaml.cs: Initialize(IMessageBus bus)
 MainWindow.axaml.cs: InitializeDockControl(ShellViewModel shell)
 │
 ├─ 1. var factory = new AeroDockFactory()
-├─ 2. DockControl.InitializeFactory = true            ← BEFORE Layout (triggers locators)
-├─ 3. DockControl.InitializeLayout = false            ← prevent double init
+├─ 2. DockControl.InitializeFactory = true            ← hypothesis: triggers locator setup
+├─ 3. DockControl.InitializeLayout = false            ← hypothesis: prevents double init
 ├─ 4. DockControl.Factory = factory                   ← safety net
-├─ 5. var layout = factory.CreateDefaultLayout()      ← calls InitLayout internally
+├─ 5. var layout = factory.CreateDefaultLayout()      ← hypothesis: calls InitLayout internally
 ├─ 6. WireViewModels(layout, shell)                   ← Context injection BEFORE layout
-├─ 7. DockControl.Layout = layout                     ← LAST — triggers rendering
+├─ 7. DockControl.Layout = layout                     ← LAST — hypothesis: triggers rendering
 └─ 8. Log: "init complete, N dockables"
 ```
 
-**Critical ordering:** `InitializeFactory = true` MUST be set before `DockControl.Layout = layout`. The `OnPropertyChanged` handler fires `Initialize()` when Layout is set, which checks `InitializeFactory` to set up `ContextLocator`, `HostWindowLocator`, etc. Without locators, drag-and-drop and rendering fail silently.
+**Hypothesis (verify in M0.5):** Setting `DockControl.Layout` triggers internal initialization that reads `InitializeFactory`. If `InitializeFactory` is false at that point, locators (`ContextLocator`, `HostWindowLocator`) are not set up, and rendering/drag-and-drop may fail silently. M0.5 will test this ordering with a minimal XAML spike; the actual working sequence is pinned only after M0.5 passes.
 
-### 2.6 Theme Include (Verified Against Package)
+### 2.6 Theme Include (Unverified — Resolve in M0.5)
 
-The theme URI was wrong in the previous plan (`SimpleDockTheme.xaml`). The actual embedded resource is `DockSimpleTheme.axaml`. Since `DockSimpleTheme` is a `ControlTheme` (not a `ResourceDictionary`), the include mechanism needs verification in M0.5.
+The `Dock.Avalonia.Themes.Simple` 11.3.12.1 package contains:
+- Embedded resource path: `DockSimpleTheme.axaml`
+- Class: `Dock.Avalonia.Themes.Simple.DockSimpleTheme` (a `ControlTheme`, not a `ResourceDictionary`)
 
-```
-avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
-```
+**The include mechanism is unsettled.** Since `DockSimpleTheme` is a `ControlTheme`, the correct mechanism could be:
+- `<StyleInclude Source="avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml"/>` (if Avalonia resolves ControlThemes via StyleInclude)
+- `<ResourceInclude>` in `<Application.Resources>`
+- Programmatic: `Application.Styles.Add(new DockSimpleTheme())`
 
-```xml
-<!-- App.axaml — Application.Styles -->
-<Application.Styles>
-    <StyleInclude Source="avares://Avalonia.Themes.Simple/SimpleTheme.xaml" />
-    <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
-    <!-- M0.5 gate: must render the spike tab or this URI is wrong -->
-    <StyleInclude Source="avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml" />
-    <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
-</Application.Styles>
-```
+M0.5 step 1 resolves this experimentally. The URI body (`DockSimpleTheme.axaml`) is confirmed; the mechanism is not. **Do not commit a guessed mechanism.**
 
 ---
 
@@ -216,26 +212,80 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 | DialogHost.Avalonia | Avalonia 12 | Incompatible with 11.3 |
 | New panels | 8.1c+ | Only existing 5 converted |
 
+Each item above is a deliberate reduction per plan-rules §7. Do not re-add without a concrete second consumer. Mirror this list in `TOFIX.md` as reductions.
+
 ---
 
 ## 4. Milestones
 
 ### M0.5 — Pure-XAML Rendering Spike
 
-**Goal:** Prove Dock.Avalonia renders inside our app before writing any C# model code.
+**Goal:** Prove Dock.Avalonia renders inside our app before writing any C# model code. This is the load-bearing gate — if this fails, every later milestone is dead.
 
-**Steps:**
-1. Add theme `StyleInclude` to `App.axaml` (see §2.6)
-2. Add a new tab "Dock spike" in the existing `MainWindow.axaml` sidebar `TabControl`
-3. Verify the theme URI by inspecting the installed package:
+**Placement:** The spike goes in the **editor area** (center column), not the sidebar. The sidebar is ~250px wide — a horizontal proportional dock cramped into 250px will look broken even when working, falsely failing the spike. The spike needs ≥600×400 to be a meaningful visual test.
+
+```xml
+<!-- MainWindow.axaml — replace EditorView content area with a toggle -->
+<!-- Keep EditorView behind IsVisible, add DockSpike alongside it -->
+<Grid Grid.Row="0">
+    <views:EditorView IsVisible="{Binding !IsSpikeActive}" />
+    <!-- M0.5: Dock spike fills the editor area -->
+    <ContentControl x:Name="DockSpikeHost" IsVisible="{Binding IsSpikeActive}" />
+</Grid>
+```
+
+**Steps (order matters — verify before include):**
+
+1. **Verify the theme include mechanism** (§2.6 is unsettled). Inspect the installed package:
    ```bash
+   # Find the embedded resource path
    unzip -l ~/.nuget/packages/dock.avalonia.themes.simple/11.3.12.1/lib/net8.0/*.dll 2>/dev/null | grep -i theme
    ```
+   Then try the include in `App.axaml`. If `<StyleInclude>` doesn't render the `ControlTheme`, try `<ResourceInclude>` or programmatic `Application.Styles.Add()`. **This step produces the verified mechanism committed in step 2.**
 
-**Verification:**
+2. **Add the verified theme include** to `App.axaml` (mechanism determined in step 1).
+
+3. **Add the inline XAML spike** to `MainWindow.axaml` in the editor area. The spike is a hand-written `<DockControl>` with static content — **no factory, no model classes, no code-behind**:
+   ```xml
+   <dock:DockControl x:Name="DockSpike" InitializeFactory="True" InitializeLayout="False">
+       <dock:DockControl.Layout>
+           <dock:RootDock>
+               <dock:ProportionalDock Orientation="Horizontal">
+                   <dock:ProportionalDock Orientation="Vertical" Proportion="0.3">
+                       <dock:ToolDock Alignment="Left">
+                           <dock:Tool Id="tool-a" Title="Tool A">
+                               <TextBlock Text="Tool A content" Margin="8"/>
+                           </dock:Tool>
+                           <dock:Tool Id="tool-b" Title="Tool B">
+                               <TextBlock Text="Tool B content" Margin="8"/>
+                           </dock:Tool>
+                       </dock:ToolDock>
+                   </dock:ProportionalDock>
+                   <dock:ProportionalDockSplitter/>
+                   <dock:ProportionalDock Orientation="Vertical" Proportion="0.7">
+                       <dock:DocumentDock>
+                           <dock:Document Id="doc-a" Title="Doc A">
+                               <TextBlock Text="Doc A content" Margin="8"/>
+                           </dock:Document>
+                       </dock:DocumentDock>
+                   </dock:ProportionalDock>
+               </dock:ProportionalDock>
+           </dock:RootDock>
+       </dock:DockControl.Layout>
+   </dock:DockControl>
+   ```
+   > **Note:** This XAML tests whether `<dock:Tool>` and `<dock:Document>` work as inline content holders in 11.3. If they don't (e.g. the library requires factory-created instances), M0.5 catches that here — before any C# is written.
+
+4. **Add a View menu item** or keyboard shortcut to toggle `IsSpikeActive` so the spike is visible on demand.
+
+5. **Build and run.** Click to show the spike tab.
+
+**Verification (acceptance criteria):**
 - `dotnet build src/aero.csproj` — 0 errors
-- App starts, click "Dock spike" tab → see *any* non-empty docked content
-- **If the spike tab is empty, STOP.** Theme URI, package version, or Avalonia 11.3 compat is wrong.
+- Spike area shows **both** tool tabs labelled "Tool A" and "Tool B" with their TextBlock text visible
+- Document area shows "Doc A content"
+- Drag the splitter — both regions resize
+- **If any of these are not visible, STOP.** Theme, package version, or Avalonia 11.3 compat is the cause; no later milestone can succeed until this passes.
 
 **Rollback:** `git tag v2-m0.5-spike`
 
@@ -243,13 +293,12 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 
 ### M1 — Model Classes + Factory
 
-**Goal:** Replace M0.5 inline XAML with factory-driven layout, still inside the spike tab.
+**Goal:** Replace M0.5 inline XAML with factory-driven layout, still inside the spike area.
 
 **Files to create:**
 
 | File | Purpose |
 |------|---------|
-| `src/Docking/LayoutMode.cs` | `enum LayoutMode { Grid, Freeform }` |
 | `src/Docking/AeroDockFactory.cs` | `Factory` subclass |
 | `src/Docking/Model/AeroRootDock.cs` | `IRootDock` implementation |
 | `src/Docking/Model/AeroProportionalDock.cs` | `IProportionalDock` implementation |
@@ -265,16 +314,16 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 **Steps:**
 1. Create all model classes implementing `INotifyPropertyChanged`
 2. Create `AeroDockFactory : Factory` with `CreateDefaultLayout()` building the tree from §2.4
-3. Each model class gets `Equals`/`GetHashCode` overrides using `Id`
-4. Add `Application.DataTemplates` in `App.axaml` (see §2.1)
-5. Replace M0.5 inline XAML with `<dock:DockControl x:Name="DockSpike"/>`
-6. Wire factory + layout in `MainWindow.axaml.cs` (see §2.5)
-7. Add `[Dock]`-prefixed debug logging
+3. Add `Application.DataTemplates` in `App.axaml` (see §2.1)
+4. Replace M0.5 inline XAML with `<dock:DockControl x:Name="DockSpike"/>`
+5. Wire factory + layout in `MainWindow.axaml.cs` (see §2.5)
+6. Add `[Dock]`-prefixed debug logging
 
 **Verification:**
-- Spike tab shows layout driven by factory
-- Debug output prints layout tree depth-first
-- `dotnet test tests` — 527 pass
+- Spike area shows layout driven by factory (same visual as M0.5)
+- Log line `[Dock] init: factory assigned` appears in debug output
+- Layout tree dump appears in debug output (depth, type, id, proportion)
+- `dotnet test tests` — 527 pass (no new tests in M1)
 
 **Rollback:** `git tag v2-m1-factory`
 
@@ -282,17 +331,19 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 
 ### M2 — Wire Real ViewModels
 
-**Goal:** Spike tab shows real content — file tree, Git panel, editor, problems, output.
+**Goal:** Spike area shows real content — file tree, Git panel, editor, problems, output.
 
 **Steps:**
 1. Implement `WireViewModels()` (see §2.1) in `MainWindow.axaml.cs`
 2. `EnumerateDockables()` recursively walks `IRootDock` via `IDock.Dockables`
 3. Each tool's `Context` is set to the corresponding ShellViewModel property
 
+> **Known M2 condition:** During M2, the spike DockControl contains an EditorDocument wired to EditorViewModel. The existing Grid layout also hosts an EditorView wired to the same EditorViewModel. Two AvaloniaEdit instances on one document model is allowed in MVVM, but focus/caret behavior with two editors on one VM is not something this codebase has exercised. Clicking a file in the spike's Explorer will also open it in the Grid editor. **This is a known condition resolved by M3** when only one mode is visible at a time.
+
 **Verification:**
-- Spike tab: Explorer tree expands, Git shows changes, Problems lists diagnostics, Output shows build log
-- Click file in Explorer → opens in Editor within the spike tab
-- `dotnet test tests` — 527 pass
+- Spike area: Explorer tree expands, Git shows changes, Problems lists diagnostics, Output shows build log
+- Click file in Explorer → opens in Editor within the spike area (note: also opens in Grid editor — expected in M2)
+- `dotnet test tests` — 527 pass (no new tests in M2)
 
 **Rollback:** `git tag v2-m2-wired`
 
@@ -302,19 +353,26 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 
 **Goal:** DockControl available alongside the existing Grid. Mode switchable from View menu.
 
+**Files to create:**
+| File | Purpose |
+|------|---------|
+| `src/Docking/LayoutMode.cs` | `enum LayoutMode { Grid, Freeform }` |
+
+> `LayoutMode.cs` lands here (not M1) because the enum has no consumer until M3. Creating it in M1 would be YAGNI.
+
 **Steps:**
 1. Add `LayoutMode` property to `ShellViewModel`
 2. Add "Layout Mode" menu item under View
 3. In `MainWindow.axaml`: Grid (existing) + DockControl, controlled by `IsVisible`
 4. On mode switch: if switching to Freeform and dock not initialized, call `InitializeDockControl()`
-5. Remove the M1/M2 spike tab
+5. Remove the M0.5/M1/M2 spike — DockControl now fills the editor region
 
 **Verification:**
 - App starts in Grid mode (unchanged behavior)
-- View → Freeform → dock layout appears, all 5 panels visible
-- View → Grid → original layout returns
+- View → Freeform → Explorer in left sidebar (tab 0), Git accessible from sidebar tab 1, Editor in center with current open files, Problems and Output as tabs in the bottom dock
+- View → Grid → original layout returns, identical to pre-8.1a
 - Both modes use the same `ShellViewModel`
-- `dotnet test tests` — 527 pass
+- `dotnet test tests` — 527 pass (no new tests in M3)
 
 **Rollback:** `git tag v2-m3-mode-switch`
 
@@ -344,7 +402,7 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 - Freeform mode: View menu toggles hide/show correct panels
 - `Ctrl+OemTilde` toggles Output
 - Grid mode: all toggles work as before
-- `dotnet test tests` — 527+ pass
+- `dotnet test tests` — 527 pass (existing tests exercise the booleans, which remain source of truth)
 
 **Rollback:** `git tag v2-m4-toggles`
 
@@ -373,7 +431,7 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 - Launch → Freeform → rearrange → close → relaunch → preserved
 - Corrupt JSON → relaunch → "Layout reset" status, default loaded
 - Grid mode → no layout file loaded
-- `dotnet test tests` — 527+ pass
+- `dotnet test tests` — 527 pass (LayoutPersistenceService may add new tests, bringing total above 527)
 
 **Rollback:** `git tag v2-m5-persist`
 
@@ -392,7 +450,7 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 
 **Verification:**
 - `dotnet build src/aero.csproj` — 0 errors, 0 new warnings
-- `dotnet test tests` — all pass (≥527)
+- `dotnet test tests` — all pass (527 baseline, or higher if M5 added persistence tests)
 - `manual_test_phase8_1a.sh` passes smoke checklist
 - `docs/roadmap/PHASES.md` 8.1a checked off
 
@@ -406,8 +464,8 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 
 | File | Milestone | Purpose |
 |------|-----------|---------|
-| `src/Docking/LayoutMode.cs` | M1 | `enum LayoutMode { Grid, Freeform }` |
 | `src/Docking/AeroDockFactory.cs` | M1 | `Factory` subclass — creates all dock model types |
+| `src/Docking/LayoutMode.cs` | M3 | `enum LayoutMode { Grid, Freeform }` — deferred from M1 (YAGNI until M3) |
 | `src/Docking/Model/AeroRootDock.cs` | M1 | `IRootDock` implementation |
 | `src/Docking/Model/AeroProportionalDock.cs` | M1 | `IProportionalDock` implementation |
 | `src/Docking/Model/AeroProportionalDockSplitter.cs` | M1 | `IProportionalDockSplitter` implementation |
@@ -426,7 +484,7 @@ avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
 |------|-----------|---------|
 | `src/App.axaml` | M0.5 | Add Dock theme `StyleInclude` |
 | `src/App.axaml` | M1 | Add `Application.DataTemplates` for tools/documents |
-| `src/MainWindow.axaml` | M0.5 | Add "Dock spike" tab (temporary) |
+| `src/MainWindow.axaml` | M0.5 | Add spike area in editor region (temporary) |
 | `src/MainWindow.axaml` | M3 | Add Grid/DockControl switch structure |
 | `src/MainWindow.axaml.cs` | M1 | Add `InitializeDockControl()`, `WireViewModels()`, `EnumerateDockables()` |
 | `src/MainWindow.axaml.cs` | M3 | Wire LayoutMode switch |
@@ -482,7 +540,7 @@ Channel: `System.Diagnostics.Debug.WriteLine` with `[Dock]` prefix. Info-level m
 All must be true before declaring 8.1a complete:
 
 - [ ] `dotnet build src/aero.csproj` — 0 errors, 0 new warnings
-- [ ] `dotnet test tests` — all existing tests pass (≥527)
+- [ ] `dotnet test tests` — all pass (527 baseline, or higher if M5 added persistence tests)
 - [ ] `manual_test_phase8_1a.sh` passes smoke checklist
 - [ ] `LayoutMode` defaults to `Freeform`; switch to Grid and back works
 - [ ] All 5 panels render real content in Freeform mode
