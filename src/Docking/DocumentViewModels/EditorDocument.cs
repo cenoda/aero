@@ -14,8 +14,6 @@ public class EditorDocument : Dock.Avalonia.Controls.ManagedDockableBase, Dock.M
         Title = "Editor";
     }
 
-    /// <summary>The actual EditorViewModel bound to this document's view.</summary>
-    public object? ViewModel { get; set; }
 
     /// <inheritdoc />
     public override bool Equals(object? obj) => obj is Dock.Model.Core.IDockable d && d.Id == Id;

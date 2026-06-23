@@ -3,9 +3,7 @@
         xmlns:vm="using:Aero.ViewModels"
         xmlns:views="using:Aero.Views"
         xmlns:dock="using:Dock.Avalonia.Controls"
-        xmlns:aero="using:Aero.Docking"
-        xmlns:dockTools="using:Aero.Docking.ToolViewModels"
-        xmlns:docModels="using:Aero.Docking.DocumentViewModels"
+        xmlns:aero="using:Aero"
         x:Class="Aero.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -34,26 +32,6 @@
         <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding BuildCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding ToggleThemeCommand}"/>
     </Window.KeyBindings>
-
-    <Window.DataTemplates>
-        <!-- Tool DataTemplates -->
-        <DataTemplate DataType="dockTools:ExplorerTool">
-            <views:FileExplorerView DataContext="{Binding ViewModel}"/>
-        </DataTemplate>
-        <DataTemplate DataType="dockTools:GitTool">
-            <views:GitPanelView DataContext="{Binding ViewModel}"/>
-        </DataTemplate>
-        <DataTemplate DataType="dockTools:ProblemsTool">
-            <views:ProblemsView DataContext="{Binding ViewModel}"/>
-        </DataTemplate>
-        <DataTemplate DataType="dockTools:OutputTool">
-            <views:OutputView DataContext="{Binding ViewModel}"/>
-        </DataTemplate>
-        <!-- Document DataTemplate -->
-        <DataTemplate DataType="docModels:EditorDocument">
-            <views:EditorView DataContext="{Binding ViewModel}"/>
-        </DataTemplate>
-    </Window.DataTemplates>
 
     <DockPanel>
         <!-- Menu bar -->

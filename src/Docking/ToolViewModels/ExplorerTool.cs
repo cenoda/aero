@@ -12,9 +12,6 @@ public class ExplorerTool : ManagedDockableBase, ITool
         Title = "Explorer";
     }
 
-    /// <summary>The actual FileExplorerViewModel bound to this tool's view.</summary>
-    public object? ViewModel { get; set; }
-
     /// <inheritdoc />
     public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
     /// <inheritdoc />

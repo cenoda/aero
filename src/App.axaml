@@ -2,7 +2,34 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="using:Aero.Converters"
              xmlns:dockSimple="using:Dock.Avalonia.Themes.Simple"
+             xmlns:views="using:Aero.Views"
+             xmlns:dockTools="using:Aero.Docking.ToolViewModels"
+             xmlns:docModels="using:Aero.Docking.DocumentViewModels"
              x:Class="Aero.App">
+
+    <!-- Dock.Avalonia resolves DataTemplates from Application.DataTemplates,
+         not Window.DataTemplates. This is required for DeferredContentControl
+         to find the correct view for each tool/document type.
+         Dock.Avalonia's DeferredContentControl sets DataContext to the dockable's
+         Context property (inherited from ManagedDockableBase). -->
+    <Application.DataTemplates>
+        <DataTemplate DataType="dockTools:ExplorerTool">
+            <views:FileExplorerView DataContext="{Binding Context}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:GitTool">
+            <views:GitPanelView DataContext="{Binding Context}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:ProblemsTool">
+            <views:ProblemsView DataContext="{Binding Context}"/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:OutputTool">
+            <views:OutputView DataContext="{Binding Context}"/>
+        </DataTemplate>
+        <DataTemplate DataType="docModels:EditorDocument">
+            <views:EditorView DataContext="{Binding Context}"/>
+        </DataTemplate>
+    </Application.DataTemplates>
+
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

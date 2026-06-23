@@ -12,9 +12,6 @@ public class ProblemsTool : ManagedDockableBase, ITool
         Title = "Problems";
     }
 
-    /// <summary>The actual ProblemsViewModel bound to this tool's view.</summary>
-    public object? ViewModel { get; set; }
-
     /// <inheritdoc />
     public override bool Equals(object? obj) => obj is IDockable d && d.Id == Id;
     /// <inheritdoc />

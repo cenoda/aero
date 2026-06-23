@@ -69,29 +69,26 @@ public partial class MainWindow : Window
         DockControl.InitializeLayout = false;
 
         // Set the factory explicitly as a safety net for drag-and-drop wiring.
-        // The factory from the layout tree is the same AeroDockFactory instance,
-        // but DockControl needs it on its own property for some internal lookups.
         DockControl.Factory = layout.Factory!;
 
-        // Now assign layout — this triggers Initialize() with all locators ready.
-        DockControl.Layout = layout;
-
-        // Wire the layout root to ShellViewModel so toggle commands can
-        // navigate the dock tree to show/hide panels.
+        // Wire ViewModels to dock tools BEFORE assigning layout to DockControl.
+        // DockControl.Layout setter triggers Initialize() which creates the visual
+        // tree. The DataTemplates bind {Binding ViewModel}, so ViewModels must be
+        // set before the visual tree is created. Plain auto-properties don't notify.
         if (DataContext is ShellViewModel shell)
         {
             shell.ActiveLayout = layout;
-
-            // Wire ViewModels to dock tools/documents so DataTemplates can bind.
-            // Dock.Avalonia's visual tree doesn't include the Window as parent,
-            // so $parent[Window].DataContext.* bindings don't resolve.
             WireViewModels(layout, shell);
         }
+
+        // Now assign layout — triggers Initialize() → visual tree creation.
+        DockControl.Layout = layout;
     }
 
     /// <summary>
-    /// Walk the dock tree and set ViewModel on each tool/document so
+    /// Walk the dock tree and set Context on each tool/document so
     /// DataTemplates bind directly to the correct ViewModel.
+    /// Dock.Avalonia's DeferredContentControl uses Context as the DataContext.
     /// </summary>
     private static void WireViewModels(IDock dock, ShellViewModel shell)
     {
@@ -101,19 +98,19 @@ public partial class MainWindow : Window
             switch (child)
             {
                 case ExplorerTool explorer:
-                    explorer.ViewModel = shell.FileExplorerViewModel;
+                    explorer.Context = shell.FileExplorerViewModel;
                     break;
                 case GitTool git:
-                    git.ViewModel = shell.GitViewModel;
+                    git.Context = shell.GitViewModel;
                     break;
                 case ProblemsTool problems:
-                    problems.ViewModel = shell.ProblemsViewModel;
+                    problems.Context = shell.ProblemsViewModel;
                     break;
                 case OutputTool output:
-                    output.ViewModel = shell.OutputViewModel;
+                    output.Context = shell.OutputViewModel;
                     break;
                 case EditorDocument editor:
-                    editor.ViewModel = shell.EditorViewModel;
+                    editor.Context = shell.EditorViewModel;
                     break;
             }
             // Recurse into nested docks
