@@ -55,23 +55,38 @@ Root (Horizontal)
 - **Symptom:** Only file tree shows in entire window
 - **Expected:** Left sidebar (Explorer + Git), Center (Editor), Bottom (Problems + Output)
 - **Debug attempts:**
-  - Set IsExpanded = true on all docks
-  - Set ActiveDockable on tool docks
-  - Set GripMode = Visible
-  - Removed unnecessary splitters
-  - Verified VisibleDockables had correct count
+  1. Set IsExpanded = true on all docks → No change
+  2. Set ActiveDockable on tool docks → No change
+  3. Set GripMode = Visible → No change
+  4. Removed unnecessary splitters → No change
+  5. Verified VisibleDockables had correct count (2 for left, 2 for bottom) → Verified OK
+  6. Added debug logging to CreateDefaultLayout → Layout structure correct
+  7. Verified Context wired to all tools → All 5 tools wired correctly
+  8. Checked DataTemplates in App.axaml → All 5 templates present
 
 ### Issue 2: Git Panel Empty
 - **Symptom:** Git panel shows but content is blank
 - **Expected:** Git changes view with staged/unstaged sections
+- **Debug attempts:**
+  1. Verified GitTool.Context = GitViewModel → Wired correctly
+  2. Checked GitPanelView.axaml exists → Exists with content
+  3. DataTemplate binds {Binding Context} → Should work
 
 ### Issue 3: Editor Not Opening
 - **Symptom:** Clicking file in explorer does nothing
 - **Expected:** EditorDocument opens with file content
+- **Debug attempts:**
+  1. Verified EditorDocument.Context = EditorViewModel → Wired correctly
+  2. Checked EditorView has open logic → Exists
+  3. FileExplorerViewModel has OpenFile command → Exists
 
 ### Issue 4: Bottom Panel Not Responding
 - **Symptom:** Problems/Output panels don't respond
 - **Expected:** Tab switching works
+- **Debug attempts:**
+  1. Verified ProblemsTool.Context = ProblemsViewModel → Wired correctly
+  2. Verified OutputTool.Context = OutputViewModel → Wired correctly
+  3. Checked DataTemplates → Both present
 
 ---
 
@@ -80,6 +95,24 @@ Root (Horizontal)
 ### Primary Cause: Dock.Avalonia Internal Behavior Unknown
 
 The fundamental issue is that Dock.Avalonia's internal rendering logic is not transparent. Multiple properties were set correctly (VisibleDockables, IsExpanded, ActiveDockable, GripMode) but the UI did not render as expected.
+
+### Debugging Attempts (Chronological)
+
+| # | Attempt | Hypothesis | Action | Result |
+|---|---------|------------|-------|--------|
+| 1 | IsExpanded not set | Set IsExpanded=true on all docks | No change |
+| 2 | ActiveDockable not set | Set ActiveDockable on tool docks | No change |
+| 3 | GripMode hidden | Set GripMode=Visible | No change |
+| 4 | Extra splitter in left column | Removed leftSplitter | No change |
+| 5 | Layout structure wrong | Added debug logging | Structure correct |
+| 6 | Context not wired | Added debug to WireViewModels | All 5 wired |
+| 7 | DataTemplates missing | Checked App.axaml | All 5 present |
+| 8 | ViewModels not created | Checked DI registration | All registered |
+| 9 | ViewModels null | Checked ShellViewModel constructor | All injected |
+| 10 | Views missing | Checked Views folder | All exist |
+| 11 | DockControl not initialized | Checked MainWindow code | Initialized correctly |
+| 12 | Layout persistence overriding | Checked for saved layouts | None found |
+| 13 | Factory not set | Set Factory explicitly | No change |
 
 ### Contributing Factors
 
@@ -98,6 +131,10 @@ The fundamental issue is that Dock.Avalonia's internal rendering logic is not tr
 4. **Multiple Agents, No Coordination**
    - Each agent worked on separate files
    - No end-to-end testing until late
+
+5. **Debug-Friendly Code Missing**
+   - No logging from start
+   - Hard to trace issues
 
 ---
 

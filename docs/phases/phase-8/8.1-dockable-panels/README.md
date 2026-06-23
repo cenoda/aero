@@ -5,6 +5,8 @@
 **⚠️ This sub-phase is split into three ordered milestones to manage complexity:**
 
 ### 8.1a — Freeform Mode (Dock.Avalonia wiring)
+**⚠️ STATUS: FAILED — Reverted to M0.5 baseline**
+
 **Scope:**
 - Wire existing panels (sidebar-left with Explorer+Git tabs, editor-center, bottom-panel with Problems+Output tabs) into Dock.Avalonia
 - Panels become draggable, resizable, hideable, and can be rearranged by the user
@@ -16,6 +18,8 @@
 - **8.5 Icon Decision** — icon assets and mapping conventions for panel header/icon consistency
 
 **Exit condition (8.1a):** Existing panels work in Freeform Mode — user can drag, resize, rearrange, and hide all panels. Mode switchable in settings.
+
+**Post-Mortem:** See `/docs/POSTMORTEM-phase-8.1a.md`
 
 ### 8.1b — Tile Mode (auto-layout)
 **Scope:**

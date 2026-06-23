@@ -341,5 +341,57 @@ grep -r "AddSingleton\|AddTransient\|AddScoped" src/App.axaml.cs src/
 
 ---
 
-*Last updated: 2026-06-19*
+## 9. Lessons Learned from Phase 8.1a Failure
+
+> **⚠️ This section was added after Phase 8.1a failed. All agents must read this before starting new implementation work.**
+
+### What Happened
+
+Phase 8.1a (Dockable Panels) was implemented using Dock.Avalonia library. The implementation compiled successfully, all ViewModels were wired correctly, but the UI only showed the Explorer panel. Other panels (Git, Editor, Problems, Output) were not visible or not working.
+
+After 13+ debugging attempts over 3+ hours, the implementation was reverted to the M0.5 baseline.
+
+### Root Cause
+
+**Primary:** Dock.Avalonia's internal rendering logic is not transparent. The code was correct (VisibleDockables, IsExpanded, ActiveDockable all set properly) but the UI did not render as expected.
+
+### Key Lessons
+
+#### 1. Validate Plan Before Implementation
+- ❌ **Bad:** Create implementation plan → immediately write code
+- ✅ **Good:** Create minimal proof-of-concept → verify library works → then implement
+
+#### 2. Incremental Development
+- ❌ **Bad:** Implement entire feature → test at end
+- ✅ **Good:** One step at a time → test after each change → easy to identify what broke
+
+#### 3. Understand the Library First
+- ❌ **Bad:** Read docs → assume understand → write code
+- ✅ **Good:** Read docs → create test app → verify behavior → then implement
+
+#### 4. Debug-Friendly Code
+- ❌ **Bad:** Write code → only add logging when debugging needed
+- ✅ **Good:** Add logging from start → makes debugging possible
+
+#### 5. Don't Rush
+- ❌ **Bad:** "Just get it done" → fast but broken
+- ✅ **Good:** Take time to verify → future debugging easier
+
+### For Future Phases
+
+Before starting any new implementation:
+
+1. **Study the library/tool first** — understand how it works
+2. **Create minimal test** — prove it works
+3. **Add logging from start** — makes debugging possible
+4. **Test frequently** — don't wait until end
+5. **Document what doesn't work** — helps future agents
+
+### Post-Mortem Document
+
+See `/docs/POSTMORTEM-phase-8.1a.md` for full details.
+
+---
+
+*Last updated: 2026-06-23*
 *Governs: entire project (`/home/cenoda/aero`)*
