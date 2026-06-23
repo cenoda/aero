@@ -1,6 +1,6 @@
 # 8.1a — Dockable Panels (Freeform Mode): Implementation Plan
 
-> **Status:** In Progress — M1–M5 complete (2026-06-23)
+> **Status:** ✅ Complete — M1–M7 all implemented and verified (2026-06-23)
 > **Author:** Kiro (via GitHub Copilot)
 > **Parent:** [`README.md`](./README.md)
 > **Depends on:** 8.9 Design System ✅, 8.5 Icon Decision ✅

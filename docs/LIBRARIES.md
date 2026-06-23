@@ -32,7 +32,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. |
+| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. Wired in Phase 8.1a — all 5 panels (Explorer, Git, Editor, Problems, Output) converted to dockables. `Dock.Serializer.Newtonsoft` used for layout persistence (handles object-reference cycles; Newtonsoft.Json already present via LSP). |
 | **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
 
 

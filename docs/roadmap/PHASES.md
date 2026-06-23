@@ -188,7 +188,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > **Exit condition:** Panels are dockable in two modes; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
 
 ### 8.1 Dockable Panels — Layout Modes [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
-- [ ] **8.1a Freeform Mode** — wire existing panels into Dock.Avalonia (draggable, resizable, hideable, rearrangeable)
+- [x] **8.1a Freeform Mode** — wire existing panels into Dock.Avalonia (draggable, resizable, hideable, rearrangeable)
 - [ ] **8.1b Tile Mode** — auto-layout with tiling + stack (tab) support. Panels tile side-by-side, stack when overlapped. Keyboard-navigation optimized. Manual adjustment still allowed (avoids Hyperland limitation).
 - [ ] **8.1c Tear-Away Windows** — panels can be dragged out of the main window into standalone OS windows (Chrome tab style). Re-dockable.
 - [ ] **Tile + Stack mixing** — panels tile when placed side-by-side, merge into tabs when placed in the same slot.

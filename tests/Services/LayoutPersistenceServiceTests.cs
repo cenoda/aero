@@ -46,7 +46,7 @@ public class LayoutPersistenceServiceTests
         var serializer = new DockSerializer();
         var corruptedJson = "not valid json {{{";
 
-        // Act & Assert - Newtonsoft throws on deserialization failure
+        // Act & Assert — Newtonsoft.Json throws JsonReaderException on malformed input
         Assert.Throws<Newtonsoft.Json.JsonReaderException>(
             () => serializer.Deserialize<IRootDock>(corruptedJson));
     }

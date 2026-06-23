@@ -7,6 +7,12 @@ namespace Aero.Services;
 
 /// <summary>
 /// Persists dock layout state to disk using Dock.Serializer.Newtonsoft.
+/// Note: Newtonsoft is used intentionally — it handles object-reference cycles in the
+/// dock layout tree automatically. The Dock.Serializer.SystemTextJson variant requires
+/// [DockJsonSerializable] source-gen wiring on all concrete model types; that work is
+/// deferred (see TOFIX R4.2).
+/// Newtonsoft.Json is already a hard project dependency (LSP layer), so this adds no
+/// new transitive dependency.
 /// </summary>
 public class LayoutPersistenceService : ILayoutPersistenceService
 {
@@ -24,7 +30,6 @@ public class LayoutPersistenceService : ILayoutPersistenceService
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             Directory.CreateDirectory(dir);
 
-        // Use the Newtonsoft-based serializer (has generic methods)
         _serializer = new DockSerializer();
     }
 
