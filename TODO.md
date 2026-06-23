@@ -1,7 +1,0 @@
-- [ ] Investigate and fix duplicate `origin/master` branch display in Git integration.
-- [ ] Refactor branch/ref mapping in `LibGit2SharpService` to preserve distinct local/remote refs and correct metadata.
-- [ ] Exclude symbolic remote HEAD refs (e.g., `origin/HEAD`) from branch listing to avoid duplicate-looking entries.
-- [ ] Update graph label mapping to allow multiple branch labels per commit SHA.
-- [ ] Add/extend `LibGit2SharpService` tests for local+remote branch correctness and duplicate prevention.
-- [ ] Update `docs/phases/phase-7/TOFIX.md` with bug analysis and fix notes.
-- [ ] Run targeted tests (`dotnet test --filter LibGit2SharpServiceTests`) and verify results.

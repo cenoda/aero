@@ -1,538 +1,492 @@
 # 8.1a — Dockable Panels (Freeform Mode): Implementation Plan
 
-> **Status:** Draft — pre-implementation (2026-06-22)
-> **Author:** Kiro (via GitHub Copilot)
-> **Parent:** [`README.md`](./README.md)
-> **Depends on:** 8.9 Design System ✅, 8.5 Icon Decision ✅
+> **Status:** Ready for implementation (2026-06-23)
+> **Branch:** `phase-8.1a-dockable-panels-v2`
+> **Replaces:** Failed v1 (see `docs/POSTMORTEM-phase-8.1a.md`)
+> **Depends on:** 8.9 Design System ✅, 8.5 Icon Decision ✅, Phase 7 Git ✅
 
 ---
 
-## 0. Entry Gates (M0)
+## 0. Lessons from v1 Failure
 
-All must be true before coding starts:
+The v1 implementation compiled cleanly, wired all five tools correctly, and still produced a blank window. After 13+ debug rounds over 3+ hours, the root cause was never conclusively isolated — every layer was a candidate because too many unverified assumptions landed at once: a custom factory, five dockables, a five-zone layout, deferred Context injection, and an unverified theme URI.
 
-- [x] Phase 8 TOFIX items R1.1–R1.4 all closed
-- [x] `dotnet build src/aero.csproj` passes (0 errors) — confirmed 2026-06-22
-- [x] `dotnet test tests` passes (baseline: 527 passed)
-- [x] 8.9 Design System complete — all `src/Styles/` tokens wired in `App.axaml`
-- [x] 8.5 Icon Decision complete — `Icons.axaml` + `IconResolver.cs` in place
-- [x] `Dock.Avalonia 11.3.*` + `Dock.Serializer.SystemTextJson 11.3.*` in `aero.csproj`
-- [x] Dock.Avalonia net8.0 fallback verified — smoke test passed (TOFIX R1.2)
-- [x] Dock.Serializer API confirmed — `DockSerializer<T>` with `[DockJsonSerializable]` (TOFIX R1.3)
+**What changed in v2:**
+
+| v1 Anti-Pattern | v2 Response |
+|----------------|------------|
+| Grid replaced in a single cutover | `LayoutMode` switch keeps Grid alive through M5 |
+| Factory + models + wiring in one commit | M0.5 proves rendering works in pure XAML before any C# |
+| No logging | `[Dock]`-prefixed debug output from M1 |
+| "Assumed the plan works" | Each milestone has an explicit pass/fail gate |
+| Theme URI guessed | M0.5 verifies the exact URI against installed package |
 
 ---
 
-## 1. Current State
+## 1. Entry Gates (M0)
 
-### Layout (fixed Grid, to be replaced)
+All must be true before M0.5 starts:
+
+- [x] `dotnet build src/aero.csproj` — 0 errors (confirmed 2026-06-23)
+- [x] `dotnet test tests` — 527 passed
+- [x] `src/Docking/` does not exist (clean baseline after v1 revert)
+- [x] Dock.Avalonia packages installed: `Dock.Avalonia 11.3.*`, `Dock.Avalonia.Themes.Simple 11.3.*`, `Dock.Serializer.SystemTextJson 11.3.*`
+- [x] No Dock references in `App.axaml` or `MainWindow.axaml`
+
+---
+
+## 2. Architecture
+
+### 2.1 DataTemplate Strategy: Option A (Direct Context Injection)
+
+**Chosen unanimously by all agents. Verified working in v1 post-mortem logs.**
+
+The Views (`FileExplorerView`, `GitPanelView`, etc.) remain unchanged. `DataTemplate`s registered in `App.axaml` map each tool/document type to its View. The `Context` property on each `IDockable` is set from code-behind in `WireViewModels()` — no `{Binding}` gymnastics, no `$parent[Window].DataContext`.
+
+```xml
+<!-- App.axaml — DataTemplates (added in M1) -->
+<Application.DataTemplates>
+    <DataTemplate DataType="dockTools:ExplorerTool"><views:FileExplorerView/></DataTemplate>
+    <DataTemplate DataType="dockTools:GitTool"><views:GitPanelView/></DataTemplate>
+    <DataTemplate DataType="dockTools:ProblemsTool"><views:ProblemsView/></DataTemplate>
+    <DataTemplate DataType="dockTools:OutputTool"><views:OutputView/></DataTemplate>
+    <DataTemplate DataType="dockDocs:EditorDocument"><views:EditorView/></DataTemplate>
+</Application.DataTemplates>
+```
+
+```csharp
+// MainWindow.axaml.cs — WireViewModels()
+private void WireViewModels(AeroRootDock layout, ShellViewModel shell)
+{
+    foreach (var dockable in EnumerateDockables(layout))
+    {
+        switch (dockable)
+        {
+            case ExplorerTool t:   t.Context = shell.FileExplorerViewModel; break;
+            case GitTool t:        t.Context = shell.GitViewModel;          break;
+            case ProblemsTool t:   t.Context = shell.ProblemsViewModel;     break;
+            case OutputTool t:     t.Context = shell.OutputViewModel;       break;
+            case EditorDocument d: d.Context = shell.EditorViewModel;       break;
+        }
+        Log($"[Dock] Wired {dockable.GetType().Name}.Context");
+    }
+}
+```
+
+### 2.2 Dock.Avalonia API Map (Verified Against v11.3.12.1)
+
+| Interface/Class | Namespace | Notes |
+|----------------|-----------|-------|
+| `IFactory` | `Dock.Model.Core` | Implemented by `AeroDockFactory`. Methods return interface types. |
+| `Factory` | `Dock.Model` | Abstract base class. Extend this instead of implementing from scratch. |
+| `IDockable` | `Dock.Model.Core` | Base interface. Has `Id`, `Title`, `Context`, `Proportion`, `Dock`, `Owner`, `Factory`, `IsVisible`. |
+| `IRootDock` | `Dock.Model.Controls` | Top-level container. Has `Window`, `Windows`, `IsFocusableRoot`. |
+| `IProportionalDock` | `Dock.Model.Controls` | Adds `Orientation` to `IDockable`. Proportions via `IDockable.Proportion` (inherited). |
+| `IProportionalDockSplitter` | `Dock.Model.Controls` | Splitter between proportional children. Has `CanResize`. |
+| `IToolDock` | `Dock.Model.Controls` | Container for tools. Has `Alignment` (Left/Right/Top/Bottom/Unset), `IsExpanded`, `ActiveDockable`. |
+| `IDocumentDock` | `Dock.Model.Controls` | Container for documents. Has `CanCreateDocument`, `CreateDocument`, `LayoutMode`, `TabsLayout`. |
+| `ITool` | `Dock.Model.Controls` | Interface for side/panel dockables. |
+| `IDocument` | `Dock.Model.Controls` | Interface for content/document dockables. |
+| `DockControl` | `Dock.Avalonia.Controls` | Root TemplatedControl. Properties: `Layout`, `Factory`, `InitializeLayout`, `InitializeFactory`, `IsDockingEnabled`. |
+| `Alignment` enum | `Dock.Model.Core` | Values: `Unset`, `Left`, `Bottom`, `Right`, `Top`. |
+| `DockSerializer` | `Dock.Serializer.SystemTextJson` | `Serialize<T>()`, `Deserialize<T>()`, `Load<T>()`, `Save<T>()`. |
+
+**Key correction from v1:** `Proportion` lives on `IDockable` (base), not on `IProportionalDock`. All model classes inherit it.
+
+### 2.3 LayoutMode Switch (From Opus — The Architectural Breakthrough)
 
 ```
-Window
-└── DockPanel
-    ├── Menu (Top)
-    └── Grid (3 columns)
-        ├── Col 0: Sidebar (250px) — TabControl [Explorer, Git]
-        ├── Col 1: GridSplitter (4px)
-        └── Col 2: Grid (3 rows)
-            ├── Row 0: EditorView (*)  — tabs + AvaloniaEdit
-            ├── Row 1: GridSplitter (4px)
-            ├── Row 2: Bottom Panel (TabControl [Problems, Output], H=150)
-            └── Row 3: Status Bar (Auto)
+┌─────────────────────────────────────────────────────────────────┐
+│  LayoutMode.Grid (default through M5)                          │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Current Grid layout — unchanged, always works           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│  LayoutMode.Freeform (M3+, hidden by default)                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  DockControl — built incrementally, verified per milestone│  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  Grid stays alive as fallback. DockControl only becomes        │
+│  default in M6 after full verification.                        │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Panel ViewModels (all exist, all functional)
+### 2.4 Layout Tree (M1)
 
-| Panel | ViewModel | Location |
-|-------|-----------|----------|
-| File Explorer | `FileExplorerViewModel` | Sidebar tab 0 |
-| Git Panel | `GitViewModel` | Sidebar tab 1 |
-| Editor | `EditorViewModel` | Center |
-| Problems | `ProblemsViewModel` | Bottom tab 0 |
-| Output | `OutputViewModel` | Bottom tab 1 |
+```
+AeroRootDock
+└── AeroProportionalDock (Horizontal)
+    ├── AeroProportionalDock (Vertical, Proportion=0.22)
+    │   └── AeroToolDock (Alignment=Left)
+    │       ├── ExplorerTool    (Context = FileExplorerViewModel)
+    │       └── GitTool         (Context = GitViewModel)
+    ├── AeroProportionalDockSplitter
+    └── AeroProportionalDock (Vertical, Proportion=0.78)
+        ├── AeroDocumentDock (Proportion=0.72)
+        │   └── EditorDocument (Context = EditorViewModel)
+        ├── AeroProportionalDockSplitter
+        └── AeroToolDock (Alignment=Bottom, Proportion=0.28)
+            ├── ProblemsTool    (Context = ProblemsViewModel)
+            └── OutputTool      (Context = OutputViewModel)
+```
 
-### ShellViewModel panel state (to be replaced by Dock model)
+**Proportion constants:**
+```csharp
+internal static class DockProportions
+{
+    public const double LeftSidebar = 0.22;
+    public const double CenterStack = 0.78;
+    public const double EditorRow   = 0.72;
+    public const double BottomRow   = 0.28;
+}
+```
 
-- `IsSidebarVisible` → replaced by Dock layout persistence
-- `ActiveSidebarTabIndex` → replaced by Dock tab grouping
-- `IsBottomPanelVisible` → replaced by Dock layout persistence
-- `ActiveBottomTabIndex` → replaced by Dock tab grouping
+### 2.5 Initialization Sequence
 
-### Key constraints
+```
+App.axaml.cs: OnFrameworkInitializationCompleted()
+│
+├─ 1. Resolve ShellViewModel, IMessageBus, LSPManager, GitViewModel
+├─ 2. Create MainWindow { DataContext = shell }     ← DataContext BEFORE Initialize
+├─ 3. mainWindow.Initialize(bus)                     ← wires bus + dock
+└─ 4. desktop.MainWindow = mainWindow
 
-- Dock.Avalonia is fully installed but zero code references exist in `src/`
-- `DialogHost.Avalonia` is incompatible with Avalonia 11.3 — custom overlays only
-- All existing toggle commands (`ToggleSidebarCommand`, etc.) must continue working
+MainWindow.axaml.cs: Initialize(IMessageBus bus)
+│
+├─ A. Read DataContext → assert ShellViewModel
+├─ B. Subscribe to MessageBus (existing handlers)
+└─ C. InitializeDockControl(shell)                     ← only if LayoutMode == Freeform
+
+MainWindow.axaml.cs: InitializeDockControl(ShellViewModel shell)
+│
+├─ 1. var factory = new AeroDockFactory()
+├─ 2. DockControl.InitializeFactory = true            ← BEFORE Layout (triggers locators)
+├─ 3. DockControl.InitializeLayout = false            ← prevent double init
+├─ 4. DockControl.Factory = factory                   ← safety net
+├─ 5. var layout = factory.CreateDefaultLayout()      ← calls InitLayout internally
+├─ 6. WireViewModels(layout, shell)                   ← Context injection BEFORE layout
+├─ 7. DockControl.Layout = layout                     ← LAST — triggers rendering
+└─ 8. Log: "init complete, N dockables"
+```
+
+**Critical ordering:** `InitializeFactory = true` MUST be set before `DockControl.Layout = layout`. The `OnPropertyChanged` handler fires `Initialize()` when Layout is set, which checks `InitializeFactory` to set up `ContextLocator`, `HostWindowLocator`, etc. Without locators, drag-and-drop and rendering fail silently.
+
+### 2.6 Theme Include (Verified Against Package)
+
+The theme URI was wrong in the previous plan (`SimpleDockTheme.xaml`). The actual embedded resource is `DockSimpleTheme.axaml`. Since `DockSimpleTheme` is a `ControlTheme` (not a `ResourceDictionary`), the include mechanism needs verification in M0.5.
+
+```
+avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml
+```
+
+```xml
+<!-- App.axaml — Application.Styles -->
+<Application.Styles>
+    <StyleInclude Source="avares://Avalonia.Themes.Simple/SimpleTheme.xaml" />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
+    <!-- M0.5 gate: must render the spike tab or this URI is wrong -->
+    <StyleInclude Source="avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml" />
+    <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
+</Application.Styles>
+```
 
 ---
 
-## 2. Scope
+## 3. Scope
 
 ### In scope (8.1a only)
 
-- **Dock.Avalonia infrastructure**: `DockControl`, `Dock` layout root, `DockableControl`
-- **5 panel dockable wrappers**: Each existing panel gets a `DockableContent` wrapper that holds its `UserControl`
-- **Drag-and-drop rearrangement**: Panels can be dragged between docking zones (left, right, center, bottom)
-- **Panel hiding**: Close button on panel headers; toggle commands restore them
-- **Layout persistence**: Save/restore layout to `~/.aero/layout.json` via `Dock.Serializer.SystemTextJson`
-- **Mode switch stub**: A `LayoutMode` enum (Tile/Freeform) in settings; 8.1a only implements Freeform
-- **View menu updates**: "Toggle Sidebar", "Toggle Bottom Panel", etc. now toggle Dock layout visibility
+- Dock.Avalonia infrastructure: `DockControl`, factory, model classes
+- 5 panel dockable wrappers: Each existing panel gets an `ITool`/`IDocument` implementation
+- Drag-and-drop rearrangement between docking zones
+- Panel visibility toggling via existing View menu commands
+- `LayoutMode` switch: `Grid` (default) / `Freeform` (parallel)
+- Layout persistence via `Dock.Serializer.SystemTextJson`
+- Default flip to Freeform in M6
 
 ### Out of scope (deferred)
 
-- **8.1b Tile Mode** — auto-layout with tiling + stack (next sub-phase)
-- **8.1c Tear-away windows** — drag panels out to standalone windows (lowest priority)
-- **New panels** — no new panels created; only existing 5 are converted
-- **Panel ordering/pinning** — user can't pin panels to specific positions yet
-
----
-
-## 3. Architecture
-
-### 3.1 Dock.Avalonia Concepts (verified against 11.3.12.1 API)
-
-| Concept | Namespace | Aero mapping |
-|---------|-----------|-------------|
-| `DockControl` | `Dock.Avalonia.Controls` | Root `TemplatedControl` hosting the layout in `MainWindow.axaml`. Creates internal `DockManager`. |
-| `IFactory` | `Dock.Model.Core` | Factory that creates layout model types (`IRootDock`, `ITool`, etc.). Must be implemented to register Avalonia `DataTemplate`s. |
-| `IDock` | `Dock.Model.Core` | Any node in the layout tree (containers + dockables). |
-| `IRootDock` | `Dock.Model.Controls` | Top-level `IDock` container. Has `IsMaximized`, `Window`, `Windows` properties. |
-| `ITool` | `Dock.Model.Controls` | Interface for side/panel dockables (Explorer, Git, Problems, Output). |
-| `IToolDock` | `Dock.Model.Controls` | Container that holds `ITool` dockables (sidebar zone, bottom zone). Has `Alignment` (Left/Right/Top/Bottom). |
-| `IDocument` | `Dock.Model.Controls` | Interface for document/content dockables (Editor). |
-| `IDocumentDock` | `Dock.Model.Controls` | Container that holds `IDocument` dockables (center zone). |
-| `IProportionalDock` | `Dock.Model.Controls` | Container that arranges children proportionally with splitters. Used for zone layout. |
-| `IProportionalDockSplitter` | `Dock.Model.Controls` | Splitter between proportional dock children. |
-| `DockManager` | `Dock.Model` | Implements drag-and-drop docking algorithms. Created internally by `DockControl`. |
-| `DockableControl` | `Dock.Avalonia.Controls` | Internal state tracker for `IDockable` — not a wrapper. Tracks bounds, drag state. |
-| `DockSerializer<T>` | `Dock.Serializer.SystemTextJson` | JSON serialization with `[DockJsonSerializable]` attribute on model types. |
-
-### 3.2 Layout Model
-
-```
-IRootDock (layout root)
-├── IProportionalDock (Horizontal, splits left | right)
-│   ├── IProportionalDock (Vertical, left column)
-│   │   ├── IToolDock (Alignment.Left, Proportion=0.25)  ← sidebar
-│   │   │   ├── ITool: FileExplorer
-│   │   │   └── ITool: Git
-│   │   └── IProportionalDockSplitter
-│   └── IProportionalDock (Vertical, right column)
-│       ├── IDocumentDock (Proportion=*)  ← editor
-│       │   └── IDocument: Editor
-│       └── IProportionalDock (Vertical, bottom section)
-│           ├── IToolDock (Alignment.Bottom, Proportion=0.3)  ← bottom panel
-│           │   ├── ITool: Problems
-│           │   └── ITool: Output
-│           └── IProportionalDockSplitter
-```
-
-> **Note:** The exact tree structure will be determined during M1 implementation. Dock.Avalonia's `IProportionalDock` with `Orientation.Horizontal/Vertical` and `IProportionalDockSplitter` create the zone layout. `IToolDock` with `Alignment` determines docking direction.
-
-### 3.3 New Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/Docking/AeroDockFactory.cs` | `IFactory` implementation. Creates layout model types and registers Avalonia `DataTemplate`s that bind panel ViewModels to their `UserControl`s. |
-| `src/Docking/LayoutPersistenceService.cs` | Save/restore `IRootDock` to `~/.aero/layout.json` via `DockSerializer<IRootDock>`. |
-| `src/Docking/LayoutMode.cs` | `enum LayoutMode { Freeform, Tile }` |
-| `src/Docking/ToolViewModels/` | `ITool` implementations wrapping each panel ViewModel (e.g. `ExplorerTool`, `GitTool`, `ProblemsTool`, `OutputTool`). |
-| `src/Docking/DocumentViewModels/` | `IDocument` implementation wrapping `EditorViewModel` (e.g. `EditorDocument`). |
-
-### 3.4 Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/MainWindow.axaml` | Replace Grid layout with `<DockControl>` + register `DataTemplate`s |
-| `src/MainWindow.axaml.cs` | Create `AeroDockFactory`, build initial layout, assign to `DockControl.Layout`; wire layout persistence on close |
-| `src/ViewModels/ShellViewModel.cs` | Remove `IsSidebarVisible`, `IsBottomPanelVisible`, `ActiveSidebarTabIndex`, `ActiveBottomTabIndex`. Toggle commands now find dockables by ID in the `IRootDock` tree and toggle `IsVisible`. |
-| `src/App.axaml.cs` | Register `LayoutPersistenceService` in DI |
+| Feature | Phase | Reason |
+|---------|-------|--------|
+| Tile Mode (8.1b) | 8.1b | Different layout engine entirely |
+| Tear-Away Windows (8.1c) | 8.1c | Requires OS window management |
+| `IDockingService` abstraction | 8.1b | Only one concrete impl; premature per AGENTS.md §4 |
+| Option B (`{Binding Context}`) | Future | Unverified; Option A proven working |
+| Removing ShellViewModel booleans | Never | Depended on by tests, persistence, Grid fallback |
+| DialogHost.Avalonia | Avalonia 12 | Incompatible with 11.3 |
+| New panels | 8.1c+ | Only existing 5 converted |
 
 ---
 
 ## 4. Milestones
 
-### M0.5 — Pre-Implementation Verification (New)
+### M0.5 — Pure-XAML Rendering Spike
 
-**Goal:** Resolve the critical uncertainties flagged by reviews before writing any implementation code.
+**Goal:** Prove Dock.Avalonia renders inside our app before writing any C# model code.
 
 **Steps:**
-1. **Verify `IFactory` concrete return types:**
-   - Dock.Model only has `FactoryBase` (abstract). No `Dock.Model.Mvvm` package exists in the dependency graph.
-   - `IFactory` methods return interfaces (`IRootDock`, `ITool`, etc.). The concrete types are in `Dock.Avalonia.dll` itself.
-   - **Check `ManagedDockableBase`** in `Dock.Avalonia.Controls` — this is the likely base class for custom `ITool`/`IDocument` implementations (confirmed present in DLL). If it's `internal`, implement `ITool`/`IDocument` directly with `INotifyPropertyChanged` property notification.
-   - **Approach:** Extend `FactoryBase` or implement `IFactory` directly. Test in a spike to confirm which concrete types are available and public.
-   - **Fallback:** If `FactoryBase` is usable, extend it. If not, implement `IFactory` from scratch using only the interface types (Dock.Avalonia resolves them via DataTemplates).
-2. **Verify DataTemplate approach:**
-   - Use XAML `DataTemplate` in `Window.DataTemplates` — Avalonia-idiomatic, explicit, no magic.
-   - **Do NOT use `AutoCreateDataTemplates`** — remove all references from the plan. This is a Dock.Avalonia convenience that may conflict with our custom templates.
-   - DataTemplate maps: `ExplorerTool` → `FileExplorerView`, etc.
-3. **Verify Dock init sequence:**
-   - `DockControl.InitializeFactory = true` — wires the factory to the control. **Keep this.**
-   - `DockControl.InitializeLayout = true` — tells Dock to build its own default layout. **Do NOT set this when providing a manual layout** — it would overwrite the layout you assign. Only use when you want Dock to create the layout from scratch.
-   - Correct pattern: create layout via factory → set `DockControl.Layout = layout` → set `DockControl.InitializeFactory = true` → do NOT set `InitializeLayout`.
-   - Verify in spike that this sequence works correctly.
-4. **Verify dockable lookup APIs:**
-   - `IDock.Dockables` and `IDock.VisibleDockables` are `IList<IDockable>` — walk them recursively for toggle commands.
-   - `DockManager` may have `FindDockable` — check at runtime. If not, custom tree walker is acceptable since the tree is small (5 panels).
-5. **Create `tests/Docking/` folder** with test class stubs.
+1. Add theme `StyleInclude` to `App.axaml` (see §2.6)
+2. Add a new tab "Dock spike" in the existing `MainWindow.axaml` sidebar `TabControl`
+3. Verify the theme URI by inspecting the installed package:
+   ```bash
+   unzip -l ~/.nuget/packages/dock.avalonia.themes.simple/11.3.12.1/lib/net8.0/*.dll 2>/dev/null | grep -i theme
+   ```
 
-**Deliverable:** Verified API approach documented. Spike confirms `IFactory` implementation works. Test folder created.
+**Verification:**
+- `dotnet build src/aero.csproj` — 0 errors
+- App starts, click "Dock spike" tab → see *any* non-empty docked content
+- **If the spike tab is empty, STOP.** Theme URI, package version, or Avalonia 11.3 compat is wrong.
 
-**Test:** Spike compiles and renders a minimal `DockControl` with one panel.
+**Rollback:** `git tag v2-m0.5-spike`
 
 ---
 
-### M1 — Dock Infrastructure Skeleton
+### M1 — Model Classes + Factory
 
-**Goal:** Replace the Grid layout with a `DockControl` that renders a dockable layout tree.
+**Goal:** Replace M0.5 inline XAML with factory-driven layout, still inside the spike tab.
+
+**Files to create:**
+
+| File | Purpose |
+|------|---------|
+| `src/Docking/LayoutMode.cs` | `enum LayoutMode { Grid, Freeform }` |
+| `src/Docking/AeroDockFactory.cs` | `Factory` subclass |
+| `src/Docking/Model/AeroRootDock.cs` | `IRootDock` implementation |
+| `src/Docking/Model/AeroProportionalDock.cs` | `IProportionalDock` implementation |
+| `src/Docking/Model/AeroProportionalDockSplitter.cs` | `IProportionalDockSplitter` implementation |
+| `src/Docking/Model/AeroToolDock.cs` | `IToolDock` implementation |
+| `src/Docking/Model/AeroDocumentDock.cs` | `IDocumentDock` implementation |
+| `src/Docking/ToolViewModels/ExplorerTool.cs` | `ITool` — File Explorer |
+| `src/Docking/ToolViewModels/GitTool.cs` | `ITool` — Git Panel |
+| `src/Docking/ToolViewModels/ProblemsTool.cs` | `ITool` — Problems |
+| `src/Docking/ToolViewModels/OutputTool.cs` | `ITool` — Output |
+| `src/Docking/DocumentViewModels/EditorDocument.cs` | `IDocument` — Editor |
 
 **Steps:**
-1. Create `src/Docking/LayoutMode.cs`:
-   ```csharp
-   public enum LayoutMode { Freeform, Tile }
-   ```
-2. Create `src/Docking/AeroDockFactory.cs` — implements `IFactory`:
-   - Overrides `CreateRootDock()`, `CreateToolDock()`, `CreateDocumentDock()`, `CreateProportionalDock()`, `CreateTool()`, `CreateDocument()`, `CreateProportionalDockSplitter()`
-   - Each override returns the concrete implementation from `Dock.Avalonia` or `Dock.Model` (verified in M0.5 — no `Dock.Model.Mvvm` package exists, use `FactoryBase` or implement `IFactory` directly)
-   - Registers `DataTemplate`s that map `ITool`/`IDocument` view models to their `UserControl` views:
-     ```csharp
-     // In the factory, store DataTemplate references:
-     // ExplorerTool → FileExplorerView
-     // GitTool → GitPanelView
-     // EditorDocument → EditorView
-     // ProblemsTool → ProblemsView
-     // OutputTool → OutputView
-     ```
-   - Implements `InitLayout(IDock layout)` — sets up default locators and context
-3. Create `src/Docking/ToolViewModels/ExplorerTool.cs` — minimal `ITool` implementation:
-   ```csharp
-   // Base class TBD by M0.5 spike — likely ManagedDockableBase or direct interface impl
-   public class ExplorerTool : ITool  // implement INotifyPropertyChanged for bindable props
-   {
-       public string Id { get; set; } = "Explorer";
-       public string Title { get; set; } = "Explorer";
-       // ... other ITool members (Dock, Owner, IsVisible, etc.)
-   }
-   ```
-   Similarly: `GitTool`, `ProblemsTool`, `OutputTool`.
-   > **Note:** Exact base class determined in M0.5. If `ManagedDockableBase` is public, extend it. Otherwise implement `ITool` directly.
-4. Create `src/Docking/DocumentViewModels/EditorDocument.cs` — minimal `IDocument` implementation:
-   ```csharp
-   // Base class TBD by M0.5 spike
-   public class EditorDocument : IDocument
-   {
-       public string Id { get; set; } = "Editor";
-       public string Title { get; set; } = "Editor";
-       // ... other IDocument members
-   }
-   ```
-5. Update `src/MainWindow.axaml`:
-   - Remove the Grid (columns 0-2), GridSplitters, and all panel content
-   - Add `xmlns:dock="using:Dock.Avalonia.Controls"` namespace
-   - Add `<dock:DockControl x:Name="DockControl" />` as the DockPanel content
-   - Register `DataTemplate`s for each tool/document view model type:
-     ```xml
-     <Window.DataTemplates>
-         <DataTemplate DataType="{x:Type local:ExplorerTool}">
-             <views:FileExplorerView/>
-         </DataTemplate>
-         <DataTemplate DataType="{x:Type local:GitTool}">
-             <views:GitPanelView/>
-         </DataTemplate>
-         <!-- etc. -->
-     </Window.DataTemplates>
-     ```
-6. Update `src/MainWindow.axaml.cs`:
-   - In `OnInitialized`:
-     ```csharp
-     var factory = new AeroDockFactory();
-     var layout = factory.CreateDefaultLayout();
-     DockControl.Layout = layout;        // assign our layout FIRST
-     DockControl.InitializeFactory = true; // wire the factory
-     // Do NOT set InitializeLayout = true — that tells Dock to build its own default
-     // and would overwrite our manually-created layout. Verify in M0.5 spike.
-     ```
+1. Create all model classes implementing `INotifyPropertyChanged`
+2. Create `AeroDockFactory : Factory` with `CreateDefaultLayout()` building the tree from §2.4
+3. Each model class gets `Equals`/`GetHashCode` overrides using `Id`
+4. Add `Application.DataTemplates` in `App.axaml` (see §2.1)
+5. Replace M0.5 inline XAML with `<dock:DockControl x:Name="DockSpike"/>`
+6. Wire factory + layout in `MainWindow.axaml.cs` (see §2.5)
+7. Add `[Dock]`-prefixed debug logging
 
-**Deliverable:** IDE starts with a `DockControl` rendering a layout tree. Panels may be empty initially but the dock framework is active.
+**Verification:**
+- Spike tab shows layout driven by factory
+- Debug output prints layout tree depth-first
+- `dotnet test tests` — 527 pass
 
-**Test:** Manual — app starts, no crash, `DockControl` renders (may show empty chrome).
+**Rollback:** `git tag v2-m1-factory`
 
 ---
 
-### M2 — Wrap Existing Panels as Dockables
+### M2 — Wire Real ViewModels
 
-**Goal:** All 5 existing panels render inside Dock.Avalonia dockable containers via DataTemplates.
+**Goal:** Spike tab shows real content — file tree, Git panel, editor, problems, output.
 
 **Steps:**
-1. Wire each tool/document ViewModel's content through `DataTemplate`:
-   - `ExplorerTool.DataContext` → `FileExplorerViewModel` (set by factory or MainWindow)
-   - `GitTool.DataContext` → `GitViewModel`
-   - `ProblemsTool.DataContext` → `ProblemsViewModel`
-   - `OutputTool.DataContext` → `OutputViewModel`
-   - `EditorDocument.DataContext` → `EditorViewModel`
-2. Build the full layout tree in `AeroDockFactory.CreateDefaultLayout()`:
-   ```csharp
-   // Horizontal ProportionalDock: left zone | right zone
-   //   Left: IToolDock(Alignment.Left) { ExplorerTool, GitTool }
-   //   Right: Vertical ProportionalDock:
-   //     Top: IDocumentDock { EditorDocument }
-   //     Bottom: IToolDock(Alignment.Bottom) { ProblemsTool, OutputTool }
-   ```
-3. Wire panel data contexts in `MainWindow.axaml.cs`:
-   - After creating the layout, find each tool by ID and set its `DataContext` to the corresponding ViewModel
-   - The `DataTemplate` registered in XAML renders the `UserControl` when the tool is visible
-4. Register `DataTemplate`s in `Window.DataTemplates` (do NOT use `AutoCreateDataTemplates` — explicit templates are preferred for clarity and control)
+1. Implement `WireViewModels()` (see §2.1) in `MainWindow.axaml.cs`
+2. `EnumerateDockables()` recursively walks `IRootDock` via `IDock.Dockables`
+3. Each tool's `Context` is set to the corresponding ShellViewModel property
 
-**Deliverable:** All 5 panels visible in their default positions. Sidebar has Explorer+Git tabs. Bottom has Problems+Output tabs. Editor fills center. Drag-and-drop works by default (built into `DockControl`).
+**Verification:**
+- Spike tab: Explorer tree expands, Git shows changes, Problems lists diagnostics, Output shows build log
+- Click file in Explorer → opens in Editor within the spike tab
+- `dotnet test tests` — 527 pass
 
-**Test:** Manual — all panels render with correct content. Tabs switch between Explorer/Git and Problems/Output. Basic drag between zones works.
+**Rollback:** `git tag v2-m2-wired`
 
 ---
 
-### M3 — Drag-and-Drop Rearrangement
+### M3 — Promote DockControl to Window Region (LayoutMode Switch)
 
-**Goal:** User can drag panels between docking zones (left ↔ center ↔ bottom ↔ right).
+**Goal:** DockControl available alongside the existing Grid. Mode switchable from View menu.
 
 **Steps:**
-1. Dock.Avalonia's `DockControl` provides built-in drag-and-drop via `DockManager` + `DockControlState`. No custom code needed for basic drag.
-2. Verify dock behavior with our `ITool`/`IDocument` models:
-   - Drag from left `IToolDock` to bottom `IToolDock` → tool moves
-   - Drag from bottom `IToolDock` to left `IToolDock` → tool moves
-   - Drag `IDocument` out of `IDocumentDock` → creates floating `IDockWindow`
-3. `DockControl.IsDockingEnabled` (default `true`) controls whether docking interactions are active
-3. XAML `DataTemplate`s registered in M1/M2 handle rendering — no `AutoCreateDataTemplates` needed
-5. Handle edge cases:
-   - Drag last tool out of an `IToolDock` → zone collapses (empty `IToolDock` hides)
-   - Drag tool back into collapsed zone → zone re-expands
-   - Tab grouping: drag tool onto another tool's tab strip → creates tab group within same `IToolDock`
+1. Add `LayoutMode` property to `ShellViewModel`
+2. Add "Layout Mode" menu item under View
+3. In `MainWindow.axaml`: Grid (existing) + DockControl, controlled by `IsVisible`
+4. On mode switch: if switching to Freeform and dock not initialized, call `InitializeDockControl()`
+5. Remove the M1/M2 spike tab
 
-**Deliverable:** All 5 panels can be freely rearranged by dragging.
+**Verification:**
+- App starts in Grid mode (unchanged behavior)
+- View → Freeform → dock layout appears, all 5 panels visible
+- View → Grid → original layout returns
+- Both modes use the same `ShellViewModel`
+- `dotnet test tests` — 527 pass
 
-**Test:** Manual — drag each panel to every other zone. Verify no crashes, visual feedback appears, tabs group correctly.
+**Rollback:** `git tag v2-m3-mode-switch`
 
 ---
 
-### M4 — Panel Visibility Toggle Commands
+### M4 — Toggle-Command Parity
 
-**Goal:** Existing View menu commands (Toggle Sidebar, Toggle Output, etc.) work with Dock layout.
+**Goal:** All existing View menu commands and keyboard shortcuts work in both modes.
+
+**Hide/show semantics:**
+
+| Action | Grid Mode (unchanged) | Freeform Mode |
+|--------|----------------------|---------------|
+| Hide sidebar | `IsSidebarVisible = false` | Remove left `IToolDock` from parent's `VisibleDockables`; remember insertion index |
+| Show sidebar | `IsSidebarVisible = true` | Re-insert at remembered index, restore Proportion |
+| Switch sidebar tab | `ActiveSidebarTabIndex = 1` | `leftToolDock.ActiveDockable = leftToolDock.VisibleDockables[1]` |
+| Toggle Output | `IsBottomPanelVisible = true; ActiveBottomTabIndex = 1` | Ensure bottom `IToolDock` in `VisibleDockables`; set `ActiveDockable = outputTool` |
+| Toggle Problems | `IsBottomPanelVisible = true; ActiveBottomTabIndex = 0` | Same, target ProblemsTool |
 
 **Steps:**
-1. Update `ShellViewModel`:
-   - Remove `IsSidebarVisible`, `ActiveSidebarTabIndex`, `IsBottomPanelVisible`, `ActiveBottomTabIndex`
-   - Inject `ILayoutPersistenceService` to get the active layout (keeps ViewModel decoupled from MainWindow per AGENTS.md MVVM rules)
-   - Rewrite toggle commands to navigate the dock tree and toggle `IsVisible` on the appropriate `IDock`:
-     ```csharp
-     // ToggleSidebarCommand → finds the IToolDock containing Explorer and toggles visibility
-     ToggleSidebarCommand = ReactiveCommand.Create(() =>
-     {
-         var sidebarDock = FindToolDock(_layout, "Explorer"); // walks VisibleDockables
-         if (sidebarDock?.Owner is { } owner)
-             owner.IsVisible = !owner.IsVisible;
-     });
-     
-     // ToggleOutputCommand → finds OutputTool and toggles it
-     ToggleOutputCommand = ReactiveCommand.Create(() =>
-     {
-         var output = FindDockable(_layout, "Output");
-         if (output is { } dockable)
-             dockable.IsVisible = !dockable.IsVisible;
-     });
-     ```
-   - Helper methods `FindToolDock` / `FindDockable` walk the `IRootDock` tree recursively via `IDock.VisibleDockables` / `IDock.Dockables`
-2. Update `MainWindow.axaml` View menu items to use new commands
-3. Ensure `Ctrl+OemTilde` (toggle output) still works via keybinding
+1. Toggle commands read/write `ShellViewModel` booleans FIRST (source of truth)
+2. In Freeform mode, additionally push state to dock model via `SyncDockVisibility()`
+3. Helper methods `FindDockable()`, `FindToolDock()` walk `IRootDock.Dockables` recursively
+4. All keybindings unchanged
 
-**Deliverable:** All existing keyboard shortcuts and menu items toggle dock panel visibility.
+**Verification:**
+- Freeform mode: View menu toggles hide/show correct panels
+- `Ctrl+OemTilde` toggles Output
+- Grid mode: all toggles work as before
+- `dotnet test tests` — 527+ pass
 
-**Test:** Unit test — toggle commands change `IsVisible` on correct dock zones. Manual — Ctrl+` toggles output panel.
+**Rollback:** `git tag v2-m4-toggles`
 
 ---
 
 ### M5 — Layout Persistence
 
-**Goal:** Layout state (panel positions, sizes, visibility) persists across restarts.
+**Goal:** Dock arrangement persists across restarts.
+
+**Files to create:**
+
+| File | Purpose |
+|------|---------|
+| `src/Services/LayoutPersistenceService.cs` | `ILayoutPersistenceService` + implementation |
 
 **Steps:**
-1. Create `src/Docking/LayoutPersistenceService.cs`:
-   ```csharp
-   public interface ILayoutPersistenceService
-   {
-       void Save(IDock layout);
-       IDock? Load();
-   }
-   
-   public class LayoutPersistenceService : ILayoutPersistenceService
-   {
-       private readonly string _layoutPath;
-       
-       public LayoutPersistenceService()
-       {
-           // Cross-platform: Environment.GetFolderPath handles Windows/macOS/Linux
-           _layoutPath = Path.Combine(
-               Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-               ".aero", "layout.json");
-           
-           // Create directory on construction (review finding 3.5)
-           var dir = Path.GetDirectoryName(_layoutPath);
-           if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-               Directory.CreateDirectory(dir);
-       }
-       
-       public void Save(IDock layout)
-       {
-           var json = DockSerializer<IRootDock>.Serialize((IRootDock)layout);
-           // Atomic write: write to temp file then move (prevents corruption on crash)
-           var tempPath = _layoutPath + ".tmp";
-           File.WriteAllText(tempPath, json);
-           File.Move(tempPath, _layoutPath, overwrite: true);
-       }
-       
-       public IDock? Load()
-       {
-           if (!File.Exists(_layoutPath)) return null;
-           try
-           {
-               var json = File.ReadAllText(_layoutPath);
-               return DockSerializer<IRootDock>.Deserialize(json);
-           }
-           catch
-           {
-               return null; // corrupted layout → fall back to default
-           }
-       }
-   }
-   ```
-   > **Note:** All model types (`IRootDock`, `ITool`, `IDocument`, etc.) must be marked with `[DockJsonSerializable]` for serialization to work. The concrete implementations returned by `AeroDockFactory` will carry this attribute.
-2. Register in DI: `services.AddSingleton<ILayoutPersistenceService, LayoutPersistenceService>()`
-3. In `MainWindow.axaml.cs`:
-   - On startup: try `ILayoutPersistenceService.Load()` → if valid and factory-compatible, use restored layout; else use `AeroDockFactory.CreateDefaultLayout()`
-   - On close: `ILayoutPersistenceService.Save(DockControl.Layout)`
-   - Debounce saves (500ms) to avoid excessive writes during drag
-4. Add `~/.aero/` to `.gitignore` (if not already)
+1. Implement `LayoutPersistenceService`: save path `~/.aero/layout.json`
+2. Serialization via `DockSerializer<IRootDock>` with `System.Text.Json`
+3. Atomic write: `.tmp` file then `File.Move(overwrite: true)`
+4. Corrupt file handling: try/catch → delete → return null → fallback to default
+5. Schema version field in JSON for forward-compat
+6. Register in DI (singleton)
+7. Save on `MainWindow.OnClosing`; load only when `LayoutMode == Freeform`
 
-**Deliverable:** User rearranges panels → closes IDE → reopens → layout is restored.
+**Verification:**
+- Launch → Freeform → rearrange → close → relaunch → preserved
+- Corrupt JSON → relaunch → "Layout reset" status, default loaded
+- Grid mode → no layout file loaded
+- `dotnet test tests` — 527+ pass
 
-**Test:** Integration test — serialize a layout, deserialize it, verify panel IDs and positions match. Manual — rearrange, restart, verify.
+**Rollback:** `git tag v2-m5-persist`
 
 ---
 
-### M6 — Settings Integration (Layout Mode Stub)
+### M6 — Default Flip + Cleanup
 
-**Goal:** Add `LayoutMode` setting for future Tile Mode (8.1b). 8.1a only uses Freeform.
+**Goal:** Freeform becomes the default. Phase 8.1a complete.
 
 **Steps:**
-1. Use the `LayoutMode` enum from `src/Docking/LayoutMode.cs` (created in M1)
-2. Store current mode in `ShellViewModel.LayoutMode` property (default: `LayoutMode.Freeform`)
-3. If `8.7-workspace-persistence` is ready, persist via `ISettingsService`; otherwise store in memory only
-4. Add UI stub in View menu: "Layout Mode > Freeform" (active, checkmark) with "Tile" option grayed out
-5. When 8.1b implements Tile Mode, the mode switch logic swaps the `AeroDockFactory` layout output
+1. Change `LayoutMode` default from `Grid` to `Freeform`
+2. Create `manual_test_phase8_1a.sh` with smoke checklist
+3. Update `docs/roadmap/PHASES.md` — mark 8.1a complete
+4. Record scope reductions in `docs/TOFIX.md`
+5. Clean up unused imports and debug code
 
-**Deliverable:** Settings model has `LayoutMode`. View menu shows the option. No functional change yet.
+**Verification:**
+- `dotnet build src/aero.csproj` — 0 errors, 0 new warnings
+- `dotnet test tests` — all pass (≥527)
+- `manual_test_phase8_1a.sh` passes smoke checklist
+- `docs/roadmap/PHASES.md` 8.1a checked off
 
-**Test:** Unit test — `LayoutMode` enum has both values. Manual — View menu shows "Freeform" as active.
-
----
-
-### M7 — Cleanup and Final Polish
-
-**Goal:** Remove dead code, update documentation, verify all tests pass.
-
-**Steps:**
-1. Remove old Grid layout code from `MainWindow.axaml` (M1 replaces it definitively — old code goes into a comment block at bottom for reference, then removed in M7)
-2. Remove unused `GridSplitter` references
-3. Remove `IsSidebarVisible`, `IsBottomPanelVisible`, `ActiveSidebarTabIndex`, `ActiveBottomTabIndex` from `ShellViewModel` (done in M4)
-4. Remove `Dock.Serializer.Newtonsoft` from `aero.csproj` (unused extra dependency — TOFIX R4.2)
-5. Verify all DataTemplates are registered and working
-6. Update `docs/roadmap/PHASES.md` — mark 8.1a items as complete
-7. Update `docs/LIBRARIES.md` — mark Dock.Avalonia as "wired in Phase 8.1a"
-8. Run `dotnet build src/aero.csproj` — 0 errors
-9. Run `dotnet test tests` — all existing tests pass (527+)
-10. Write `manual_test/manual_test_phase8.1a.sh` for manual verification
-
-**Deliverable:** Clean codebase, updated docs, all tests green.
-
-**Test:** `dotnet build` + `dotnet test` both pass. Manual test script covers all scenarios.
+**Rollback:** `git tag v2-m6-default-freeform`
 
 ---
 
-## 5. Test Expectations
+## 5. Files Summary
 
-### Unit Tests
+### Files to Create
 
-| Test | File | Validates |
-|------|------|-----------|
-| `AeroDockFactoryTests.CreatesDefaultLayout` | `tests/Docking/` | Factory returns valid `IRootDock` with 5 dockables in correct zones |
-| `AeroDockFactoryTests.LeftZoneHasTwoTools` | `tests/Docking/` | Explorer + Git are tabs in the left `IToolDock` |
-| `AeroDockFactoryTests.BottomZoneHasTwoTools` | `tests/Docking/` | Problems + Output are tabs in the bottom `IToolDock` |
-| `AeroDockFactoryTests.CenterHasDocument` | `tests/Docking/` | `IDocumentDock` contains exactly one `IDocument` (Editor) |
-| `LayoutPersistenceServiceTests.RoundTrip` | `tests/Docking/` | Serialize → deserialize preserves dockable IDs and structure |
-| `LayoutPersistenceServiceTests.MissingFileReturnsNull` | `tests/Docking/` | `Load()` returns null when file doesn't exist |
-| `LayoutPersistenceServiceTests.CorruptedFileReturnsNull` | `tests/Docking/` | `Load()` returns null on malformed JSON |
-| `ShellViewModelToggleTests` | `tests/ViewModels/` | Toggle commands change `IsVisible` on correct dock tree nodes |
+| File | Milestone | Purpose |
+|------|-----------|---------|
+| `src/Docking/LayoutMode.cs` | M1 | `enum LayoutMode { Grid, Freeform }` |
+| `src/Docking/AeroDockFactory.cs` | M1 | `Factory` subclass — creates all dock model types |
+| `src/Docking/Model/AeroRootDock.cs` | M1 | `IRootDock` implementation |
+| `src/Docking/Model/AeroProportionalDock.cs` | M1 | `IProportionalDock` implementation |
+| `src/Docking/Model/AeroProportionalDockSplitter.cs` | M1 | `IProportionalDockSplitter` implementation |
+| `src/Docking/Model/AeroToolDock.cs` | M1 | `IToolDock` implementation |
+| `src/Docking/Model/AeroDocumentDock.cs` | M1 | `IDocumentDock` implementation |
+| `src/Docking/ToolViewModels/ExplorerTool.cs` | M1 | `ITool` — File Explorer |
+| `src/Docking/ToolViewModels/GitTool.cs` | M1 | `ITool` — Git Panel |
+| `src/Docking/ToolViewModels/ProblemsTool.cs` | M1 | `ITool` — Problems |
+| `src/Docking/ToolViewModels/OutputTool.cs` | M1 | `ITool` — Output |
+| `src/Docking/DocumentViewModels/EditorDocument.cs` | M1 | `IDocument` — Editor |
+| `src/Services/LayoutPersistenceService.cs` | M5 | Layout save/restore |
 
-### Integration Tests
+### Files to Modify
 
-| Test | File | Validates |
-|------|------|-----------|
-| `LayoutSaveRestoreTests.FullCycle` | `tests/Docking/` | Save layout → modify → restore → verify original structure |
-| `ModeSwitchTests.FreeformOnly` | `tests/Docking/` | Setting `LayoutMode.Freeform` produces correct layout |
+| File | Milestone | Changes |
+|------|-----------|---------|
+| `src/App.axaml` | M0.5 | Add Dock theme `StyleInclude` |
+| `src/App.axaml` | M1 | Add `Application.DataTemplates` for tools/documents |
+| `src/MainWindow.axaml` | M0.5 | Add "Dock spike" tab (temporary) |
+| `src/MainWindow.axaml` | M3 | Add Grid/DockControl switch structure |
+| `src/MainWindow.axaml.cs` | M1 | Add `InitializeDockControl()`, `WireViewModels()`, `EnumerateDockables()` |
+| `src/MainWindow.axaml.cs` | M3 | Wire LayoutMode switch |
+| `src/MainWindow.axaml.cs` | M4 | Add `SyncDockVisibility()`, `FindDockable()` |
+| `src/MainWindow.axaml.cs` | M5 | Wire layout persistence on close |
+| `src/ViewModels/ShellViewModel.cs` | M3 | Add `LayoutMode` property, `IsFreeformMode` computed |
+| `src/ViewModels/ShellViewModel.cs` | M4 | Rewrite toggle commands to operate per mode |
+| `src/ViewModels/ShellViewModel.cs` | M6 | Change default to Freeform |
+| `src/App.axaml.cs` | M5 | Register `LayoutPersistenceService` in DI |
 
-### Manual Tests
+### Files NOT to Modify
 
-| Scenario | Expected Result |
-|----------|----------------|
-| App starts with default layout | Sidebar (Explorer+Git) on left, Editor center, Bottom (Problems+Output) below |
-| Drag Explorer tab to bottom zone | Explorer moves to bottom zone as a tab with Problems/Output |
-| Drag Git tab to right side | Right zone created with Git panel |
-| Close Explorer panel | Panel disappears; zone collapses if empty |
-| Toggle Sidebar via menu | Sidebar zone toggles visibility |
-| Toggle Output via Ctrl+` | Output panel toggles visibility |
-| Rearrange panels → restart IDE | Layout restored to last arrangement |
-| Drag panel onto Editor tab bar | Editor becomes a tab group (if Dock supports it) |
-
----
-
-## 6. Risks and Mitigations
-
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Dock.Avalonia API changed between docs and 11.3.12.1 | Medium | All types verified against XML docs in NuGet package. `IFactory`, `ITool`, `IDocument`, `IRootDock` all confirmed present. |
-| net8.0 TFM fallback causes subtle issues | Low | R1.2 smoke test passed. Monitor for windowing/drag issues |
-| `DockObject` does not exist in 11.3.12.1 | High | `DockObject` is a pre-11.x type. M0.5 spike must identify correct base class: `ManagedDockableBase` (confirmed in DLL) or direct `ITool`/`IDocument` impl with `INotifyPropertyChanged`. Removed from M1 examples pending M0.5 verification |
-| Concrete model types need `[DockJsonSerializable]` for serialization | Medium | The `Dock.Serializer.SystemTextJson` package requires this attribute. Verify during M5; fallback to manual JSON if needed |
-| `IFactory` overrides must return correct concrete types | High | Factory must return types from `Dock.Avalonia` or `Dock.Model` assemblies. No `Dock.Model.Mvvm` package exists. Verify in M0.5 spike which concrete types are public. Fallback: implement `IFactory` directly, let Dock resolve via DataTemplates |
-| Existing ViewModel DataContext breaks when wrapped | Medium | DataTemplate approach preserves DataContext on the content. Test each panel individually |
-| Layout serialization produces huge JSON | Low | Only serializes dock structure, not content. ~1-5KB typical |
-| GridSplitter removal breaks resize behavior | Low | Dock.Avalonia provides its own `IProportionalDockSplitter` between zones |
+- `src/ViewModels/EditorViewModel.cs` — tab management unchanged
+- `src/ViewModels/FileExplorerViewModel.cs` — file tree logic unchanged
+- `src/ViewModels/GitViewModel.cs` — git operations unchanged
+- `src/ViewModels/ProblemsViewModel.cs` — diagnostic display unchanged
+- `src/ViewModels/OutputViewModel.cs` — build output unchanged
+- `src/Services/DocumentManager.cs` — document lifecycle unchanged
+- `src/Views/*.axaml` — all View files unchanged (Context injection means zero View changes)
 
 ---
 
-## 7. Dependencies After 8.1a Completes
+## 6. Logging Strategy
 
-```
-8.1a ──┬── 8.1b (Tile Mode)
-        └── 8.1c (Tear-away Windows)
-```
+Channel: `System.Diagnostics.Debug.WriteLine` with `[Dock]` prefix. Info-level messages also published via `IMessageBus.Publish(new StatusMessage(...))` for Output panel visibility.
 
-8.1a is the foundation. Both 8.1b and 8.1c build on the dock infrastructure established here.
+| Site | Level | Message |
+|------|-------|---------|
+| `AeroDockFactory.CreateDefaultLayout()` | Debug | Tree dump: depth, type, id, proportion per child |
+| `AeroDockFactory.GetDockable()` | Debug | Each `ITool`/`IDocument` constructed |
+| `MainWindow.InitializeDockControl()` | Info | "init: begin / factory / layout built / wired / layout assigned" |
+| `MainWindow.WireViewModels()` | Debug | "Wired {Type}.Context → {ContextType}" per dockable |
+| `MainWindow.OnClosing()` | Debug | Layout JSON length + path |
+| `LayoutPersistenceService.Load()` | Info | "loaded N bytes" or "default layout (reason: ...)" |
 
 ---
 
-## 8. Notes
+## 7. Key Risks
 
-- **Dock.Avalonia documentation is sparse.** The implementation will rely on GitHub samples at `https://github.com/wieslawsoltes/Dock` and the confirmed API from TOFIX R1.3.
-- **The factory is critical.** `DockControl.Layout` requires a `Factory` that creates concrete `IDock`/`IDockable` types. `Dock.Model` provides `FactoryBase` (abstract). No `Dock.Model.Mvvm` package exists — implement `IFactory` directly or extend `FactoryBase`. Use `DockControl.InitializeFactory = true` to wire the factory, but do NOT set `InitializeLayout = true` when providing your own layout (it would overwrite it).
-- **DataTemplate registration** is how Dock renders custom content. Register `DataTemplate` in `Window.DataTemplates` mapping each `ITool`/`IDocument` type to its `UserControl`. Dock's `DockControl` uses these templates when rendering. Do NOT use `AutoCreateDataTemplates` — explicit templates are preferred for clarity.
-- **Panel header styling** should use 8.9 design tokens (`Radius.Panel`, `Spacing.*`, `Typography.*`) from the start.
-- **The status bar stays outside the Dock** — it's always visible at the bottom of the window, not a dockable panel. The expected MainWindow.axaml structure is:
-  ```xml
-  <DockPanel>
-      <Menu DockPanel.Dock="Top"/>
-      <StatusBar DockPanel.Dock="Bottom"/>
-      <dock:DockControl />  <!-- fills remaining space -->
-  </DockPanel>
-  ```
-- **Menu bar stays outside the Dock** — always at the top, not dockable.
-- **EditorView internal tabs** (open files) remain managed by `EditorViewModel` — Dock.Avalonia manages the *panels*, not the tabs within the editor panel.
-- **Serialization caveat:** `[DockJsonSerializable]` must be on all model types used in the layout tree. Verify if `FactoryBase`-derived types carry it; if not, custom `ITool`/`IDocument` implementations must carry it.
-- **Rollback plan:** If Dock.Avalonia integration fails, keep the Grid layout code behind a feature flag (commented out in M1, restore if M2 fails). Allow switching back via `appsettings.json` layout mode flag.
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Theme URI wrong | Medium | Critical | M0.5 verifies by inspecting package; spike empty → STOP |
+| Dock.Avalonia 11.3 undocumented behavior | Medium | High | M0.5 is purely XAML against exact installed version |
+| Grid replacement breaks keybindings | Medium | Medium | LayoutMode switch keeps Grid alive; M4 wires per mode |
+| Layout JSON corrupts on shutdown | Medium | High | M5 try/catch + version check; atomic write; delete corrupt |
+| Context injection too late for initial render | Low | Critical | WireViewModels runs strictly before Layout assignment |
+| Toggle commands drift between modes | Medium | Medium | Reactive booleans remain canonical; mode code pushes to dock |
+
+---
+
+## 8. Definition of Done
+
+All must be true before declaring 8.1a complete:
+
+- [ ] `dotnet build src/aero.csproj` — 0 errors, 0 new warnings
+- [ ] `dotnet test tests` — all existing tests pass (≥527)
+- [ ] `manual_test_phase8_1a.sh` passes smoke checklist
+- [ ] `LayoutMode` defaults to `Freeform`; switch to Grid and back works
+- [ ] All 5 panels render real content in Freeform mode
+- [ ] All keyboard shortcuts still fire
+- [ ] `docs/roadmap/PHASES.md` 8.1a checked off
+- [ ] `docs/TOFIX.md` has no unchecked items blocking 8.1a
+- [ ] Any scope reductions recorded with rationale
