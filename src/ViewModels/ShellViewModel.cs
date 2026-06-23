@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Aero.Core;
+using Aero.Docking;
 using Aero.Languages;
 using Aero.Models.Editor;
 using Aero.Models.Settings;
@@ -57,6 +58,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
     [Reactive] public bool IsDarkTheme { get; set; }
+    [Reactive] public LayoutMode CurrentLayoutMode { get; set; } = LayoutMode.Freeform;
 
     /// <summary>
     /// Root of the dock layout tree, set by MainWindow after layout creation.
@@ -100,6 +102,7 @@ public class ShellViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
     public ReactiveCommand<Unit, Unit> BuildCommand { get; }
     public ReactiveCommand<Unit, Unit> ToggleThemeCommand { get; }
+    public ReactiveCommand<LayoutMode, Unit> SetLayoutModeCommand { get; }
 
 public ShellViewModel(
         IMessageBus bus,
@@ -148,6 +151,13 @@ public ShellViewModel(
         AboutCommand = ReactiveCommand.Create(About);
         BuildCommand = ReactiveCommand.CreateFromTask(BuildAsync);
         ToggleThemeCommand = ReactiveCommand.CreateFromTask(ToggleThemeAsync);
+        SetLayoutModeCommand = ReactiveCommand.Create<LayoutMode>(mode =>
+        {
+            CurrentLayoutMode = mode;
+            // Future: swap layout tree when Tile Mode is implemented in 8.1b
+            // For now, just log it
+            System.Diagnostics.Debug.WriteLine($"Layout mode changed to: {mode}");
+        });
 
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg =>

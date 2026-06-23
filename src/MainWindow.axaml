@@ -3,6 +3,7 @@
         xmlns:vm="using:Aero.ViewModels"
         xmlns:views="using:Aero.Views"
         xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:aero="using:Aero.Docking"
         xmlns:dockTools="using:Aero.Docking.ToolViewModels"
         xmlns:docModels="using:Aero.Docking.DocumentViewModels"
         x:Class="Aero.MainWindow"
@@ -82,6 +83,14 @@
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
                 <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Layout Mode">
+                    <MenuItem Header="_Freeform" Command="{Binding SetLayoutModeCommand}"
+                              CommandParameter="{x:Static aero:LayoutMode.Freeform}"/>
+                    <MenuItem Header="_Tile" Command="{Binding SetLayoutModeCommand}"
+                              CommandParameter="{x:Static aero:LayoutMode.Tile}"
+                              IsEnabled="False"/>
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Build">
                 <MenuItem Header="_Build" Command="{Binding BuildCommand}" InputGesture="Ctrl+Shift+B"/>
