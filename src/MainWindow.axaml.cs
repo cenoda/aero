@@ -60,14 +60,42 @@ public partial class MainWindow : Window
     /// <summary>
     /// M0.5: Initialize the Dock spike control with a C#-created layout.
     /// This avoids the XAML compiler error with nested generic types.
+    /// 
+    /// Issue 2: Assign Factory to DockControl (was null before)
+    /// Issue 9: Layout assigned on first toggle, not during Initialize
     /// </summary>
     private void InitializeDockSpike()
     {
         if (DockSpikeControl == null) return;
 
+        // Issue 2: Assign the static factory to prevent half-initialization
+        DockSpikeControl.Factory = SpikeDockFactory.Factory;
+        System.Diagnostics.Debug.WriteLine($"[Dock] Factory assigned: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
+    }
+
+    /// <summary>
+    /// M0.5: Assign layout on first toggle (Issue 9: after template is applied).
+    /// Called from ShellViewModel when IsSpikeActive changes.
+    /// </summary>
+    internal void AssignSpikeLayout()
+    {
+        if (DockSpikeControl == null) return;
+
+        // Issue 4: Log DockControl state before assignment
+        System.Diagnostics.Debug.WriteLine($"[Dock] Before layout assign:");
+        System.Diagnostics.Debug.WriteLine($"[Dock]   Factory: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine($"[Dock]   Layout pre: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
+
         var layout = SpikeDockFactory.CreateSpikeLayout();
         DockSpikeControl.Layout = layout;
-        System.Diagnostics.Debug.WriteLine("[Dock] M0.5: spike layout assigned");
+
+        // Issue 4: Log DockControl state after assignment
+        System.Diagnostics.Debug.WriteLine($"[Dock] After layout assign:");
+        System.Diagnostics.Debug.WriteLine($"[Dock]   Layout post: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
+        if (DockSpikeControl.Layout is Dock.Model.Core.IDock root)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Dock]   Root children: {root.VisibleDockables?.Count ?? 0}");
+        }
     }
 
     /// <summary>

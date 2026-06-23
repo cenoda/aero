@@ -51,6 +51,14 @@ public class ShellViewModel : ReactiveObject, IDisposable
     private Action<GitBranchChanged>? _gitBranchChangedHandler;
     private bool _disposed;
     private string? _workspacePath;
+    // Issue 9: Store MainWindow reference for spike layout assignment
+    private MainWindow? _mainWindow;
+
+    /// <summary>
+    /// Called from App.axaml.cs to set the MainWindow reference after construction.
+    /// Used for spike layout assignment (Issue 9).
+    /// </summary>
+    internal void SetMainWindow(MainWindow window) => _mainWindow = window;
 
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
@@ -150,7 +158,18 @@ public ShellViewModel(
         ToggleThemeCommand = ReactiveCommand.CreateFromTask(ToggleThemeAsync);
 
         // M0.5: Dock spike toggle
-        ToggleSpikeCommand = ReactiveCommand.Create(() => { IsSpikeActive = !IsSpikeActive; });
+        // Issue 9: Assign layout on first toggle (after template is applied)
+        ToggleSpikeCommand = ReactiveCommand.Create(() => 
+        { 
+            IsSpikeActive = !IsSpikeActive; 
+            // Issue 3: Log toggle
+            System.Diagnostics.Debug.WriteLine($"[Dock] IsSpikeActive: {IsSpikeActive}");
+            // Issue 9: Assign layout when toggled on (not during Initialize)
+            if (IsSpikeActive && _mainWindow != null)
+            {
+                _mainWindow.AssignSpikeLayout();
+            }
+        });
 
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg =>
