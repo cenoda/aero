@@ -2,8 +2,9 @@
 
 > **Status:** M0.5 Resolved (2026-06-23) — All critical/high/medium issues fixed.
 > **Review Round 5:** 2026-06-23 (TOFIX cleanup pass — addressed T0.5/T0.7/T0.8/T0.11/T0.12/T0.13/T0.16/T0.17/T0.18)
-> **Remaining open items:** T0.15 (M1 verification of `InitializeFactory` flag).
-> These are deviations from the plan, unknowns resolved during M0.5, and items
+> **M1 Review:** 2026-06-23 (Round 6 — addressed T1.2/T1.3/T1.4/T1.5; opened T1.1/T1.6/T1.7).
+> **Remaining open items:** T0.15 (M1 `InitializeFactory` verification), T1.1/T1.6/T1.7 (M1 wiring + structural cleanup), T0.15 follow-up.
+> These are deviations from the plan, unknowns resolved during M0.5/M1, and items
 > that must be addressed in later milestones.
 
 ---
@@ -516,3 +517,230 @@ Closed the following issues with concrete code or documentation changes:
 - `dotnet test tests` — 527 passed, 0 failed.
 - Only **T0.15** remains open — deferred to M1 (verify `InitializeFactory` flag
   behavior with real ViewModels).
+
+---
+
+## M1 — Findings & Action Items
+
+> **Reviewed against commit `efb7d37` ("docking: M1 - AeroDockFactory with thin
+> Tool/Document subclasses"), 2026-06-23.**
+> Build: 0 warnings, 0 errors. Tests: 527 pass.
+> M1 files: `src/Docking/AeroDockFactory.cs`, `src/Docking/ToolViewModels/*Tool.cs`,
+> `src/Docking/DocumentViewModels/EditorDocument.cs`. `App.axaml` DataTemplates and
+> `MainWindow.axaml` DockSpikeControl also touched in M1.
+
+### T1.1 `Context` not wired on any M1 dockable *(priority: high, deferred to M2)*
+
+**Description:** `AeroDockFactory.CreateDefaultLayout()` builds all 5 dockables
+(`ExplorerTool`, `GitTool`, `EditorDocument`, `ProblemsTool`, `OutputTool`) without
+setting `.Context`. Every `*Tool.cs` / `EditorDocument.cs` file ends with the comment
+*"Context is injected from code-behind in M2."* `SpikeDockFactory` does set `Context`
+(using raw strings), so the M0.5 spike rendered; M1's factory does not, so the spike
+will show **tabs but blank bodies** as soon as `Ctrl+Shift+D` is pressed against the
+real M1 layout.
+
+Compare to v1's failure mode ("Only Explorer Panel Visible") — if M2 wiring is
+forgotten, the symptom is identical, and another debugging round will be needed to
+discover `Context` was never set. This is the single largest debugging-huddle risk
+in M2.
+
+**Required fix:**
+- [ ] M2: implement `WireViewModels(layout, shell)` per the plan §2.1; set
+  `dockable.Context` for all 5 dockables **before** assigning to `DockControl.Layout`
+- [ ] M2: add a unit test that walks the layout tree and asserts
+  `dockable.Context != null` for all 5 expected IDs
+- [ ] Consider setting `Context = "M2-pending"` in M1 as a fail-loud placeholder
+  (DataTemplates would render the literal string, making the missing wiring obvious)
+
+**Status:** [ ] Open — defer to M2
+
+---
+
+### T1.2 `ActiveDockable` not set on either `ToolDock` *(priority: medium)*
+
+**Description:** `AeroDockFactory.CreateDefaultLayout()` sets `IsExpanded = true` on
+both tool docks (left and bottom) but does not set `ActiveDockable`. The v1
+post-mortem explicitly listed "Set ActiveDockable on tool docks → No change" as a
+failed debug attempt — and M1 still omits it.
+
+**Impact:** Both `Explorer` and `Git` tabs render side-by-side, but neither shows as
+selected. When bindings have bugs, focus travels to whichever tab happens to be
+hit-tested first, masking the real cause.
+
+**Required fix:**
+- [ ] Set `leftToolDock.ActiveDockable = explorerTool`
+- [ ] Set `bottomToolDock.ActiveDockable = problemsTool`
+- [ ] Use a `DockableBase`-style switch in case `ActiveDockable` is null after
+  factory creation (verify against Dock 11.3.12.1)
+
+**Status:** [ ] Open — defer to M2
+
+---
+
+### T1.3 Redundant `editorProportional` wrapper with single child *(priority: medium)*
+
+**Description:** `CreateRightStack()` builds:
+```
+rightProportional (Vertical)
+ ├── editorProportional (Vertical, P=0.72)
+ │    └── documentDock
+ │         └── editorDocument
+ ├── splitter
+ └── bottomProportional (Vertical, P=0.28)
+      └── bottomToolDock
+```
+`editorProportional` wraps a single `DocumentDock`. A `ProportionalDock` with one
+visible child is degenerate — Dock 11.3 may collapse it to `Auto` size or trigger
+"minimum 2 visible children" warnings in debug builds. It also adds an extra
+`Proportion` indirection that obscures the 72/28 split.
+
+**Required fix:**
+- [ ] Add `documentDock` directly to `rightProportional` with `Proportion = 0.72`
+- [ ] Delete the `editorProportional` local
+- [ ] The `editorBottomSplitter` should be created and added with no proportion
+  adjustment (splitters are auto-sized)
+
+**Status:** [ ] Open — defer to M2
+
+---
+
+### T1.4 `MainWindow.InitializeDockSpike()` does not match plan §2.5 init sequence *(priority: medium)*
+
+**Description:** The plan §2.5 specifies the init order (also recorded in
+`/memories/repo/aero-phase8-m1-review.md`):
+```
+1. CreateDefaultLayout()            // calls InitLayout internally
+2. DockControl.InitializeFactory = true   // BEFORE Layout!
+3. DockControl.InitializeLayout = false
+4. DockControl.Factory = layout.Factory!  // safety net
+5. DockControl.Layout = layout
+```
+
+Current `MainWindow.InitializeDockSpike()` (line ~80) only does:
+```csharp
+DockSpikeControl.Factory = AeroDockFactory.Factory;
+```
+It does **not** set `InitializeFactory` or `InitializeLayout` from code-behind. These
+are read from XAML (`InitializeFactory="True" InitializeLayout="True"`), so the
+runtime values depend on the XAML loader's lifecycle — which is what T0.15 is open
+about. If the XAML flag is read at template-apply but DockControl's `Layout`
+property-change handler reads it at a different lifecycle moment, the locator setup
+may be skipped.
+
+Additionally, `Factory` is set to the static `AeroDockFactory.Factory` field
+**before** the layout is built. The plan recommends `Factory = layout.Factory!` as a
+safety net **after** layout creation (the layout's `Factory` is what DockControl's
+internals expect to find).
+
+**Required fix:**
+- [ ] Move Factory/Layout assignment into `AssignSpikeLayout()` (where the layout
+  is built) rather than `InitializeDockSpike()` (which runs at app start)
+- [ ] Set `DockSpikeControl.InitializeFactory = true` from code-behind **before**
+  `DockSpikeControl.Layout = layout`
+- [ ] Set `DockSpikeControl.Factory = layout.Factory!` (use the layout's factory,
+  not the static field) — addresses the "wrong instance" concern
+- [ ] Log `InitializeFactory` value in the pre/post state snapshots (T0.14 follow-up)
+
+**Status:** [ ] Open — defer to M2 (co-located with T0.15 verification)
+
+---
+
+### T1.5 Proportion/Orientation wiring verified by inspection only *(priority: low)*
+
+**Description:** Proportion assignments in `CreateDefaultLayout()`:
+- Root horizontal: no `Proportion` (correct — root is unconstrained)
+- `leftProportional.Proportion = 0.22` inside root horizontal → controls **horizontal** width ✅
+- `rightProportional.Proportion = 0.78` inside root horizontal → horizontal width ✅
+- `editorProportional.Proportion = 0.72` inside `rightProportional` (Vertical) → controls **vertical** height ✅
+- `bottomProportional.Proportion = 0.28` inside `rightProportional` (Vertical) → vertical height ✅
+
+Logic is correct **on paper**. No automated test covers this, and the M0.5 spike
+only validated a simpler 30/70 split. If Dock 11.3 silently ignores `Proportion`
+on nested `ProportionalDock` children when the parent already specifies a layout,
+the 22/78 and 72/28 splits could be lost.
+
+**Required fix:**
+- [ ] Add `AeroDockFactoryTests` that walks the tree and asserts
+  `leftProportional.Proportion == 0.22` and `editorProportional.Proportion == 0.72`
+  (will also catch the T1.3 refactor)
+
+**Status:** [ ] Open — defer to M2
+
+---
+
+### T1.6 Dual-editor visual tree (T0.11) still active — no mitigation in M1 *(priority: low, monitor)*
+
+**Description:** `MainWindow.axaml` lines 117–125: `EditorView` and `DockSpikeControl`
+share the same Grid cell with mutually exclusive `IsVisible`. When the spike is ON:
+- `Ctrl+Space` keybind binds to `Binding EditorViewModel.CompletionCommand` — fires
+  against the **invisible** editor
+- AvaloniaEdit completion popups may render on the hidden view, then the
+  `DockControl`'s grab-handles steal focus
+- Both controls still process layout passes, bindings, and popups
+
+No bug *yet*, but the moment M2 wires real ViewModels, completion popups will
+flicker between active and docked editors — and the bug will be hard to attribute
+to the dual-tree condition rather than the docking logic itself.
+
+**Required fix:**
+- [ ] M2 acceptance gate: trigger Ctrl+Space while spike is ON, confirm popup
+  appears on the DockControl side, not the hidden EditorView
+- [ ] If flickering occurs, apply the M2 escape valve from the plan §4:
+  - Use `Selector.IsSelected` binding to switch which control is in the visual tree
+  - Or, conditionally include either `EditorView` or `DockSpikeControl` via
+    `DataTemplate` on a content selector
+- [ ] Reuse the M2 escape valve decision when `DockControl` becomes the default
+  in M6 (Grid fallback path is removed)
+
+**Status:** [ ] Open — monitor during M2
+
+---
+
+### T1.7 No automated coverage for `AeroDockFactory` *(priority: medium)*
+
+**Description:** 527 unit tests pass, but **none touch `AeroDockFactory`**:
+- No test asserts `CreateDefaultLayout().VisibleDockables.Count == 1`
+  (root has one proportional child)
+- No test asserts the 5 dockables are reachable by walking the tree
+- No test asserts `dockable.Id` matches the expected values
+  (`explorer`, `git`, `editor`, `problems`, `output`)
+- No test asserts `dockable.Context == null` today (so the T1.1 wiring check in M2
+  is enforced by the test suite, not by inspection)
+
+This means a regression that drops a dockable silently, renames an ID, or leaves
+`Context` unset will not fail a test — only manual `Ctrl+Shift+D` will catch it.
+
+**Required fix:**
+- [ ] Create `tests/Docking/AeroDockFactoryTests.cs` with:
+  - `CreateDefaultLayout_HasOneRootChild` — asserts `root.VisibleDockables.Count == 1`
+  - `LayoutTree_ContainsAllFiveDockables` — walks the tree, asserts 5 IDs present
+  - `LayoutTree_DockablesHaveExpectedAlignment` — asserts left/bottom ToolDocks
+  - `LayoutTree_ProportionsAreCorrect` — asserts 0.22 / 0.78 / 0.72 / 0.28
+    (T1.5 follow-up)
+  - `LayoutTree_ContextIsUnsetInM1` — asserts all 5 Contexts are null
+    (T1.1 follow-up; will be inverted in M2)
+
+**Status:** [ ] Open — defer to M2
+
+---
+
+## Round 6 — M1 Review Pass (2026-06-23)
+
+Added the following issues from M1 review:
+
+| Issue | Type | Priority | Status |
+|-------|------|----------|--------|
+| T1.1  | Wiring | high    | Open — M2 |
+| T1.2  | Wiring | medium  | Open — M2 |
+| T1.3  | Structure | medium | Open — M2 |
+| T1.4  | Init sequence | medium | Open — M2 |
+| T1.5  | Verification | low    | Open — M2 |
+| T1.6  | UI hazard | low    | Open — M2 (monitor) |
+| T1.7  | Test gap | medium  | Open — M2 |
+
+**Verification (M1 commit `efb7d37`):**
+- `dotnet build src/aero.csproj` — 0 warnings, 0 errors.
+- `dotnet test tests` — 527 passed, 0 failed.
+- No code changes in this round (review-only pass); commit M1 as-is to preserve
+  the M0.5 → M1 boundary for the rollback tag workflow.
+
