@@ -123,6 +123,20 @@
 
     <!-- Phase 8.2 — Theme engine -->
     <Compile Include="../src/Services/ThemeService.cs" />
+
+    <!-- Phase 8.1a — Docking model types & factory -->
+    <Compile Include="../src/Docking/AeroDockFactory.cs" />
+    <Compile Include="../src/Docking/ToolViewModels/ExplorerTool.cs" />
+    <Compile Include="../src/Docking/ToolViewModels/GitTool.cs" />
+    <Compile Include="../src/Docking/ToolViewModels/ProblemsTool.cs" />
+    <Compile Include="../src/Docking/ToolViewModels/OutputTool.cs" />
+    <Compile Include="../src/Docking/DocumentViewModels/EditorDocument.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Dock.Avalonia libraries needed for AeroDockFactory tests (Phase 8.1a) -->
+    <PackageReference Include="Dock.Avalonia" Version="11.3.*" />
+    <PackageReference Include="Dock.Model.ReactiveUI" Version="11.3.*" />
   </ItemGroup>
 
   <!-- Phase 8.2 — Theme presets (for token key verification in tests) -->

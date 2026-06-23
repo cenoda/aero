@@ -58,30 +58,28 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// M1: Initialize the Dock spike control with AeroDockFactory.
-    /// Assigns only the factory; layout is deferred to user toggle.
+    /// M1: Stub — real initialization moved to <see cref="AssignSpikeLayout"/>
+    /// per T1.4 (plan §2.5 init sequence must run at layout-assignment time,
+    /// not at app-start time before the template is applied).
     /// </summary>
     private void InitializeDockSpike()
     {
-        if (DockSpikeControl == null) return;
-
-        DockSpikeControl.Factory = AeroDockFactory.Factory;
-        System.Diagnostics.Debug.WriteLine($"[Dock] M1 Factory assigned: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
+        // T1.4: Factory and Layout assignment deferred to AssignSpikeLayout().
+        // The constructor-time call is kept as a hook point for future non-spike
+        // dock initialization but does nothing for the spike path.
     }
 
     /// <summary>
-    /// M0.5: Assign layout on first toggle (Issue 9: after template is applied).
+    /// M1: Assign layout on first toggle, using the plan §2.5 init sequence
+    /// (T1.4: Factory and layout init flags set from code-behind).
     /// Called from ShellViewModel when IsSpikeActive changes.
     ///
-    /// Issue T0.16/17: Idempotent — skips if a layout is already assigned.
-    /// Repeated toggles on/off no longer accumulate orphaned layouts.
+    /// T0.16/17: Idempotent — skips if a layout is already assigned.
     /// </summary>
     internal void AssignSpikeLayout()
     {
         if (DockSpikeControl == null) return;
 
-        // T0.16/17: Idempotent guard. If a layout is already assigned, the existing
-        // tree is reused. Rapid double-toggles no longer stack new IRootDock instances.
         if (DockSpikeControl.Layout != null)
         {
             System.Diagnostics.Debug.WriteLine(
@@ -89,20 +87,33 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Issue 4: Log DockControl state before assignment
-        System.Diagnostics.Debug.WriteLine($"[Dock] Before layout assign:");
-        System.Diagnostics.Debug.WriteLine($"[Dock]   Factory: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
-        System.Diagnostics.Debug.WriteLine($"[Dock]   Layout pre: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout: init sequence start");
+        System.Diagnostics.Debug.WriteLine(
+            $"[Dock]   InitializeFactory (before): {DockSpikeControl.InitializeFactory}");
+
+        // Plan §2.5: init flags BEFORE factory/layout assignment (T1.4 + T0.15)
+        DockSpikeControl.InitializeFactory = true;
+        DockSpikeControl.InitializeLayout = false;
 
         var layout = AeroDockFactory.CreateDefaultLayout();
+
+        // T1.4: use layout's factory as safety net (plan §2.5 step 4)
+        DockSpikeControl.Factory = layout.Factory ?? AeroDockFactory.Factory;
+
+        System.Diagnostics.Debug.WriteLine(
+            $"[Dock]   InitializeFactory (after): {DockSpikeControl.InitializeFactory}");
+        System.Diagnostics.Debug.WriteLine(
+            $"[Dock]   Factory (after): {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine(
+            $"[Dock]   Layout type: {layout.GetType().Name}");
+
         DockSpikeControl.Layout = layout;
 
-        // Issue 4: Log DockControl state after assignment
-        System.Diagnostics.Debug.WriteLine($"[Dock] After layout assign:");
-        System.Diagnostics.Debug.WriteLine($"[Dock]   Layout post: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout: layout assigned");
         if (DockSpikeControl.Layout is Dock.Model.Core.IDock root)
         {
-            System.Diagnostics.Debug.WriteLine($"[Dock]   Root children: {root.VisibleDockables?.Count ?? 0}");
+            System.Diagnostics.Debug.WriteLine(
+                $"[Dock]   Root children: {root.VisibleDockables?.Count ?? 0}");
         }
     }
 

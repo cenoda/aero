@@ -76,18 +76,21 @@ public static class AeroDockFactory
 
         var explorerTool = new ExplorerTool
         {
-            Id = "explorer", Title = "Explorer", CanClose = true
+            Id = "explorer", Title = "Explorer", CanClose = true,
+            Context = "M2-pending"   // T1.1: fail-loud placeholder until M2 wiring
         };
         var gitTool = new GitTool
         {
-            Id = "git", Title = "Git", CanClose = true
+            Id = "git", Title = "Git", CanClose = true,
+            Context = "M2-pending"
         };
 
         Factory.AddDockable(leftToolDock, explorerTool);
         Factory.AddDockable(leftToolDock, gitTool);
+        leftToolDock.ActiveDockable = explorerTool;  // T1.2: select first tab
         Factory.AddDockable(leftProportional, leftToolDock);
 
-        Debug.WriteLine("[Dock] Left sidebar: ExplorerTool + GitTool");
+        Debug.WriteLine("[Dock] Left sidebar: ExplorerTool + GitTool (ActiveDockable set)");
         return leftProportional;
     }
 
@@ -97,21 +100,18 @@ public static class AeroDockFactory
         rightProportional.Orientation = Orientation.Vertical;
         rightProportional.Proportion = Proportions.CenterStack;
 
-        // ── Editor (72%) ──
-        var editorProportional = Factory.CreateProportionalDock();
-        editorProportional.Orientation = Orientation.Vertical;
-        editorProportional.Proportion = Proportions.EditorRow;
-
+        // ── Editor (72%) — T1.3: add DocumentDock directly, no wrapper ProportionalDock ──
         var documentDock = Factory.CreateDocumentDock();
         documentDock.CanCreateDocument = false;
+        documentDock.Proportion = Proportions.EditorRow;
 
         var editorDocument = new EditorDocument
         {
-            Id = "editor", Title = "Editor", CanClose = true
+            Id = "editor", Title = "Editor", CanClose = true,
+            Context = "M2-pending"   // T1.1
         };
 
         Factory.AddDockable(documentDock, editorDocument);
-        Factory.AddDockable(editorProportional, documentDock);
 
         var editorBottomSplitter = Factory.CreateProportionalDockSplitter();
         editorBottomSplitter.CanResize = true;
@@ -127,22 +127,25 @@ public static class AeroDockFactory
 
         var problemsTool = new ProblemsTool
         {
-            Id = "problems", Title = "Problems", CanClose = true
+            Id = "problems", Title = "Problems", CanClose = true,
+            Context = "M2-pending"   // T1.1
         };
         var outputTool = new OutputTool
         {
-            Id = "output", Title = "Output", CanClose = true
+            Id = "output", Title = "Output", CanClose = true,
+            Context = "M2-pending"
         };
 
         Factory.AddDockable(bottomToolDock, problemsTool);
         Factory.AddDockable(bottomToolDock, outputTool);
+        bottomToolDock.ActiveDockable = problemsTool;  // T1.2: select first tab
         Factory.AddDockable(bottomProportional, bottomToolDock);
 
-        Factory.AddDockable(rightProportional, editorProportional);
+        Factory.AddDockable(rightProportional, documentDock);
         Factory.AddDockable(rightProportional, editorBottomSplitter);
         Factory.AddDockable(rightProportional, bottomProportional);
 
-        Debug.WriteLine("[Dock] Right stack: EditorDocument + ProblemsTool + OutputTool");
+        Debug.WriteLine("[Dock] Right stack: EditorDocument + ProblemsTool + OutputTool (ActiveDockable set)");
         return rightProportional;
     }
 
