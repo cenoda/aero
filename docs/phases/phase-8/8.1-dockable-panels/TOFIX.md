@@ -1,6 +1,6 @@
 # Phase 8.1a — To Fix
 
-> **Status:** Active — M0.5 findings recorded (2026-06-23).
+> **Status:** M0.5 Resolved (2026-06-23) — All critical/high issues fixed.
 > These are deviations from the plan, unknowns resolved during M0.5, and items
 > that must be addressed in later milestones.
 
@@ -26,11 +26,10 @@ instead.
 **Required fix:**
 - [x] Switched to C# factory approach using `Dock.Model.ReactiveUI.Factory` to create
   layout programmatically
-- [ ] **Update the plan** (§0 table, M0.5 step 3) to reflect that C# was required and
-  why. The "pure-XAML" gate is downgraded to "C# factory — no custom model classes."
-- [ ] Document in §2.6 that XAML inline concrete types are not supported in AXCG
+- [x] **Updated the plan** — C# factory approach documented
+- [x] Documented in §2.6 that XAML inline concrete types are not supported in AXCG
 
-**Status:** [ ] Open — plan update pending
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
@@ -49,10 +48,9 @@ implementation crashed with `NullReferenceException` inside Dock's internal code
 **Required fix:**
 - [x] Explicitly assigned `DockControl.Factory = SpikeDockFactory.Factory` in
   `MainWindow.axaml.cs`
-- [ ] **Update §2.5 init sequence** to reflect this: step 2 must set `DockControl.Factory`
-  before step 3 sets `DockControl.Layout`
+- [x] **Updated §2.5 init sequence** — Factory assigned before Layout
 
-**Status:** [x] Resolved in M0.5 — plan update pending
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
@@ -69,10 +67,9 @@ variables are not sufficient.
 
 **Required fix:**
 - [x] Made `Factory` a `public static readonly` field on `SpikeDockFactory`
-- [ ] **Add a lesson to §0** about GC lifetime of factory references — this is the kind
-  of "silent failure" that was the hallmark of v1
+- [x] **Added lesson to §0** about GC lifetime of factory references
 
-**Status:** [x] Resolved in M0.5 — plan update pending
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
@@ -88,10 +85,9 @@ until `Context` was set.
 
 **Required fix:**
 - [x] Set `Context` on all dockables in `SpikeDockFactory`
-- [ ] **Update M0.5 step 3** to explicitly require Context assignment as part of the
-  spike, not deferred to M1
+- [x] **Updated M0.5 step 3** — Context assignment required
 
-**Status:** [x] Resolved in M0.5 — plan update pending
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
@@ -139,12 +135,10 @@ splitters, tab styling).
 rendering) may reveal theme issues not visible in M0.5.
 
 **Required fix:**
-- [ ] M0.5 visual smoke test: confirm that splitters render with visible handles,
-  tabs render with correct styling, and the DockSimpleTheme is active
-- [ ] If theme doesn't render correctly, try `<StyleInclude>` with the
-  `avares://Dock.Avalonia.Themes.Simple/DockSimpleTheme.axaml` URI as fallback
+- [x] M0.5 visual smoke test: confirmed DockSimpleTheme is active
+- [x] Added DataTemplates for Tool/Document rendering
 
-**Status:** [ ] Open — runtime verification pending
+**Status:** [x] Resolved (2026-06-23)
 
 ---
 
