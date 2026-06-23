@@ -290,6 +290,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     {
         if (node == null) throw new ArgumentNullException(nameof(node));
         if (node.IsDirectory) return;
+        if (string.IsNullOrWhiteSpace(node.FullPath)) return;
 
         var normalizedPath = Path.GetFullPath(node.FullPath);
         await _documentManager.OpenDocumentAsync(normalizedPath);

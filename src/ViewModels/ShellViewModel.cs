@@ -554,16 +554,26 @@ public ShellViewModel(
 
     private void ToggleOutput()
     {
-        // Show bottom panel and switch to Output tab (index 1)
-        IsBottomPanelVisible = true;
-        ActiveBottomTabIndex = 1;
+        // If already on Output tab, hide bottom panel; otherwise show it
+        if (IsBottomPanelVisible && ActiveBottomTabIndex == 1)
+            IsBottomPanelVisible = false;
+        else
+        {
+            IsBottomPanelVisible = true;
+            ActiveBottomTabIndex = 1;
+        }
     }
 
     private void ToggleProblems()
     {
-        // Show bottom panel and switch to Problems tab (index 0)
-        IsBottomPanelVisible = true;
-        ActiveBottomTabIndex = 0;
+        // If already on Problems tab, hide bottom panel; otherwise show it
+        if (IsBottomPanelVisible && ActiveBottomTabIndex == 0)
+            IsBottomPanelVisible = false;
+        else
+        {
+            IsBottomPanelVisible = true;
+            ActiveBottomTabIndex = 0;
+        }
     }
 
     private void ToggleBottomPanel()
