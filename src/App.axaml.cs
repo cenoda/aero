@@ -38,28 +38,6 @@ public partial class App : Application
             // Phase 8.1a: Add Dock theme programmatically (ControlTheme, not ResourceDictionary)
             Styles.Add(new DockSimpleTheme());
 
-            // Issue 1: Add DataTemplates for Dock spike tools/documents
-            // Issue 7: Verify theme include works (added above)
-            // Use Application.DataTemplates (global templates)
-            DataTemplates.Add(new Avalonia.Controls.Templates.FuncDataTemplate(
-                typeof(Dock.Model.ReactiveUI.Controls.Tool),
-                (node, _) => new Avalonia.Controls.TextBlock
-                {
-                    Text = node is Dock.Model.ReactiveUI.Controls.Tool t ? t.Context?.ToString() ?? "Tool" : "Tool",
-                    Margin = new Avalonia.Thickness(8),
-                    FontSize = 14
-                },
-                false));
-            DataTemplates.Add(new Avalonia.Controls.Templates.FuncDataTemplate(
-                typeof(Dock.Model.ReactiveUI.Controls.Document),
-                (node, _) => new Avalonia.Controls.TextBlock
-                {
-                    Text = node is Dock.Model.ReactiveUI.Controls.Document d ? d.Context?.ToString() ?? "Document" : "Document",
-                    Margin = new Avalonia.Thickness(8),
-                    FontSize = 14
-                },
-                false));
-
             var shell = _services.GetRequiredService<ShellViewModel>();
             var bus = _services.GetRequiredService<IMessageBus>();
 

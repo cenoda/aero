@@ -1,6 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="using:Aero.Converters"
+             xmlns:dockTools="using:Aero.Docking.ToolViewModels"
+             xmlns:dockDocs="using:Aero.Docking.DocumentViewModels"
+             xmlns:views="using:Aero.Views"
              x:Class="Aero.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -32,4 +35,25 @@
         <!-- Phase 8.9 Control Themes — layered after SimpleTheme so overrides win -->
         <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
     </Application.Styles>
+
+    <!-- Phase 8.1a M1: DataTemplates for dockable tool/document types.
+         Maps each thin subclass to its View. Context injection happens
+         in code-behind (WireViewModels in M2). -->
+    <Application.DataTemplates>
+        <DataTemplate DataType="dockTools:ExplorerTool">
+            <views:FileExplorerView/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:GitTool">
+            <views:GitPanelView/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:ProblemsTool">
+            <views:ProblemsView/>
+        </DataTemplate>
+        <DataTemplate DataType="dockTools:OutputTool">
+            <views:OutputView/>
+        </DataTemplate>
+        <DataTemplate DataType="dockDocs:EditorDocument">
+            <views:EditorView/>
+        </DataTemplate>
+    </Application.DataTemplates>
 </Application>

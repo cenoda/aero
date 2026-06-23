@@ -58,19 +58,15 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// M0.5: Initialize the Dock spike control with a C#-created layout.
-    /// This avoids the XAML compiler error with nested generic types.
-    /// 
-    /// Issue 2: Assign Factory to DockControl (was null before)
-    /// Issue 9: Layout assigned on first toggle, not during Initialize
+    /// M1: Initialize the Dock spike control with AeroDockFactory.
+    /// Assigns only the factory; layout is deferred to user toggle.
     /// </summary>
     private void InitializeDockSpike()
     {
         if (DockSpikeControl == null) return;
 
-        // Issue 2: Assign the static factory to prevent half-initialization
-        DockSpikeControl.Factory = SpikeDockFactory.Factory;
-        System.Diagnostics.Debug.WriteLine($"[Dock] Factory assigned: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
+        DockSpikeControl.Factory = AeroDockFactory.Factory;
+        System.Diagnostics.Debug.WriteLine($"[Dock] M1 Factory assigned: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
     }
 
     /// <summary>
@@ -98,7 +94,7 @@ public partial class MainWindow : Window
         System.Diagnostics.Debug.WriteLine($"[Dock]   Factory: {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
         System.Diagnostics.Debug.WriteLine($"[Dock]   Layout pre: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
 
-        var layout = SpikeDockFactory.CreateSpikeLayout();
+        var layout = AeroDockFactory.CreateDefaultLayout();
         DockSpikeControl.Layout = layout;
 
         // Issue 4: Log DockControl state after assignment

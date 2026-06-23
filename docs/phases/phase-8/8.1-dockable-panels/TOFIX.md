@@ -325,14 +325,39 @@ floatable windows. Missing locator setup would cause silent failures that look
 exactly like v1 symptoms.
 
 **Required fix:**
-- [ ] Verify in M1 that `InitializeFactory="True"` (or removing the attribute
-  entirely, since True is the default) does not break the now-working spike
-- [ ] Test drag-to-rearrange and close-button behavior in M1 to confirm locators
-  are functional
+- [x] Verify in M1 that `InitializeFactory="True"` does not break the spike —
+  changed both flags to True in MainWindow.axaml; build 0 errors, 527 tests pass
+- [ ] Test drag-to-rearrange and close-button behavior in M2/M3 to confirm locators
+  are functional with real ViewModels
 - [ ] If `InitializeFactory="True"` causes regressions, document the correct flag
   combination in the plan §2.5
 
-**Status:** [ ] Open — test in M1
+**Status:** [x] Partially resolved (2026-06-23) — build/tests pass with True flags.
+Drag/close behavior deferred to M2/M3 when Context is wired.
+
+---
+
+### T1.1 Scope reduction: Skipped container model classes *(priority: low, recorded)*
+
+**Description:** The IMPLEMENTATION_PLAN (M1) calls for 6 container model classes
+(`AeroRootDock`, `AeroProportionalDock`, `AeroToolDock`, `AeroDocumentDock`,
+`AeroProportionalDockSplitter`) implementing their respective Dock interfaces.
+M0.5 proved that `Dock.Model.ReactiveUI.Factory` + its concrete types
+(`RootDock`, `ProportionalDock`, `ToolDock`, `DocumentDock`) work without
+custom subclasses. Re-implementing those interfaces would be ~400 lines of
+boilerplate with zero benefit.
+
+**Reduction:** Container model classes skipped. `AeroDockFactory` wraps
+`Dock.Model.ReactiveUI.Factory` (same pattern as `SpikeDockFactory`). Only
+thin `Tool`/`Document` subclasses were created — these exist purely for
+DataTemplate type discrimination, not for custom interface implementation.
+
+**Per plan-rules §7:** Do not re-add container model classes without a
+concrete second consumer (e.g. custom rendering logic, analytics hooks).
+
+**Recorded:** 2026-06-23
+
+**Status:** [x] Reduction recorded
 
 ---
 

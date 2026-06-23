@@ -117,11 +117,11 @@
                 <Grid Grid.Row="0">
                     <views:EditorView DataContext="{Binding EditorViewModel}"
                               IsVisible="{Binding !IsSpikeActive}"/>
-                    <!-- M0.5: Dock spike — layout created in C# (SpikeDockFactory) -->
+                    <!-- M1: Dock spike — layout from AeroDockFactory (T0.15: testing InitializeFactory="True") -->
                     <dock:DockControl x:Name="DockSpikeControl"
                                   IsVisible="{Binding IsSpikeActive}"
-                                  InitializeFactory="False"
-                                  InitializeLayout="False"/>
+                                  InitializeFactory="True"
+                                  InitializeLayout="True"/>
                 </Grid>
 
                 <!-- Problems panel (Phase 4 M4) -->
