@@ -84,10 +84,10 @@ public class AeroRootDock : ManagedDockableBase, IRootDock
 
     public bool CanGoBack => false;
     public bool CanGoForward => false;
-    public ICommand? GoBack { get; } = new NoOpCommand();
-    public ICommand? GoForward { get; } = new NoOpCommand();
-    public ICommand? Navigate { get; } = new NoOpCommand();
-    public ICommand? Close { get; } = new NoOpCommand();
+    public ICommand GoBack { get; } = new NoOpCommand();
+    public ICommand GoForward { get; } = new NoOpCommand();
+    public ICommand Navigate { get; } = new NoOpCommand();
+    public ICommand Close { get; } = new NoOpCommand();
 
     public bool EnableGlobalDocking
     {
@@ -108,8 +108,8 @@ public class AeroRootDock : ManagedDockableBase, IRootDock
     public IList<IDockWindow>? Windows { get; set; }
     public DockFloatingWindowHostMode FloatingWindowHostMode { get; set; }
     public DockCapabilityPolicy? RootDockCapabilityPolicy { get; set; }
-    public ICommand? ShowWindows { get; } = new NoOpCommand();
-    public ICommand? ExitWindows { get; } = new NoOpCommand();
+    public ICommand ShowWindows { get; } = new NoOpCommand();
+    public ICommand ExitWindows { get; } = new NoOpCommand();
     public bool EnableAdaptiveGlobalDockTargets { get; set; }
 }
 
@@ -118,9 +118,16 @@ public class AeroRootDock : ManagedDockableBase, IRootDock
 /// </summary>
 public class NoOpCommand : ICommand
 {
-    public event EventHandler? CanExecuteChanged;
+    /// <inheritdoc />
+    public event EventHandler? CanExecuteChanged
+    {
+        add { }
+        remove { }
+    }
 
+    /// <inheritdoc />
     public bool CanExecute(object? parameter) => true;
 
+    /// <inheritdoc />
     public void Execute(object? parameter) { }
 }

@@ -251,6 +251,7 @@ public ShellViewModel(
             try
             {
                 var normalizedPath = Path.GetFullPath(path);
+                File.AppendAllText("/tmp/aero-debug.log", $"[ShellViewModel] OpenFolderAsync: {normalizedPath}\n");
                 _bus.Publish(new FolderOpened(normalizedPath));
                 StatusText = $"Opened folder: {normalizedPath}";
             }

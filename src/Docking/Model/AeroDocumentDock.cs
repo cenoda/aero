@@ -7,6 +7,10 @@ using Dock.Model.Controls;
 
 namespace Aero.Docking.Model;
 
+// CS8767: Setter nullability mismatch with IDocumentDock is a false positive from
+// Dock.Model being compiled without a nullable context.
+#pragma warning disable CS8767
+
 /// <summary>
 /// Document dock container - holds document dockables (Editor).
 /// </summary>
@@ -109,6 +113,7 @@ public class AeroDocumentDock : ManagedDockableBase, IDocumentDock
     }
 
 private ICommand _createDocument = new NoOpCommand();
+    /// <inheritdoc />
     public ICommand CreateDocument
     {
         get => _createDocument;
@@ -146,6 +151,7 @@ private ICommand _createDocument = new NoOpCommand();
     }
 
     private ICommand _cascadeDocuments = new NoOpCommand();
+    /// <inheritdoc />
     public ICommand CascadeDocuments
     {
         get => _cascadeDocuments;
@@ -153,6 +159,7 @@ private ICommand _createDocument = new NoOpCommand();
     }
 
     private ICommand _tileDocumentsHorizontal = new NoOpCommand();
+    /// <inheritdoc />
     public ICommand TileDocumentsHorizontal
     {
         get => _tileDocumentsHorizontal;
@@ -160,6 +167,7 @@ private ICommand _createDocument = new NoOpCommand();
     }
 
     private ICommand _tileDocumentsVertical = new NoOpCommand();
+    /// <inheritdoc />
     public ICommand TileDocumentsVertical
     {
         get => _tileDocumentsVertical;
@@ -167,6 +175,7 @@ private ICommand _createDocument = new NoOpCommand();
     }
 
     private ICommand _restoreDocuments = new NoOpCommand();
+    /// <inheritdoc />
     public ICommand RestoreDocuments
     {
         get => _restoreDocuments;
@@ -177,3 +186,5 @@ private ICommand _createDocument = new NoOpCommand();
     public void AddDocument(IDockable dockable) { }
     public void AddTool(IDockable dockable) { }
 }
+
+#pragma warning restore CS8767

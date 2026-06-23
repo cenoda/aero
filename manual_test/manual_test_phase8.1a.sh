@@ -79,12 +79,13 @@ else
     fail "DockControl" "dock:DockControl not found in MainWindow.axaml"
 fi
 
-# DataTemplates registered
+# DataTemplates registered in App.axaml (not MainWindow.axaml)
+APP_AXAML="$PROJECT_DIR/src/App.axaml"
 for T in "ExplorerTool" "GitTool" "ProblemsTool" "OutputTool" "EditorDocument"; do
-    if grep -q "$T" "$AXAML"; then
+    if grep -q "$T" "$APP_AXAML"; then
         pass "DataTemplate registered for $T"
     else
-        fail "DataTemplate" "Missing DataTemplate for $T in MainWindow.axaml"
+        fail "DataTemplate" "Missing DataTemplate for $T in App.axaml"
     fi
 done
 

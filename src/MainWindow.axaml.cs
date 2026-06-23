@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Aero.Core;
 using Aero.Docking;
@@ -42,12 +43,9 @@ public partial class MainWindow : Window
                 shell.WindowY = args.Point.Y;
             }
         };
-
-        // Initialize DockControl with the default layout
-        InitializeDockControl();
     }
 
-    private void InitializeDockControl()
+    private void InitializeDockControl(ShellViewModel shell)
     {
         if (DockControl == null) return;
 
@@ -73,13 +71,10 @@ public partial class MainWindow : Window
 
         // Wire ViewModels to dock tools BEFORE assigning layout to DockControl.
         // DockControl.Layout setter triggers Initialize() which creates the visual
-        // tree. The DataTemplates bind {Binding ViewModel}, so ViewModels must be
-        // set before the visual tree is created. Plain auto-properties don't notify.
-        if (DataContext is ShellViewModel shell)
-        {
-            shell.ActiveLayout = layout;
-            WireViewModels(layout, shell);
-        }
+        // tree. The DataTemplates bind {Binding Context}, so Context must be
+        // set before the visual tree is created.
+        shell.ActiveLayout = layout;
+        WireViewModels(layout, shell);
 
         // Now assign layout — triggers Initialize() → visual tree creation.
         DockControl.Layout = layout;
@@ -99,18 +94,23 @@ public partial class MainWindow : Window
             {
                 case ExplorerTool explorer:
                     explorer.Context = shell.FileExplorerViewModel;
+                    File.AppendAllText("/tmp/aero-debug.log", $"[MainWindow] Wired ExplorerTool.Context\n");
                     break;
                 case GitTool git:
                     git.Context = shell.GitViewModel;
+                    File.AppendAllText("/tmp/aero-debug.log", $"[MainWindow] Wired GitTool.Context\n");
                     break;
                 case ProblemsTool problems:
                     problems.Context = shell.ProblemsViewModel;
+                    File.AppendAllText("/tmp/aero-debug.log", $"[MainWindow] Wired ProblemsTool.Context\n");
                     break;
                 case OutputTool output:
                     output.Context = shell.OutputViewModel;
+                    File.AppendAllText("/tmp/aero-debug.log", $"[MainWindow] Wired OutputTool.Context\n");
                     break;
                 case EditorDocument editor:
                     editor.Context = shell.EditorViewModel;
+                    File.AppendAllText("/tmp/aero-debug.log", $"[MainWindow] Wired EditorDocument.Context\n");
                     break;
             }
             // Recurse into nested docks
@@ -139,6 +139,11 @@ public partial class MainWindow : Window
 
         _confirmDeleteHandler = OnConfirmDelete;
         _bus.Subscribe(_confirmDeleteHandler);
+
+        // Initialize DockControl AFTER DataContext is set (from App.axaml.cs).
+        // This ensures WireViewModels() has access to the ShellViewModel.
+        if (DataContext is ShellViewModel shell)
+            InitializeDockControl(shell);
     }
 
     /// <summary>

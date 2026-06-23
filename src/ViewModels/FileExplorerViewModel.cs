@@ -96,6 +96,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         // Subscribe to folder-opened messages from the shell (File → Open Folder).
         _folderOpenedHandler = msg =>
         {
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] Received FolderOpened: {msg.Path}\n");
             _ = LoadFolderAsync(msg.Path);
             try
             {
@@ -140,6 +141,8 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
         if (string.IsNullOrEmpty(path))
             return;
 
+        File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] LoadFolderAsync: {path}\n");
+
         // Cancel any in-flight root load AND any in-flight child expansions.
         // The new load replaces the entire tree — stale child loads would
         // populate nodes that are about to be discarded.
@@ -155,6 +158,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 
         try
         {
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] Task.Run started: {path}\n");
             // Run the synchronous enumeration off the UI thread. The
             // FileSystemService is intentionally not self-offloading (see
             // FileSystemService.cs comments), so we own that responsibility.
@@ -162,6 +166,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
                 () => BuildRootLevelAsync(path, token),
                 token);
 
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] Task.Run completed: {nodes.Count} nodes\n");
             // If a newer load superseded us while we awaited, drop this result.
             token.ThrowIfCancellationRequested();
 
@@ -177,14 +182,17 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             RootPath = Path.GetFullPath(path);
             HasRootPath = true;
             StatusText = $"{nodes.Count} entries";
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] LoadFolderAsync complete: {nodes.Count} entries\n");
         }
         catch (OperationCanceledException)
         {
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] Cancelled: {path}\n");
             // Expected when a newer load supersedes us. Don't surface an error.
             StatusText = $"Load cancelled for {path}";
         }
         catch (Exception ex)
         {
+            File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] Exception: {ex.Message}\n{ex.StackTrace}\n");
             ErrorMessage = ex.Message;
             StatusText = $"Load failed: {ex.Message}";
             // Clear any partial tree on hard failure so the UI doesn't show stale nodes.
@@ -604,18 +612,22 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
     private async Task<(IReadOnlyList<FileExplorerNodeViewModel> Nodes, IReadOnlyList<ProjectInfo> Projects)>
         BuildRootLevelAsync(string rootPath, CancellationToken ct)
     {
+        File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] BuildRootLevelAsync start: {rootPath}\n");
         // Project roots discovered at the workspace top level. Cached on the
         // VM for child expansions to reuse.
         var projects = _projectLoader.DetectProjects(rootPath, ct);
 
+        File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] DetectProjects done, getting entries\n");
         var entries = await _fileSystem.GetDirectoryEntriesAsync(rootPath, ct);
 
+        File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] GetDirectoryEntriesAsync done: {entries.Count} entries\n");
         var nodes = new List<FileExplorerNodeViewModel>(entries.Count);
         foreach (var entry in entries)
         {
             ct.ThrowIfCancellationRequested();
             nodes.Add(CreateNodeForEntry(entry, projects));
         }
+        File.AppendAllText("/tmp/aero-debug.log", $"[FileExplorerViewModel] BuildRootLevelAsync done: {nodes.Count} nodes\n");
         return (nodes, projects);
     }
 

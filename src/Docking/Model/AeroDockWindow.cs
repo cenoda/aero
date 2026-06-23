@@ -34,7 +34,8 @@ public class AeroDockWindow : ManagedDockableBase, IDockWindow
     /// <inheritdoc />
     public override int GetHashCode() => Id?.GetHashCode() ?? 0;
 
-    public string Id
+    /// <inheritdoc />
+    public new string Id
     {
         get => _id;
         set => this.SetProperty(ref _id, value);
@@ -76,7 +77,8 @@ public class AeroDockWindow : ManagedDockableBase, IDockWindow
         set => this.SetProperty(ref _topmost, value);
     }
 
-    public string Title
+    /// <inheritdoc />
+    public new string Title
     {
         get => _title;
         set => this.SetProperty(ref _title, value);
@@ -106,13 +108,15 @@ public class AeroDockWindow : ManagedDockableBase, IDockWindow
         set => this.SetProperty(ref _showInTaskbar, value);
     }
 
-    public IDockable? Owner
+    /// <inheritdoc />
+    public new IDockable? Owner
     {
         get => _owner;
         set => this.SetProperty(ref _owner, value);
     }
 
-    public IFactory? Factory
+    /// <inheritdoc />
+    public new IFactory? Factory
     {
         get => _factory;
         set => this.SetProperty(ref _factory, value);
@@ -131,7 +135,8 @@ public class AeroDockWindow : ManagedDockableBase, IDockWindow
     }
 
 // IDockWindow methods - no-op implementations
-    public void OnClose() { }
+    /// <inheritdoc />
+    public new void OnClose() { }
     public bool OnMoveDragBegin() => false;
     public void OnMoveDrag() { }
     public void OnMoveDragEnd() { }

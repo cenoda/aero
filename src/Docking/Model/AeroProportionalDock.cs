@@ -85,10 +85,10 @@ public class AeroProportionalDock : ManagedDockableBase, IProportionalDock
 
     public bool CanGoBack => false;
     public bool CanGoForward => false;
-    public ICommand? GoBack { get; } = new NoOpCommand();
-    public ICommand? GoForward { get; } = new NoOpCommand();
-    public ICommand? Navigate { get; } = new NoOpCommand();
-    public ICommand? Close { get; } = new NoOpCommand();
+    public ICommand GoBack { get; } = new NoOpCommand();
+    public ICommand GoForward { get; } = new NoOpCommand();
+    public ICommand Navigate { get; } = new NoOpCommand();
+    public ICommand Close { get; } = new NoOpCommand();
 
     public bool EnableGlobalDocking
     {

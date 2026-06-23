@@ -4,6 +4,7 @@
         xmlns:views="using:Aero.Views"
         xmlns:dock="using:Dock.Avalonia.Controls"
         xmlns:aero="using:Aero"
+        xmlns:docking="using:Aero.Docking"
         x:Class="Aero.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -64,9 +65,9 @@
                 <Separator/>
                 <MenuItem Header="_Layout Mode">
                     <MenuItem Header="_Freeform" Command="{Binding SetLayoutModeCommand}"
-                              CommandParameter="{x:Static aero:LayoutMode.Freeform}"/>
+                              CommandParameter="{x:Static docking:LayoutMode.Freeform}"/>
                     <MenuItem Header="_Tile" Command="{Binding SetLayoutModeCommand}"
-                              CommandParameter="{x:Static aero:LayoutMode.Tile}"
+                              CommandParameter="{x:Static docking:LayoutMode.Tile}"
                               IsEnabled="False"/>
                 </MenuItem>
             </MenuItem>

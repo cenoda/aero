@@ -8,8 +8,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Suppress CS0618 (XAML partial class/member not seen by IDE analyzer).
          The Roslyn analyzer doesn't see compiler-generated .g.cs files, but MSBuild
-         resolves them correctly. Actual builds have 0 errors. -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+         resolves them correctly. Actual builds have 0 errors.
+         Suppress CS9057: Dock.Serializer.SystemTextJson analyzer references a newer
+         Roslyn version than we currently ship. Not fixable on our side. -->
+    <NoWarn>$(NoWarn);CS0618;CS9057</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

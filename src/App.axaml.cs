@@ -45,6 +45,10 @@ public partial class App : Application
             // folder is opened (Phase 7).
             _services.GetRequiredService<GitViewModel>();
 
+            // Eagerly resolve FileExplorerViewModel so it subscribes to FolderOpened before any
+            // folder is opened.
+            _services.GetRequiredService<FileExplorerViewModel>();
+
             var mainWindow = new MainWindow { DataContext = shell };
             mainWindow.Initialize(bus);
             desktop.MainWindow = mainWindow;
