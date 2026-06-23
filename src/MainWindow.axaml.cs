@@ -1,23 +1,31 @@
 using System;
 using Aero.Core;
 using Aero.Docking;
+using Aero.Services;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
+using Dock.Model.Controls;
 
 namespace Aero;
 
 public partial class MainWindow : Window
 {
     private IMessageBus? _bus;
+    private ILayoutPersistenceService? _layoutPersistence;
     private Action<ConfirmDirtyClose>? _confirmDirtyCloseHandler;
     private Action<PromptNewItem>? _promptNewItemHandler;
     private Action<PromptRename>? _promptRenameHandler;
     private Action<ConfirmDelete>? _confirmDeleteHandler;
     private bool _exitHandled;
 
-    public MainWindow()
+    public MainWindow() : this(null)
     {
+    }
+
+    public MainWindow(ILayoutPersistenceService? layoutPersistence)
+    {
+        _layoutPersistence = layoutPersistence;
         InitializeComponent();
         Closing += OnClosing;
 
@@ -38,9 +46,13 @@ public partial class MainWindow : Window
     {
         if (DockControl == null) return;
 
-        // Create the factory and layout
-        // CreateDefaultLayout() creates its own factory and calls InitLayout(root)
-        var layout = AeroDockFactory.CreateDefaultLayout();
+        // Try to restore saved layout, fall back to default
+        var layout = _layoutPersistence?.Load();
+        if (layout == null)
+        {
+            // CreateDefaultLayout() creates its own factory and calls InitLayout(root)
+            layout = AeroDockFactory.CreateDefaultLayout();
+        }
 
         // CRITICAL: Set InitializeFactory BEFORE Layout assignment.
         // When Layout is set, DockControl.OnPropertyChanged fires Initialize()
@@ -98,6 +110,12 @@ public partial class MainWindow : Window
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
+        // Save layout on close
+        if (_layoutPersistence != null && DockControl?.Layout is IRootDock layout)
+        {
+            _layoutPersistence.Save(layout);
+        }
+
         // If ExitAsync() already handled the dirty check, just clean up
         if (_exitHandled)
         {

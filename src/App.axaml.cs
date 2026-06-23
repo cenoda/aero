@@ -186,6 +186,9 @@ public partial class App : Application
         // Phase 8.2 — Theme engine
         services.AddSingleton<ThemeService>();
 
+        // Phase 8.1a M5 — Layout persistence
+        services.AddSingleton<ILayoutPersistenceService, LayoutPersistenceService>();
+
         // ViewModels
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<EditorViewModel>();
