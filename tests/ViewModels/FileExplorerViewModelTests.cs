@@ -1018,6 +1018,85 @@ public class FileExplorerViewModelTests : IDisposable
         Assert.Contains(srcNode.Children, n => n.Name == "b.txt");
     }
 
+    // --- deep nesting (ISSUE-012) ------------------------------------
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_DeepTree_LoadsAllLevels()
+    {
+        // Regression for ISSUE-012: expanding a directory at level 2 and level 3
+        // must load children at each level. This tests the ViewModel layer — if
+        // this passes but the UI still shows "…", the bug is in the View layer
+        // (ContainerPrepared not firing for nested TreeViewItems).
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "level1/"),
+            Path.Combine(root, "level1", "level2/"),
+            Path.Combine(root, "level1", "level2", "level3/"),
+            Path.Combine(root, "level1", "level2", "level3", "deep.txt"),
+            Path.Combine(root, "level1", "level2", "file2.txt"),
+            Path.Combine(root, "level1", "file1.txt"));
+
+        await _vm.LoadFolderAsync(root);
+
+        // Root has one child: level1
+        var level1 = Assert.Single(_vm.RootNodes);
+        Assert.Equal("level1", level1.Name);
+        Assert.True(level1.IsDirectory);
+        Assert.False(level1.AreChildrenLoaded);
+
+        // Expand level1 → should load level2 + file1.txt
+        await _vm.EnsureChildrenLoadedAsync(level1);
+        Assert.True(level1.AreChildrenLoaded);
+        Assert.Equal(2, level1.Children.Count);
+        Assert.DoesNotContain(level1.Children, c => c.IsPlaceholder);
+        var level2 = level1.Children.First(c => c.IsDirectory);
+        var file1 = level1.Children.First(c => !c.IsDirectory);
+        Assert.Equal("level2", level2.Name);
+        Assert.Equal("file1.txt", file1.Name);
+        Assert.False(level2.AreChildrenLoaded);
+
+        // Expand level2 → should load level3 + file2.txt
+        await _vm.EnsureChildrenLoadedAsync(level2);
+        Assert.True(level2.AreChildrenLoaded);
+        Assert.Equal(2, level2.Children.Count);
+        Assert.DoesNotContain(level2.Children, c => c.IsPlaceholder);
+        var level3 = level2.Children.First(c => c.IsDirectory);
+        var file2 = level2.Children.First(c => !c.IsDirectory);
+        Assert.Equal("level3", level3.Name);
+        Assert.Equal("file2.txt", file2.Name);
+        Assert.False(level3.AreChildrenLoaded);
+
+        // Expand level3 → should load deep.txt
+        await _vm.EnsureChildrenLoadedAsync(level3);
+        Assert.True(level3.AreChildrenLoaded);
+        var deepFile = Assert.Single(level3.Children);
+        Assert.False(deepFile.IsPlaceholder);
+        Assert.Equal("deep.txt", deepFile.Name);
+    }
+
+    [Fact]
+    public async Task EnsureChildrenLoadedAsync_EachDirectoryGetsOwnPlaceholder()
+    {
+        // Verify the CreatePlaceholderChild() factory fix: each directory must
+        // get its own placeholder instance, not share a singleton.
+        var root = TempPath();
+        Seed(
+            Path.Combine(root, "a/"),
+            Path.Combine(root, "b/"),
+            Path.Combine(root, "c/"));
+
+        await _vm.LoadFolderAsync(root);
+
+        Assert.Equal(3, _vm.RootNodes.Count);
+        var placeholders = _vm.RootNodes
+            .Select(n => Assert.Single(n.Children))
+            .ToList();
+
+        // All must be placeholders but each must be a distinct instance.
+        Assert.All(placeholders, p => Assert.True(p.IsPlaceholder));
+        Assert.Equal(3, placeholders.Select(p => p.GetHashCode()).Distinct().Count());
+    }
+
     // --- small async helper ------------------------------------------
 
     private static async Task WaitFor(Func<bool> predicate, TimeSpan timeout)

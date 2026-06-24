@@ -4,6 +4,7 @@ Quick-scan list of all issues. Update status here when opening/closing.
 
 | # | Title | Label | Priority | Status | Path |
 |---|-------|-------|----------|--------|------|
+| 012 | Nested folders show "…" placeholder instead of real files | BUG | high | in-progress | `open/ISSUE-012-nested-tree-shows-placeholder.md` |
 | 011 | Toggle Dock Spike doesn't work + editor unscrollable | BUG | high | closed | `closed/ISSUE-011-toggle-dock-spike-fails.md` |
 | 010 | Adopt Avalonia.Headless UI harness for interactive verification | CHORE | medium | open | `open/ISSUE-010-adopt-avalonia-headless-ui-harness.md` |
 | 002 | Phase 7 documentation corruption — false claims of completion | BUG | high | closed | `closed/ISSUE-002-phase7-docs-corruption.md` |
