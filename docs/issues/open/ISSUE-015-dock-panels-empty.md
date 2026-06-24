@@ -1,13 +1,13 @@
-# ISSUE-015: Dock Panels Show But Content Is Empty
+# ISSUE-015: Git Panel Doesn't Load in Dock Panels (Explorer Works)
 
 ## Description
 
-Dock panels (Explorer, Git) show in the dock UI but content is empty. The sidebar versions work correctly, but the dock versions don't display any content.
+Dock panel Explorer shows the file tree correctly, but the Git panel doesn't load any content (staged/unstaged changes, branch info, etc.). The sidebar versions of both panels work correctly, but the dock Git panel is empty or non-functional.
 
 ## Expected vs Actual
 
-- **Expected**: Dock panels should show file tree (Explorer) and staged/unstaged files (Git)
-- **Actual**: Dock panels show but content areas are empty
+- **Expected**: Dock Git panel should show staged/unstaged files, current branch, and Git graph (same as sidebar)
+- **Actual**: Dock Git panel content area is empty / doesn't display Git data. Explorer dock panel works correctly.
 
 ## Debug Log
 
@@ -33,7 +33,21 @@ Dock panels (Explorer, Git) show in the dock UI but content is empty. The sideba
 - **Action:** Added `AutoCreateDataTemplates="False"` to DockSpikeControl; changed all DataTemplates to use ContentControl/ContentTemplate pattern; added `xmlns:vm` namespace.
 - **Result:** Build succeeds, 535 tests pass. Pending UI verification.
 
+### Attempt 5 — Re-evaluate after UI verification: Explorer works, Git doesn't
+- **Observation:** After Attempt 4 fix (ContentTemplate pattern), Explorer panel shows the file tree correctly. Git panel still doesn't load.
+- **Key observation:** Both `ExplorerTool` and `GitTool` use identical `DataContext="{Binding Context}"` pattern in `App.axaml`. Both go through the same `WireViewModels` code path. If the binding fix resolved Explorer, it should have resolved Git too — unless the issue is specific to `GitViewModel` initialization or data loading.
+- **Hypotheses to investigate:**
+  1. `GitViewModel` may not be properly registered in DI, so `WireViewModels` sets `Context` to null or throws.
+  2. `GitViewModel` may be registered but doesn't load data until certain conditions are met (e.g., git repo detection, async init not awaited, git executable not found on Linux).
+  3. The `GitPanelView` x:DataType binding expects `GitViewModel` but the Context is a different type (or null).
+  4. Nested DataTemplates in `GitPanelView` (e.g., `GitFileStatusViewModel`) use `$parent[UserControl]` which may resolve differently inside a Dock template hierarchy vs sidebar.
+  5. `GitViewModel`'s `StagedChanges`/`UnstagedChanges` collections may remain empty due to git service not being initialized in the dock path.
+
 ## Root Cause (Final)
+
+**UPDATED 2026-06-25:** The original root cause (primary) below was correct and fixed Explorer, but Git still doesn't load. The issue is now narrowed to a Git-specific problem, not a general DataTemplate binding issue. See Attempt 5 above.
+
+**ORIGINAL (partially resolved):**
 
 **Primary:** `DataContext="{Binding Context}"` on the DataTemplate root creates a circular binding:
 
@@ -48,14 +62,21 @@ Dock panels (Explorer, Git) show in the dock UI but content is empty. The sideba
 
 ## Resolution
 
+### Applied (Explorer fixed — M2)
+
 | File | Change |
 |------|--------|
 | `src/MainWindow.axaml` | Added `AutoCreateDataTemplates="False"` to DockSpikeControl |
 | `src/App.axaml` | Changed from `DataContext="{Binding Context}"` to `Content="{Binding Context}"` + ContentTemplate |
 | `src/App.axaml` | Added `xmlns:vm="using:Aero.ViewModels"` namespace |
 
+### Pending (Git still broken)
+
+Git panel investigation needed — likely a GitViewModel initialization, DI registration, or git-service-not-found-on-Linux issue.
+
 ## Status
 
 | Date | Status |
 |------|--------|
-| 2026-06-24 | fixed (pending UI verification) |
+| 2026-06-24 | Explorer fixed; Git still empty (original report was imprecise — Explorer works, Git doesn't) |
+| 2026-06-25 | Doc updated to reflect actual state: Explorer works, Git broken. Debug pending. |
