@@ -1,6 +1,6 @@
 # ISSUE-011 — Toggle Dock Spike Doesn't Work + Editor Unscrollable
 
-> **Status:** in-progress
+> **Status:** closed
 > **Created:** 2026-06-24
 > **Priority:** high
 > **Milestone:** Phase 8.1a (Dockable Panels)
@@ -88,4 +88,20 @@ The toggle simply doesn't work. Possible root causes:
 
 ## Resolution
 
-TBD after deeper investigation
+**Root Cause:** `AeroDockFactory.CreateDefaultLayout()` was missing the critical `Factory.InitLayout(root)` call. Without this, DockControl receives a layout object but has no idea how to render it — resulting in blank white space.
+
+**What was wrong:**
+1. The layout tree was correctly assembled (RootDock → ProportionalDock → Tools/Editors)
+2. But `Factory.InitLayout()` was never called — this is the Dock.Avalonia call that wires up navigation, `CanClose`, `CanDrag`, `Navigate` commands, active dockable state, and all rendering machinery
+3. Additionally, visibility was controlled via XAML bindings (`IsVisible="{Binding !IsSpikeActive}"`) which Avalonia doesn't support (no `!` negation). Fixed by moving visibility control to code-behind (`SetSpikeVisibility()`)
+4. Layout assignment now happens BEFORE visibility toggle (timing fix)
+
+**Fix applied:**
+1. Added `Factory.InitLayout(root)` at the end of `CreateDefaultLayout()` in `AeroDockFactory.cs`
+2. Moved visibility control from XAML bindings to code-behind (`MainWindow.axaml.cs`)
+3. Added `DebugLogger` utility class for GUI debugging
+4. Added `IsNotSpikeActive` computed property to `ShellViewModel`
+
+**Closed:** 2026-06-24
+
+**Note:** User reports additional bug found during testing (not blocking this fix).

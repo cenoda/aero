@@ -80,23 +80,22 @@ public partial class MainWindow : Window
     /// </summary>
     internal void AssignSpikeLayout()
     {
-        // BUGFIX: Add detailed logging to diagnose toggle failure
-        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout CALLED");
-        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
+        // BUGFIX: Add file-based logging to diagnose toggle failure (GUI app)
+        DebugLogger.Log("[Dock] AssignSpikeLayout CALLED");
+        DebugLogger.Log($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
 
         if (DockSpikeControl == null) return;
 
-        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl.Layout before: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
+        DebugLogger.Log($"[Dock]   DockSpikeControl.Layout before: {DockSpikeControl.Layout?.GetType().Name ?? "null"}");
 
         if (DockSpikeControl.Layout != null)
         {
-            System.Diagnostics.Debug.WriteLine(
-                "[Dock] AssignSpikeLayout: skipping — layout already assigned");
+            DebugLogger.Log("[Dock] AssignSpikeLayout: skipping — layout already assigned");
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout: init sequence start");
-        System.Diagnostics.Debug.WriteLine(
+        DebugLogger.Log("[Dock] AssignSpikeLayout: init sequence start");
+        DebugLogger.Log(
             $"[Dock]   InitializeFactory (before): {DockSpikeControl.InitializeFactory}");
 
         // Plan §2.5: init flags BEFORE factory/layout assignment (T1.4 + T0.15)
@@ -114,28 +113,43 @@ public partial class MainWindow : Window
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine(
+            DebugLogger.Log(
                 "[Dock] AssignSpikeLayout: DataContext is not ShellViewModel — skipping WireViewModels");
         }
 
         // T1.4: use layout's factory as safety net (plan §2.5 step 4)
         DockSpikeControl.Factory = layout.Factory ?? AeroDockFactory.Factory;
 
-        System.Diagnostics.Debug.WriteLine(
+        DebugLogger.Log(
             $"[Dock]   InitializeFactory (after): {DockSpikeControl.InitializeFactory}");
-        System.Diagnostics.Debug.WriteLine(
+        DebugLogger.Log(
             $"[Dock]   Factory (after): {DockSpikeControl.Factory?.GetType().Name ?? "null"}");
-        System.Diagnostics.Debug.WriteLine(
+        DebugLogger.Log(
             $"[Dock]   Layout type: {layout.GetType().Name}");
 
         DockSpikeControl.Layout = layout;
 
-        System.Diagnostics.Debug.WriteLine("[Dock] AssignSpikeLayout: layout assigned");
+        DebugLogger.Log("[Dock] AssignSpikeLayout: layout assigned");
         if (DockSpikeControl.Layout is Dock.Model.Core.IDock root)
         {
-            System.Diagnostics.Debug.WriteLine(
+            DebugLogger.Log(
                 $"[Dock]   Root children: {root.VisibleDockables?.Count ?? 0}");
         }
+        
+        // BUGFIX: Check visibility after layout assignment
+        DebugLogger.Log($"[Dock]   DockSpikeControl.IsVisible: {DockSpikeControl.IsVisible}");
+        DebugLogger.Log($"[Dock]   DockSpikeControl.IsEffectivelyVisible: {DockSpikeControl.IsEffectivelyVisible}");
+        DebugLogger.Log($"[Dock]   DockSpikeControl.IsInitialized: {DockSpikeControl.IsInitialized}");
+        DebugLogger.Log($"[Dock]   DockSpikeControl.IsArrangeValid: {DockSpikeControl.IsArrangeValid}");
+        DebugLogger.Log($"[Dock]   DockSpikeControl.IsMeasureValid: {DockSpikeControl.IsMeasureValid}");
+        
+        // BUGFIX: Force visual update
+        DebugLogger.Log("[Dock]   Forcing visual update...");
+        DockSpikeControl.InvalidateVisual();
+        DockSpikeControl.InvalidateMeasure();
+        DockSpikeControl.InvalidateArrange();
+        DebugLogger.Log($"[Dock]   After invalidate - IsVisible: {DockSpikeControl.IsVisible}");
+        DebugLogger.Log($"[Dock]   After invalidate - IsEffectivelyVisible: {DockSpikeControl.IsEffectivelyVisible}");
     }
 
     /// <summary>
@@ -145,15 +159,15 @@ public partial class MainWindow : Window
     /// </summary>
     internal void ClearSpikeLayout()
     {
-        // BUGFIX: Add detailed logging
-        System.Diagnostics.Debug.WriteLine("[Dock] ClearSpikeLayout CALLED");
-        System.Diagnostics.Debug.WriteLine($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
+        // BUGFIX: Add file-based logging (GUI app)
+        DebugLogger.Log("[Dock] ClearSpikeLayout CALLED");
+        DebugLogger.Log($"[Dock]   DockSpikeControl is null: {DockSpikeControl == null}");
 
         if (DockSpikeControl == null) return;
 
         if (DockSpikeControl.Layout != null)
         {
-            System.Diagnostics.Debug.WriteLine(
+            DebugLogger.Log(
                 $"[Dock] ClearSpikeLayout: detaching {DockSpikeControl.Layout.GetType().Name}");
             DockSpikeControl.Layout = null;
             // BUGFIX: Clear InitializeFactory to ensure clean re-init
@@ -168,7 +182,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine("[Dock] ClearSpikeLayout: nothing to clear");
+            DebugLogger.Log("[Dock] ClearSpikeLayout: nothing to clear");
         }
     }
 
@@ -319,4 +333,45 @@ public partial class MainWindow : Window
 
 #pragma warning restore VSTHRD100
 
+    /// <summary>
+    /// BUGFIX: Control spike visibility in code-behind to bypass XAML binding issues.
+    /// Also controls EditorView visibility (they are mutually exclusive).
+    /// </summary>
+    internal void SetSpikeVisibility(bool isVisible)
+    {
+        DebugLogger.Log($"[Dock] SetSpikeVisibility({isVisible})");
+        
+        // BUGFIX: Control the Border's visibility (it wraps DockSpikeControl)
+        var dockBorder = this.FindControl<Border>("DockSpikeBorder");
+        if (dockBorder != null)
+        {
+            // BUGFIX: Ensure layout is assigned BEFORE making visible
+            if (isVisible && DockSpikeControl.Layout == null)
+            {
+                DebugLogger.Log("[Dock]   Layout is null, calling AssignSpikeLayout() first");
+                AssignSpikeLayout();
+            }
+            
+            dockBorder.IsVisible = isVisible;
+            DebugLogger.Log($"[Dock]   DockSpikeBorder.IsVisible set to {isVisible}");
+            DebugLogger.Log($"[Dock]   DockSpikeBorder.Bounds: {dockBorder.Bounds}");
+            DebugLogger.Log($"[Dock]   DockSpikeControl.Layout: {DockSpikeControl?.Layout?.GetType().Name ?? "null"}");
+        }
+        else
+        {
+            DebugLogger.Log($"[Dock]   ERROR: DockSpikeBorder is null!");
+        }
+        
+        // Find EditorView and toggle its visibility
+        var editorView = this.FindControl<Views.EditorView>("EditorView");
+        if (editorView != null)
+        {
+            editorView.IsVisible = !isVisible;
+            DebugLogger.Log($"[Dock]   EditorView.IsVisible set to {!isVisible}");
+        }
+        else
+        {
+            DebugLogger.Log($"[Dock]   ERROR: EditorView not found by name!");
+        }
+    }
 }

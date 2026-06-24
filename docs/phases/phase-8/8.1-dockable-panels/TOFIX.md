@@ -706,17 +706,38 @@ Drag-to-rearrange and close-button behavior is still unverified (requires M3+).
 
 ---
 
-### T2.4 Toggle doesn't work + editor unscrollable after toggle off *(priority: high, open)*
+### T2.4 Toggle doesn't work + editor unscrollable after toggle off *(priority: high, resolved)*
 
 **Description:** User reported two issues:
 1. Ctrl+Shift+D or View menu toggle doesn't activate the dock spike
 2. After toggling off, the main editor becomes unscrollable
 
-**Root cause analysis (Attempt 1-2):**
-- Added detailed logging — issue persists
-- Added focus restoration — issue persists
+**Root cause (found during debugging, 2026-06-24):**
+1. **`Factory.InitLayout(root)` was never called** in `AeroDockFactory.CreateDefaultLayout()`.
+   This is the critical Dock.Avalonia call that wires up navigation, `CanClose`, `CanDrag`,
+   `Navigate` commands, and all rendering machinery. Without it, DockControl receives a
+   layout object but has no idea how to render it — showing blank white space.
+2. **XAML `!` negation not supported** — Avalonia XAML does not support `{Binding !IsSpikeActive}`.
+   Visibility was moved to code-behind (`SetSpikeVisibility()`).
+3. **Layout assignment timing** — layout was assigned AFTER visibility toggle; now assigned BEFORE.
 
-**Status:** [ ] Open — created ISSUE-005 for deeper investigation
+**Fix applied:**
+- Added `Factory.InitLayout(root)` in `AeroDockFactory.CreateDefaultLayout()`
+- Moved visibility control to code-behind (MainWindow.axaml.cs `SetSpikeVisibility()`)
+- Added `DebugLogger` utility class for GUI debugging
+- Added `IsNotSpikeActive` computed property to ShellViewModel
+- Created ISSUE-011 to track the fix
+
+**Status:** [x] Resolved (2026-06-24) — confirmed working by user
+
+---
+
+### T2.5 Additional bug found during dock spike testing *(priority: medium, open)*
+
+**Description:** User reports finding an additional bug during dock spike testing
+(details not yet logged). This was noted alongside the T2.4 fix confirmation.
+
+**Status:** [ ] Open — awaiting user description of the bug
 
 ---
 

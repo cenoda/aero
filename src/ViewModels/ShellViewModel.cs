@@ -58,7 +58,15 @@ public class ShellViewModel : ReactiveObject, IDisposable
     /// Called from App.axaml.cs to set the MainWindow reference after construction.
     /// Used for spike layout assignment (Issue 9).
     /// </summary>
-    internal void SetMainWindow(MainWindow window) => _mainWindow = window;
+    internal void SetMainWindow(MainWindow window)
+    {
+        _mainWindow = window;
+        // BUGFIX: If spike is active by default, assign layout now
+        if (IsSpikeActive && _mainWindow != null)
+        {
+            _mainWindow.AssignSpikeLayout();
+        }
+    }
 
     [Reactive] public string StatusText { get; set; } = "Aero IDE";
     [Reactive] public string WindowTitle { get; set; } = "Aero";
@@ -69,7 +77,17 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public bool IsDarkTheme { get; set; }
 
     // M0.5: Dock spike toggle for Phase 8.1a
-    [Reactive] public bool IsSpikeActive { get; set; }
+    private bool _isSpikeActive = false; // Start hidden, toggle with Ctrl+Shift+D
+    public bool IsSpikeActive
+    {
+        get => _isSpikeActive;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isSpikeActive, value);
+            this.RaisePropertyChanged(nameof(IsNotSpikeActive));
+        }
+    }
+    public bool IsNotSpikeActive => !IsSpikeActive;
     public ReactiveCommand<Unit, Unit> ToggleSpikeCommand { get; }
 
     // Window state — persisted via ISettingsService (Phase 8.7)
@@ -165,22 +183,40 @@ public ShellViewModel(
         // factory's dockable state without stacking IRootDock instances.
         ToggleSpikeCommand = ReactiveCommand.Create(() =>
         {
-            // BUGFIX: Add detailed logging to diagnose toggle failure
-            System.Diagnostics.Debug.WriteLine("[Dock] ToggleSpikeCommand EXECUTED");
-            System.Diagnostics.Debug.WriteLine($"[Dock]   _mainWindow is null: {_mainWindow == null}");
-            System.Diagnostics.Debug.WriteLine($"[Dock]   IsSpikeActive before: {IsSpikeActive}");
-            IsSpikeActive = !IsSpikeActive;
-            System.Diagnostics.Debug.WriteLine($"[Dock]   IsSpikeActive after: {IsSpikeActive}");
-            if (_mainWindow == null) return;
-            if (IsSpikeActive)
+            // BUGFIX: Add file-based logging to diagnose toggle failure (GUI app)
+            Aero.Core.DebugLogger.Clear(); // Start fresh each toggle
+            Aero.Core.DebugLogger.Log("[Dock] ToggleSpikeCommand EXECUTED");
+            Aero.Core.DebugLogger.Log($"[Dock]   _mainWindow is null: {_mainWindow == null}");
+            Aero.Core.DebugLogger.Log($"[Dock]   IsSpikeActive before: {IsSpikeActive}");
+
+            if (_mainWindow == null) 
             {
-                _mainWindow.AssignSpikeLayout();
+                Aero.Core.DebugLogger.Log("[Dock]   ERROR: _mainWindow is null, aborting");
+                return;
             }
-            else
+            
+            // BUGFIX: Assign layout BEFORE making control visible (timing fix)
+            if (!IsSpikeActive) // We're about to activate
+            {
+                Aero.Core.DebugLogger.Log("[Dock]   Calling AssignSpikeLayout() BEFORE setting IsSpikeActive=true");
+                _mainWindow.AssignSpikeLayout();
+                Aero.Core.DebugLogger.Log("[Dock]   AssignSpikeLayout() completed");
+            }
+            
+            IsSpikeActive = !IsSpikeActive;
+            Aero.Core.DebugLogger.Log($"[Dock]   IsSpikeActive after: {IsSpikeActive}");
+            
+            // BUGFIX: Manually control visibility in code-behind (bypass XAML binding issues)
+            Aero.Core.DebugLogger.Log("[Dock]   Calling _mainWindow.SetSpikeVisibility()");
+            _mainWindow.SetSpikeVisibility(IsSpikeActive);
+            
+            if (!IsSpikeActive) // We just deactivated
             {
                 // T0.18: detach the layout on toggle off to avoid accumulating
                 // orphan IRootDock instances on the (invisible) DockControl.
+                Aero.Core.DebugLogger.Log("[Dock]   Calling ClearSpikeLayout() AFTER setting IsSpikeActive=false");
                 _mainWindow.ClearSpikeLayout();
+                Aero.Core.DebugLogger.Log("[Dock]   ClearSpikeLayout() completed");
             }
         });
 

@@ -115,13 +115,19 @@
                 <!-- Editor panel with tabs -->
                 <!-- M0.5: Dock spike replaces EditorView when IsSpikeActive is true -->
                 <Grid Grid.Row="0">
-                    <views:EditorView DataContext="{Binding EditorViewModel}"
-                              IsVisible="{Binding !IsSpikeActive}"/>
-                    <!-- M1: Dock spike — layout from AeroDockFactory (T0.15: testing InitializeFactory="True") -->
-                    <dock:DockControl x:Name="DockSpikeControl"
-                                  IsVisible="{Binding IsSpikeActive}"
-                                  InitializeFactory="True"
-                                  InitializeLayout="True"/>
+                    <!-- BUGFIX: Remove IsVisible bindings - control in code-behind -->
+                    <views:EditorView x:Name="EditorView"
+                              DataContext="{Binding EditorViewModel}"/>
+                    <!-- M1: Dock spike — layout from AeroDockFactory (assigned in code-behind) -->
+                    <!-- BUGFIX: Wrap in Border with explicit size to force rendering -->
+                    <Border x:Name="DockSpikeBorder"
+                            IsVisible="False"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <dock:DockControl x:Name="DockSpikeControl"
+                                          InitializeFactory="True"
+                                          InitializeLayout="False"/>
+                    </Border>
                 </Grid>
 
                 <!-- Problems panel (Phase 4 M4) -->

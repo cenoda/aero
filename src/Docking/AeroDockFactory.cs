@@ -59,7 +59,12 @@ public static class AeroDockFactory
         Factory.AddDockable(proportional, right);
         Factory.AddDockable(root, proportional);
 
-        Debug.WriteLine("[Dock] M1: CreateDefaultLayout() completed");
+        // CRITICAL: InitLayout wires up navigation, active dockable, CanClose,
+        // CanDrag, context menu commands, etc. Without this, DockControl
+        // receives a layout but has no idea how to render it.
+        Factory.InitLayout(root);
+
+        Debug.WriteLine("[Dock] M1: CreateDefaultLayout() completed — InitLayout called");
         DumpTree(root, 0);
         return root;
     }
