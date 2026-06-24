@@ -38,22 +38,28 @@
 
     <!-- Phase 8.1a M1: DataTemplates for dockable tool/document types.
          Maps each thin subclass to its View. Context injection happens
-         in code-behind (WireViewModels in M2). -->
+         in code-behind (WireViewModels in M2).
+
+         CRITICAL: DataContext="{Binding}" is required. The DockControl sets the
+         DataTemplate's DataType as the data context. Since each Tool/Document's
+         Context property is the real ViewModel (set by WireViewModels),
+         we bind DataContext="{Binding Context}" to pass the ViewModel through.
+         Without this, views render with no ViewModel — showing blank panels. -->
     <Application.DataTemplates>
         <DataTemplate DataType="dockTools:ExplorerTool">
-            <views:FileExplorerView/>
+            <views:FileExplorerView DataContext="{Binding Context}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:GitTool">
-            <views:GitPanelView/>
+            <views:GitPanelView DataContext="{Binding Context}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:ProblemsTool">
-            <views:ProblemsView/>
+            <views:ProblemsView DataContext="{Binding Context}"/>
         </DataTemplate>
         <DataTemplate DataType="dockTools:OutputTool">
-            <views:OutputView/>
+            <views:OutputView DataContext="{Binding Context}"/>
         </DataTemplate>
         <DataTemplate DataType="dockDocs:EditorDocument">
-            <views:EditorView/>
+            <views:EditorView DataContext="{Binding Context}"/>
         </DataTemplate>
     </Application.DataTemplates>
 </Application>

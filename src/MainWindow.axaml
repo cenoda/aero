@@ -77,15 +77,18 @@
         <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <!-- Sidebar: fixed default width, MinWidth lets the user collapse to a sliver. -->
-                <ColumnDefinition Width="250" MinWidth="0"/>
+                <!-- Sidebar: Auto width — collapses to 0 when inner content is invisible. -->
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
 <!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
-                 (parent DataContext), not child ViewModels. -->
+                 (parent DataContext), not child ViewModels.
+                 Width=250 on the Grid ensures the Auto column sizes to 250 when visible,
+                 and collapses to 0 when IsVisible=False. -->
             <Grid Grid.Column="0"
+                  Width="250"
                   IsVisible="{Binding IsSidebarVisible}">
                 <TabControl SelectedIndex="{Binding ActiveSidebarTabIndex}">
                     <TabItem Header="Explorer">
