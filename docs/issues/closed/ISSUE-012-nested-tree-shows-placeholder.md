@@ -1,6 +1,6 @@
 # ISSUE-012 — Nested Folders Show "…" Placeholder Instead of Real Files
 
-> **Status:** in-progress
+> **Status:** closed
 > **Created:** 2026-06-24
 > **Priority:** high
 > **Milestone:** Phase 8.1a (Dockable Panels) — found during testing
@@ -98,4 +98,14 @@ private void OnTreeContainerPrepared(object? sender, ContainerPreparedEventArgs 
 
 ## Resolution
 
-TBD
+**Root Cause:** `TreeView.ContainerPrepared` only fires for direct `TreeViewItem`s. Nested items (level 2+) are created by `TreeDataTemplate` inside each `TreeViewItem`, so `ContainerPrepared` fires on the parent `TreeViewItem`, not the root `TreeView`. The `Expanded` handler was never attached to deeper levels.
+
+**Fix:** Recursively subscribe to `ContainerPrepared` on each `TreeViewItem` in `FileExplorerView.axaml.cs`:
+```csharp
+item.ContainerPrepared -= OnTreeContainerPrepared;
+item.ContainerPrepared += OnTreeContainerPrepared;
+```
+
+**Also:** Previous singleton placeholder fix (`CreatePlaceholderChild()` factory) was correct but insufficient on its own.
+
+**Closed:** 2026-06-24 — confirmed working by user.
