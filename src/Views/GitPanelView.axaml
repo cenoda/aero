@@ -11,12 +11,13 @@
   <Grid RowDefinitions="Auto,*,Auto">
     
     <!-- Header -->
-    <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}" Padding="8">
+    <Border Grid.Row="0" Background="{DynamicResource panel.sectionBackground}" Padding="8">
       <StackPanel Orientation="Horizontal">
-        <TextBlock Text="Git" FontWeight="Bold" FontSize="14"/>
-        <TextBlock Text=" - " Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+        <TextBlock Text="Git" FontWeight="Bold" FontSize="14"
+                 Foreground="{DynamicResource panel.foreground}"/>
+        <TextBlock Text=" - " Foreground="{DynamicResource panel.sectionForeground}"/>
         <TextBlock Text="{Binding CurrentBranch}" FontSize="12"
-                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                 Foreground="{DynamicResource panel.sectionForeground}"/>
       </StackPanel>
     </Border>
 
@@ -26,9 +27,9 @@
         <Grid ColumnDefinitions="*,*" Margin="4">
       
       <!-- Staged Changes (Left) -->
-      <Border Grid.Column="0" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
+      <Border Grid.Column="0" Margin="2" BorderBrush="{DynamicResource panel.border}" BorderThickness="1" CornerRadius="4">
         <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
+          <Border Grid.Row="0" Background="{DynamicResource panel.headerBackground}" Padding="4">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="Staged" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center"/>
               <Button Grid.Column="1" Content="Unstage All" Command="{Binding UnstageAllCommand}"
@@ -60,9 +61,9 @@
       </Border>
 
       <!-- Unstaged Changes (Right) -->
-      <Border Grid.Column="1" Margin="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
+      <Border Grid.Column="1" Margin="2" BorderBrush="{DynamicResource panel.border}" BorderThickness="1" CornerRadius="4">
         <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltLowBrush}" Padding="4">
+          <Border Grid.Row="0" Background="{DynamicResource panel.headerBackground}" Padding="4">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="Unstaged" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center"/>
               <Button Grid.Column="1" Content="Stage All" Command="{Binding StageAllCommand}"
@@ -100,12 +101,14 @@
     </TabControl>
 
     <!-- Commit Box -->
-    <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}" Padding="8">
+    <Border Grid.Row="2" Background="{DynamicResource panel.sectionBackground}" Padding="8">
       <StackPanel>
         <TextBox x:Name="CommitMessageBox"
                 Text="{Binding CommitMessage, Mode=TwoWay}"
                 Watermark="Commit message..."
                 AcceptsReturn="False"
+                Background="{DynamicResource editor.background}"
+                Foreground="{DynamicResource editor.foreground}"
                 Height="32"/>
         <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
           <Button Grid.Column="0" Content="Commit" Command="{Binding CommitCommand}"
