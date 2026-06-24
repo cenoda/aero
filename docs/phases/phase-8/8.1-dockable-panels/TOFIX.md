@@ -732,15 +732,6 @@ Drag-to-rearrange and close-button behavior is still unverified (requires M3+).
 
 ---
 
-### T2.5 Additional bug found during dock spike testing *(priority: medium, open)*
-
-**Description:** User reports finding an additional bug during dock spike testing
-(details not yet logged). This was noted alongside the T2.4 fix confirmation.
-
-**Status:** [ ] Open — awaiting user description of the bug
-
----
-
 ### Round 7 — M2 Verification Summary (2026-06-23)
 
 | Check | Result |
