@@ -15,17 +15,35 @@ namespace Aero.ViewModels;
 public class FileExplorerNodeViewModel : ReactiveObject
 {
     /// <summary>
-    /// Synthetic sentinel child inserted into a directory's <see cref="Children"/>
-    /// until the real children are loaded. The view shows the expander arrow
-    /// because the collection is non-empty; after the load completes the VM
-    /// replaces this placeholder with the real entries.
+    /// Create a synthetic sentinel child to insert into a directory's
+    /// <see cref="Children"/> until the real children are loaded. The view
+    /// shows the expander arrow because the collection is non-empty; after
+    /// the load completes the VM replaces this placeholder with the real
+    /// entries.
+    ///
+    /// IMPORTANT: Each directory node must get its own placeholder instance.
+    /// <see cref="System.Collections.ObjectModel.ObservableCollection{T}"/>
+    /// and Avalonia's TreeView both assume items belong to exactly one
+    /// collection/visual parent. Sharing a static singleton across multiple
+    /// directories causes the placeholder to "jump" between nodes when
+    /// directories expand, making nested files display "…" (the placeholder's
+    /// name) and become unopenable.
     /// </summary>
-    public static readonly FileExplorerNodeViewModel PlaceholderChild =
+    public static FileExplorerNodeViewModel CreatePlaceholderChild() =>
         new("\u2026", "", isDirectory: false, iconKind: "Placeholder")
         {
             IsPlaceholder = true,
             AreChildrenLoaded = true,
         };
+
+    /// <summary>
+    /// Legacy static placeholder kept for backward compatibility with tests
+    /// that reference <c>PlaceholderChild</c> directly. Do NOT add this to
+    /// more than one <see cref="Children"/> collection at a time — use
+    /// <see cref="CreatePlaceholderChild"/> for new placeholder instances.
+    /// </summary>
+    public static FileExplorerNodeViewModel PlaceholderChild =>
+        CreatePlaceholderChild();
 
     public FileExplorerNodeViewModel(
         string name,

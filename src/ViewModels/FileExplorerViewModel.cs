@@ -648,7 +648,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
             // renders an expander arrow. EnsureChildrenLoadedAsync will swap
             // this out when the directory is expanded.
             node.AreChildrenLoaded = false;
-            node.Children.Add(FileExplorerNodeViewModel.PlaceholderChild);
+            node.Children.Add(FileExplorerNodeViewModel.CreatePlaceholderChild());
         }
 
         return node;
