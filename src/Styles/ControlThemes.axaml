@@ -77,8 +77,9 @@
   </Style>
 
   <!-- TabControl background (Phase 8.1 M4) -->
+  <!-- ISSUE-013 fix: use panel.background for content area visibility -->
   <Style Selector="TabControl">
-    <Setter Property="Background" Value="{DynamicResource tab.background}"/>
+    <Setter Property="Background" Value="{DynamicResource panel.background}"/>
   </Style>
 
   <!-- Git panel: compact action buttons (e.g., Stage All / Unstage All) -->

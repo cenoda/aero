@@ -138,5 +138,16 @@ Border (IsVisible, Height binding)
 
 **Fix 3:** If binding fails, use IValueConverter for negation
 
-- **Commit:**
-- **Closed date:**
+## Resolution (APPLIED)
+
+**Root cause:** Two issues:
+1. TabControl content area used `tab.background` (#ECECEC light / #2D2D2D dark) instead of `panel.background`
+2. DockPanel in child views had no Background set, defaulting to transparent
+
+**Fix applied:**
+1. ControlThemes.axaml: Changed TabControl Background from `tab.background` to `panel.background`
+2. ProblemsView.axaml: Added `Background="{DynamicResource panel.background}"` to DockPanel
+3. OutputView.axaml: Added `Background="{DynamicResource panel.background}"` to DockPanel
+
+- **Commit:** fix: show bottom panel content with proper background (ISSUE-013)
+- **Closed date:** 2026-06-25

@@ -9,7 +9,8 @@
     <Border Background="{DynamicResource panel.background}"
             BorderBrush="{DynamicResource panel.border}"
             BorderThickness="0,1,0,0">
-        <DockPanel>
+        <!-- ISSUE-013 fix: add Background to DockPanel -->
+        <DockPanel Background="{DynamicResource panel.background}">
             <!-- Header toolbar -->
             <Border DockPanel.Dock="Top"
                     Background="{DynamicResource editor.background}"
