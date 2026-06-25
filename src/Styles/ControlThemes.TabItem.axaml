@@ -18,18 +18,22 @@
         </Border>
       </ControlTemplate>
     </Setter>
-    <!-- Active state: blue underline -->
-    <Style Selector="TabItem:selected">
-      <Setter Property="Background" Value="{DynamicResource tab.activeBackground}"/>
-      <Setter Property="Foreground" Value="{DynamicResource tab.activeForeground}"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
-    <Style Selector="TabItem:selected /template/ Border#PART_Root">
-      <Setter Property="BorderBrush" Value="{DynamicResource tab.activeBorderTop}"/>
-    </Style>
-    <!-- Hover state -->
-    <Style Selector="TabItem:pointerover">
-      <Setter Property="Background" Value="{DynamicResource panel.hoverBackground}"/>
-    </Style>
+  </Style>
+
+  <!-- Active state: blue underline -->
+  <Style Selector="TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource tab.activeBackground}"/>
+    <Setter Property="Foreground" Value="{DynamicResource tab.activeForeground}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <!-- Active state border -->
+  <Style Selector="TabItem:selected /template/ Border#PART_Root">
+    <Setter Property="BorderBrush" Value="{DynamicResource tab.activeBorderTop}"/>
+  </Style>
+
+  <!-- Hover state -->
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Background" Value="{DynamicResource panel.hoverBackground}"/>
   </Style>
 </Styles>
