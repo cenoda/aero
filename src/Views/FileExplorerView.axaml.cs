@@ -41,6 +41,15 @@ public partial class FileExplorerView : UserControl
         {
             item.Expanded -= OnItemExpanded;
             item.Expanded += OnItemExpanded;
+
+            // ISSUE-012: ContainerPrepared on the root TreeView only fires for
+            // direct TreeViewItems. Nested TreeViewItems (level 2+) are created
+            // by TreeDataTemplate inside each TreeViewItem, so their
+            // ContainerPrepared events fire on the PARENT TreeViewItem, not on
+            // the root TreeView. Recursively subscribe so every nesting level
+            // gets the Expanded handler wired.
+            item.ContainerPrepared -= OnTreeContainerPrepared;
+            item.ContainerPrepared += OnTreeContainerPrepared;
         }
     }
 
