@@ -22,12 +22,24 @@
                            VerticalAlignment="Center"/>
             </Border>
 
-            <!-- Empty state -->
-            <TextBlock Text="No problems detected."
-                        IsVisible="{Binding !Diagnostics.Count}"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Opacity="0.6"/>
+            <!-- Empty state (Phase 8.1 M5.2: enhanced with icon) -->
+            <StackPanel IsVisible="{Binding !Diagnostics.Count}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Spacing="8">
+                <PathIcon Data="{StaticResource Icon.CheckCircle}"
+                        Width="40" Height="40"
+                        Foreground="{DynamicResource panel.emptyStateForeground}"
+                        HorizontalAlignment="Center"/>
+                <TextBlock Text="No problems detected"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontWeight="SemiBold"
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="Errors and warnings will appear here"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontSize="11"
+                          HorizontalAlignment="Center"/>
+            </StackPanel>
 
             <!-- Diagnostics list -->
             <ListBox ItemsSource="{Binding Diagnostics}"

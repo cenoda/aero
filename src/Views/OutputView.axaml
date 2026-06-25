@@ -48,7 +48,27 @@
             </Border>
 
             <!-- Output area -->
-            <ScrollViewer x:Name="OutputScrollViewer">
+            <!-- Empty state (Phase 8.1 M5.3: enhanced with icon) -->
+            <StackPanel IsVisible="{Binding !Lines.Count}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Code}"
+                        Width="40" Height="40"
+                        Foreground="{DynamicResource panel.emptyStateForeground}"
+                        HorizontalAlignment="Center"/>
+                <TextBlock Text="No output yet"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontWeight="SemiBold"
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="Run a build or command to see output"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontSize="11"
+                          HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <ScrollViewer x:Name="OutputScrollViewer"
+                        IsVisible="{Binding Lines.Count}">
                 <ItemsControl ItemsSource="{Binding Lines}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>

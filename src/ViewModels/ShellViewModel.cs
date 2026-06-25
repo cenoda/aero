@@ -60,6 +60,25 @@ public class ShellViewModel : ReactiveObject, IDisposable
     [Reactive] public bool IsBottomPanelVisible { get; set; }
     [Reactive] public bool IsDarkTheme { get; set; }
 
+    // Panel headers — computed titles (Phase 8.1 M1)
+    public string ActiveSidebarTitle => ActiveSidebarTabIndex switch
+    {
+        0 => "Explorer",
+        1 => "Git",
+        _ => "Explorer"
+    };
+
+    public string ActiveBottomTabTitle => ActiveBottomTabIndex switch
+    {
+        0 => "Problems",
+        1 => "Output",
+        _ => "Problems"
+    };
+
+    // Panel sizes for animations (Phase 8.1 M3)
+    [Reactive] public double SidebarWidth { get; set; } = 250;
+    [Reactive] public double BottomPanelHeight { get; set; } = 150;
+
     // Window state — persisted via ISettingsService (Phase 8.7)
     [Reactive] public double WindowX { get; set; }
     [Reactive] public double WindowY { get; set; }
@@ -190,6 +209,12 @@ public ShellViewModel(
     {
         var settings = await _settingsService.LoadSettingsAsync();
         IsDarkTheme = settings.Theme == "Dark";
+
+        // Panel state (Phase 8.1 M7)
+        IsSidebarVisible = settings.IsSidebarVisible;
+        IsBottomPanelVisible = settings.IsBottomPanelVisible;
+        SidebarWidth = settings.IsSidebarVisible ? settings.SidebarWidth : 0;
+        BottomPanelHeight = settings.IsBottomPanelVisible ? settings.BottomPanelHeight : 0;
     }
 
     private async Task ToggleThemeAsync()
@@ -387,6 +412,7 @@ public ShellViewModel(
             return;
 
         await SaveWorkspaceStateAsync();
+        await SavePanelStateAsync();
         _documentManager.ClearLastDirtyState();
         Dispose();
 
@@ -508,6 +534,20 @@ public ShellViewModel(
     private void ToggleSidebar()
     {
         IsSidebarVisible = !IsSidebarVisible;
+        SidebarWidth = IsSidebarVisible ? 250 : 0;
+        _ = SavePanelStateAsync();
+    }
+
+    private async Task SavePanelStateAsync()
+    {
+        var settings = await _settingsService.LoadSettingsAsync();
+        await _settingsService.SaveSettingsAsync(settings with
+        {
+            IsSidebarVisible = IsSidebarVisible,
+            IsBottomPanelVisible = IsBottomPanelVisible,
+            SidebarWidth = SidebarWidth > 0 ? SidebarWidth : 250,
+            BottomPanelHeight = BottomPanelHeight > 0 ? BottomPanelHeight : 150,
+        });
     }
 
     private void ToggleSidebarTab()
@@ -533,6 +573,8 @@ public ShellViewModel(
     private void ToggleBottomPanel()
     {
         IsBottomPanelVisible = !IsBottomPanelVisible;
+        BottomPanelHeight = IsBottomPanelVisible ? 150 : 0;
+        _ = SavePanelStateAsync();
     }
 
     private async Task BuildAsync()

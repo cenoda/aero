@@ -31,5 +31,7 @@
              Material.Icons.Avalonia deferred to Avalonia 12 upgrade. -->
         <!-- Phase 8.9 Control Themes — layered after SimpleTheme so overrides win -->
         <StyleInclude Source="avares://aero/Styles/ControlThemes.axaml" />
+        <!-- Phase 8.1 M4: TabItem styles -->
+        <StyleInclude Source="avares://aero/Styles/ControlThemes.TabItem.axaml" />
     </Application.Styles>
 </Application>

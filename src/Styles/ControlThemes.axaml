@@ -61,4 +61,23 @@
        A full ControlTemplate override is needed, which risks friction with
        SimpleTheme. Thumb radius is cosmetic only; skipping for Phase 8.9.
        Revisit in Phase 8.2 when the theme engine applies color tokens. -->
+
+  <!-- GridSplitter — hover highlight (Phase 8.1 M6) -->
+  <Style Selector="GridSplitter">
+    <Setter Property="Background" Value="{DynamicResource splitter.background}"/>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background"
+                       Duration="{StaticResource Transition.Duration}"/>
+      </Transitions>
+    </Setter>
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="{DynamicResource splitter.hoverBackground}"/>
+    </Style>
+  </Style>
+
+  <!-- TabControl background (Phase 8.1 M4) -->
+  <Style Selector="TabControl">
+    <Setter Property="Background" Value="{DynamicResource tab.background}"/>
+  </Style>
 </Styles>

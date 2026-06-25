@@ -45,14 +45,28 @@
                            TextTrimming="CharacterEllipsis"/>
             </Border>
 
-            <!-- Empty-state hint -->
-            <TextBlock Text="No folder open. Use File → Open Folder (Ctrl+Shift+O)."
-                       IsVisible="{Binding !HasRootPath}"
+            <!-- Empty-state hint (Phase 8.1 M5.1: enhanced with icon) -->
+            <StackPanel IsVisible="{Binding !HasRootPath}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       TextWrapping="Wrap"
-                       Margin="12"
-                       Opacity="0.5"/>
+                       Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Folder}"
+                        Width="40" Height="40"
+                        Foreground="{DynamicResource panel.emptyStateForeground}"
+                        HorizontalAlignment="Center"/>
+                <TextBlock Text="No folder opened"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontWeight="SemiBold"
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="Open a folder to get started"
+                          Foreground="{DynamicResource panel.emptyStateForeground}"
+                          FontSize="11"
+                          HorizontalAlignment="Center"/>
+                <Button Content="Open Folder"
+                        Command="{Binding $parent[Window].DataContext.OpenFolderCommand}"
+                        HorizontalAlignment="Center"
+                        Margin="0,4,0,0"/>
+            </StackPanel>
 
             <!-- Loading indicator (thin progress bar at the top of the tree) -->
             <ProgressBar DockPanel.Dock="Top"

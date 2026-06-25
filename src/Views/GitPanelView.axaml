@@ -20,8 +20,29 @@
       </StackPanel>
     </Border>
 
+    <!-- Empty state (Phase 8.1 M5.4: enhanced with icon) -->
+    <StackPanel Grid.Row="1"
+                IsVisible="{Binding !HasGitRepository}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="8">
+      <PathIcon Data="{StaticResource Icon.GitBranch}"
+                Width="40" Height="40"
+                Foreground="{DynamicResource panel.emptyStateForeground}"
+                HorizontalAlignment="Center"/>
+      <TextBlock Text="No repository"
+                Foreground="{DynamicResource panel.emptyStateForeground}"
+                FontWeight="SemiBold"
+                HorizontalAlignment="Center"/>
+      <TextBlock Text="Open a folder with a Git repository"
+                Foreground="{DynamicResource panel.emptyStateForeground}"
+                FontSize="11"
+                HorizontalAlignment="Center"/>
+    </StackPanel>
+
     <!-- Tab Control: Changes | Graph -->
-    <TabControl Grid.Row="1">
+    <TabControl Grid.Row="1"
+               IsVisible="{Binding HasGitRepository}">
       <TabItem Header="Changes">
         <Grid ColumnDefinitions="*,*" Margin="4">
       
