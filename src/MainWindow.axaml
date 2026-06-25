@@ -59,6 +59,8 @@
                 <MenuItem Header="Toggle _Output" Command="{Binding ToggleOutputCommand}"/>
                 <MenuItem Header="Toggle _Problems" Command="{Binding ToggleProblemsCommand}"/>
                 <MenuItem Header="Toggle _Bottom Panel" Command="{Binding ToggleBottomPanelCommand}"/>
+                <Separator/>
+                <MenuItem Header="Toggle _Theme" Command="{Binding ToggleThemeCommand}" InputGesture="Ctrl+Shift+T"/>
             </MenuItem>
             <MenuItem Header="_Build">
                 <MenuItem Header="_Build" Command="{Binding BuildCommand}" InputGesture="Ctrl+Shift+B"/>
@@ -259,6 +261,19 @@
                         <!-- TODO(phase-3): Detect line ending from file content -->
                         <TextBlock Grid.Column="4"
                                   Text="Lf"/>
+
+                        <!-- Theme toggle -->
+                        <Button Grid.Column="5"
+                                Command="{Binding ToggleThemeCommand}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="4,2"
+                                Cursor="Hand"
+                                ToolTip.Tip="Toggle theme (Ctrl+Shift+T)">
+                            <PathIcon Data="{StaticResource Icon.Config}"
+                                      Width="14" Height="14"
+                                      Foreground="{DynamicResource statusBar.foreground}"/>
+                        </Button>
                     </Grid>
                 </Border>
             </Grid>
