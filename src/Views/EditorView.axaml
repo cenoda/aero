@@ -40,6 +40,14 @@
                     ItemsSource="{Binding Tabs}"
                     SelectedItem="{Binding ActiveTab}">
 
+            <!-- Horizontal StackPanel → single-row tabs that shrink
+                 (like Chrome) instead of the default WrapPanel which stacks. -->
+            <TabControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </TabControl.ItemsPanel>
+
             <TabControl.ContentTemplate>
                 <DataTemplate>
                     <ae:TextEditor Document="{Binding Document.InnerDocument}"
