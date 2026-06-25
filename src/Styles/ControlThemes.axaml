@@ -114,4 +114,66 @@
   <Style Selector="Border.git-file-row">
     <Setter Property="CornerRadius" Value="{StaticResource Radius.Panel}"/>
   </Style>
+
+  <!-- Focus ring: TextBox -->
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource input.focusBorder}"/>
+  </Style>
+
+  <!-- Focus ring: Button -->
+  <Style Selector="Button:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource input.focusBorder}"/>
+  </Style>
+
+  <!-- Focus ring: ListBoxItem -->
+  <Style Selector="ListBoxItem:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource input.focusBorder}"/>
+  </Style>
+
+  <!-- Focus visible outline for keyboard navigation -->
+  <Style Selector="Button:focus:pointerover">
+    <Setter Property="Opacity" Value="0.9"/>
+  </Style>
+
+  <!-- Smooth opacity transitions for buttons -->
+  <Style Selector="Button">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity"
+                       Duration="{StaticResource Transition.Fast}"/>
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <!-- Modern ScrollBar: thin, rounded thumb -->
+  <Style Selector="ScrollBar">
+    <Setter Property="MinWidth" Value="8"/>
+    <Setter Property="MinHeight" Value="8"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+
+  <!-- ScrollBar thumb: rounded, colored -->
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.ScrollbarThumb}"/>
+    <Setter Property="Background" Value="{DynamicResource scrollbarThumb.background}"/>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background"
+                       Duration="{StaticResource Transition.Fast}"/>
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{DynamicResource scrollbarThumb.hoverBackground}"/>
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pressed">
+    <Setter Property="Background" Value="{DynamicResource scrollbarThumb.activeBackground}"/>
+  </Style>
+
+  <!-- ScrollBar horizontal/vertical track -->
+  <Style Selector="ScrollBar /template/ Rectangle">
+    <Setter Property="Fill" Value="Transparent"/>
+  </Style>
 </Styles>

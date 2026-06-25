@@ -89,21 +89,54 @@ Border (IsVisible, Height binding)
 ### Attempt 1
 - **Hypothesis:** Dynamic resources missing
 - **Action:** Check Themes/ folder for panel.* resource definitions
-- **Result:** Pending
+- **Result:** All resources found (panel.background, panel.border, panel.emptyStateForeground, etc.)
 
 ### Attempt 2
 - **Hypothesis:** DataContext not set on child views
 - **Action:** Verify OutputViewModel/ProblemsViewModel instances are created in ShellViewModel
-- **Result:** Pending
+- **Result:** ViewModels properly injected via constructor and exposed via properties
 
 ### Attempt 3
-- **Hypothesis:** Empty state visibility binding issue (Count property returns 0 but binding fails)
-- **Action:** Check how Lines.Count and Diagnostics.Count are implemented
-- **Result:** Pending
+- **Hypothesis:** Empty state visibility binding issue
+- **Action:** Check DockPanel structure and IsVisible bindings
+- **Result:** FOUND LIKELY ISSUE - Two potential problems:
+
+**Issue A: DockPanel without background**
+- OutputView.axaml and ProblemsView.axaml use DockPanel without setting Background
+- DockPanel defaults to transparent, showing parent Border background
+- But the StackPanel and ScrollViewer inside have IsVisible bindings that might fail
+
+**Issue B: IsVisible binding syntax `!Lines.Count`**
+- Avalonia may not support `!` negation on int in bindings
+- Should use a converter or `Lines.Count == 0` syntax
+
+### Attempt 4
+- **Hypothesis:** TabControl content area background
+- **Action:** Check if TabControl has proper background for content area
+- **Result:** TabControl has `tab.background` but content area might be different
 
 ## Resolution
 
-- **Root cause:**
-- **Fix:**
+- **Root cause:** Likely one of:
+  1. DockPanel has no background set (transparent), showing white from parent
+  2. IsVisible binding `!Lines.Count` doesn't work in Avalonia (needs converter)
+  3. TabControl content area background not set
+
+- **Fix:** Try these changes:
+
+**Fix 1:** Add Background to DockPanel in both views:
+```xml
+<DockPanel Background="{DynamicResource panel.background}">
+```
+
+**Fix 2:** Add Background to TabControl content area:
+```xml
+<TabControl Grid.Row="1"
+           Background="{DynamicResource panel.background}"
+           ...>
+```
+
+**Fix 3:** If binding fails, use IValueConverter for negation
+
 - **Commit:**
 - **Closed date:**

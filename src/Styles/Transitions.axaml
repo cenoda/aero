@@ -1,13 +1,20 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-  <!-- Phase 8.9 Design System: Transition Timing (200ms CubicOut)
+  <!-- Phase 8.9 Design System: Transition Timing 
        Applied via Avalonia Transitions on controls that support them.
        Note: Avalonia does not have a CSS-like global transition: property;
        these values are used per-control in Style setters.
 
        Easing is applied per-control via inline Style (e.g. CubicOut, CubicEase).
-       This file only defines the duration constant. -->
+       This file only defines the duration constants. -->
 
+  <!-- Fast: hover states, focus rings -->
+  <sys:TimeSpan x:Key="Transition.Fast">00:00:00.120</sys:TimeSpan>
+  <!-- Normal: buttons, tabs, list items -->
   <sys:TimeSpan x:Key="Transition.Duration">00:00:00.200</sys:TimeSpan>
+  <!-- Slow: panel collapse/expand, dialogs -->
+  <sys:TimeSpan x:Key="Transition.Slow">00:00:00.300</sys:TimeSpan>
+  <!-- Slower: page transitions, complex animations -->
+  <sys:TimeSpan x:Key="Transition.Slower">00:00:00.400</sys:TimeSpan>
 </ResourceDictionary>

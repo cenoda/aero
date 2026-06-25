@@ -1,7 +1,14 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Phase 8.9 Design System: Shadow System (layered depth) -->
+  <!-- Subtle: buttons, tabs, list items -->
   <BoxShadow x:Key="Shadow.Subtle">0 1 2 0 #14000000</BoxShadow>
+  <!-- Medium: panels, cards, dropdowns -->
   <BoxShadow x:Key="Shadow.Medium">0 4 12 0 #1F000000</BoxShadow>
+  <!-- Popup: floating panels, dialogs, autocomplete -->
   <BoxShadow x:Key="Shadow.Popup">0 8 24 0 #29000000</BoxShadow>
+  <!-- Elevated: floating windows, tool windows -->
+  <BoxShadow x:Key="Shadow.Elevated">0 12 32 0 #33000000</BoxShadow>
+  <!-- Modal: modal dialogs, overlays -->
+  <BoxShadow x:Key="Shadow.Modal">0 20 48 0 #40000000</BoxShadow>
 </ResourceDictionary>
