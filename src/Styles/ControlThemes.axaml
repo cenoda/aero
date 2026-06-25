@@ -80,4 +80,38 @@
   <Style Selector="TabControl">
     <Setter Property="Background" Value="{DynamicResource tab.background}"/>
   </Style>
+
+  <!-- Git panel: compact action buttons (e.g., Stage All / Unstage All) -->
+  <Style Selector="Button.git-compact-action">
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="Padding" Value="6,2"/>
+    <Setter Property="MinHeight" Value="24"/>
+  </Style>
+
+  <!-- Git panel: icon-only arrow buttons -->
+  <Style Selector="Button.git-icon-button">
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="Padding" Value="4,2"/>
+    <Setter Property="MinWidth" Value="26"/>
+    <Setter Property="MinHeight" Value="24"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- Git panel: file row button surface -->
+  <Style Selector="Button.git-file-button">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="Padding" Value="6,3"/>
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="{DynamicResource git.panel.rowHoverBackground}"/>
+    </Style>
+  </Style>
+
+  <!-- Git panel: row container -->
+  <Style Selector="Border.git-file-row">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Panel}"/>
+  </Style>
 </Styles>

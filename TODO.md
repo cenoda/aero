@@ -5,3 +5,9 @@
 - [ ] Add/extend `LibGit2SharpService` tests for local+remote branch correctness and duplicate prevention.
 - [ ] Update `docs/phases/phase-7/TOFIX.md` with bug analysis and fix notes.
 - [ ] Run targeted tests (`dotnet test --filter LibGit2SharpServiceTests`) and verify results.
+
+- [ ] Polish Git panel UI structure and spacing in `src/Views/GitPanelView.axaml`.
+- [ ] Add Git panel-specific control styles in `src/Styles/ControlThemes.axaml`.
+- [ ] Add `git.panel.*` color tokens in `src/Styles/ThemeDark.axaml`.
+- [ ] Add `git.panel.*` color tokens in `src/Styles/ThemeLight.axaml`.
+- [ ] Run `dotnet build` to validate XAML/UI changes.

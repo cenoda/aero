@@ -136,6 +136,13 @@
     <SolidColorBrush x:Key="git.untrackedForeground" Color="#6F42C1"/>
     <SolidColorBrush x:Key="git.conflictForeground" Color="#E81123"/>
 
+    <!-- Git Panel polish -->
+    <SolidColorBrush x:Key="git.panel.headerBackground" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="git.panel.sectionHeaderBackground" Color="#EBEBEB"/>
+    <SolidColorBrush x:Key="git.panel.sectionBorder" Color="#D2D2D2"/>
+    <SolidColorBrush x:Key="git.panel.rowBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="git.panel.rowHoverBackground" Color="#EDEDED"/>
+
     <!-- Debug (97–101) -->
     <SolidColorBrush x:Key="debug.breakpointForeground" Color="#E81123"/>
     <SolidColorBrush x:Key="debug.breakpointBackground" Color="#FFE0E0"/>
