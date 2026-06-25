@@ -71,8 +71,8 @@
         <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <!-- Sidebar column: controlled from code-behind -->
-                <ColumnDefinition x:Name="SidebarColumn" Width="250"/>
+                <!-- Sidebar column: 0px when collapsed, SidebarWidth when visible -->
+                <ColumnDefinition Width="{Binding SidebarColumnWidth}"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
@@ -86,9 +86,30 @@
                     Margin="0,0,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                <TabControl Grid.Row="0"
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource panel.headerBackground}"
+                            BorderBrush="{DynamicResource panel.border}"
+                            BorderThickness="0,0,0,1"
+                            Padding="12,6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Button Grid.Column="0"
+                                    Command="{Binding ToggleSidebarCommand}"
+                                    HorizontalAlignment="Right"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="4"
+                                    ToolTip.Tip="Collapse sidebar"
+                                    Cursor="Hand">
+                                <PathIcon Data="{StaticResource Icon.ChevronLeft}"
+                                          Width="12" Height="12"
+                                          Foreground="{DynamicResource panel.headerForeground}"/>
+                            </Button>
+                        </Grid>
+                </Border>
+                <TabControl Grid.Row="1"
                            SelectedIndex="{Binding ActiveSidebarTabIndex}">
                     <TabItem Header="Explorer">
                         <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
@@ -101,8 +122,7 @@
             </Border>
 
             <!-- Draggable divider between sidebar and editor -->
-            <GridSplitter x:Name="SidebarSplitter"
-                          Grid.Column="1"
+            <GridSplitter Grid.Column="1"
                           Width="4"
                           IsVisible="{Binding IsSidebarVisible}"
                           Background="{DynamicResource panel.border}"

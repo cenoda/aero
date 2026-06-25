@@ -37,35 +37,61 @@ The tab displays "Aero.ViewModels.EditorTabViewModel" (the type name).
 
 ## Root Cause
 
-**Binding scope failure:** The `#EditorTabControl` name-scope reference in the close button's
-`Command` binding was unresolvable from within the `TabControl.ItemTemplate` DataTemplate.
+**Wrong template property:** `TabControl.ItemTemplate` was used to set the tab header,
+but `TabItem` extends `HeaderedContentControl` — it has both `Header` and `Content`.
 
-In Avalonia, `TabItem` containers auto-generated from `ItemsSource` live inside the `TabStrip`
-which is within the `TabControl`'s `ControlTemplate` — a **different name scope** from the
-host `UserControl`. The `#controlName` syntax can only resolve controls in the same name scope.
-When the binding fails at runtime, the entire header DataTemplate renders nothing, and the
-`TabControl` falls back to displaying `ToString()` on the item — producing the full type name
-`"Aero.ViewModels.EditorTabViewModel"` instead of the filename.
+In `TabItem.UpdateHeader()` (triggered by `DataContextProperty.Changed`), when `Header`
+is `null`, it calls `SetCurrentValue(HeaderProperty, DataContext)` — setting the entire
+`EditorTabViewModel` instance as the header. Since no `HeaderTemplate` was set, Avalonia
+calls `ToString()` on it, producing the full type name.
 
-**All other aspects were correct:**
-- `TabControl.ItemTemplate` IS the header template in Avalonia 11 (confirmed by official docs)
-- `TabControl.ContentTemplate` is for the content area
-- `EditorTabViewModel.Title` correctly returns `_document.DisplayName`
-- The other bindings (`{Binding Title}`, `{Binding GlyphGeometry}`, etc.) were fine
+`TabControl.ItemTemplate` maps to the container's **content** area (via
+`ItemsControl.PrepareContainerForItemOverride` → `ContentControl.ContentTemplate`),
+which is `TabItem.Content` — the body, not the header.
 
-## Resolution
+**Both `ItemTemplate` and `ContentTemplate` on TabControl target the same content zone.**
+Neither controls the tab header. The header is exclusively controlled by
+`TabItem.HeaderTemplate` (from `HeaderedContentControl`).
 
-Changed the close button command binding from name-scope reference to **visual tree ancestor lookup**:
+## Resolution (Attempt 2 — CORRECT FIX)
 
-```diff
-- Command="{Binding #EditorTabControl.DataContext.CloseTabCommand}"
-+ Command="{Binding $parent[TabControl].DataContext.CloseTabCommand}"
+**Attempt 1 (FAILED):** Changed `#EditorTabControl` to `$parent[TabControl]` in the binding.
+This did not fix the issue because `ItemTemplate` is not the right property.
+
+**Attempt 2 (CORRECT):** Replaced `TabControl.ItemTemplate` with a `Style` that sets
+`TabItem.HeaderTemplate`. The `HeaderTemplate` data template is now applied to the
+`TabItem.Header` property, which is what the `TabStrip` renders for each tab.
+
+```xml
+<!-- Before (incorrect — ItemTemplate targets content, not header) -->
+<TabControl.ItemTemplate>
+    <DataTemplate>...</DataTemplate>
+</TabControl.ItemTemplate>
+
+<!-- After (correct — Style sets HeaderTemplate on TabItem) -->
+<TabControl.Styles>
+    <Style Selector="TabItem">
+        <Setter Property="HeaderTemplate">
+            <Setter.Value>
+                <DataTemplate>...</DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</TabControl.Styles>
 ```
 
-`$parent[TabControl]` walks up the visual tree to find the `TabControl` ancestor,
-bypassing name scope limitations. The `.DataContext.CloseTabCommand` path then
-resolves to `EditorViewModel.CloseTabCommand` correctly.
+Also kept the `$parent[TabControl]` fix (from Attempt 1) for the close button command
+binding, since `$parent` is more robust than `#controlName` for visual tree traversal.
 
-**File changed:** `src/Views/EditorView.axaml` line 29
+**File changed:** `src/Views/EditorView.axaml`
 **Date:** 2026-06-25
 **Status:** resolved
+
+## Key Avalonia TabControl Learning
+
+| Property | What it controls |
+|---|---|
+| `TabControl.ContentTemplate` | Selected tab's body content |
+| `TabControl.ItemTemplate` | Same as ContentTemplate (applied to `ContentControl.Content`) |
+| `TabItem.HeaderTemplate` | **Tab header in the strip** (set via Style) |
+| `TabItem.Header` | Auto-set to `DataContext` by `UpdateHeader()` if null |
