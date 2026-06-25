@@ -58,6 +58,11 @@
     <SolidColorBrush x:Key="panel.hoverBackground" Color="#E8E8E8"/>
     <SolidColorBrush x:Key="panel.scrollbarBackground" Color="#F0F0F0"/>
     <SolidColorBrush x:Key="panel.scrollbarThumb" Color="#C1C1C1"/>
+    <SolidColorBrush x:Key="panel.emptyStateForeground" Color="#888888"/>
+
+    <!-- Splitter (Phase 8.1) -->
+    <SolidColorBrush x:Key="splitter.background" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="splitter.hoverBackground" Color="#0078D4"/>
 
     <!-- Status Bar (45–48) -->
     <SolidColorBrush x:Key="statusBar.background" Color="#0078D4"/>
