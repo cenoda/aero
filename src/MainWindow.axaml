@@ -77,7 +77,11 @@
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar (Phase 2 M2) -->
+<!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
+                 (parent DataContext), not child ViewModels. -->
+            <!-- Phase 8.1 M1: Panel header with icon + title + collapse button -->
+            <!-- Phase 8.1 M2: Border with corner radius on top corners -->
+            <!-- Phase 8.1 M3: Width animation for collapse/expand -->
             <Border Grid.Column="0"
                     IsVisible="{Binding IsSidebarVisible}"
                     CornerRadius="8,8,0,0"
@@ -94,10 +98,20 @@
                             BorderBrush="{DynamicResource panel.border}"
                             BorderThickness="0,0,0,1"
                             Padding="12,6">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <Button Grid.Column="0"
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <PathIcon Grid.Column="0"
+                                      Data="{StaticResource Icon.Folder}"
+                                      Width="14" Height="14"
+                                      Foreground="{DynamicResource panel.headerForeground}"
+                                      Margin="0,0,6,0"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ActiveSidebarTitle}"
+                                       Foreground="{DynamicResource panel.headerForeground}"
+                                       FontWeight="SemiBold"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="2"
                                     Command="{Binding ToggleSidebarCommand}"
-                                    HorizontalAlignment="Right"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Padding="4"
@@ -106,8 +120,8 @@
                                 <PathIcon Data="{StaticResource Icon.ChevronLeft}"
                                           Width="12" Height="12"
                                           Foreground="{DynamicResource panel.headerForeground}"/>
-                            </Button>
-                        </Grid>
+                        </Button>
+                    </Grid>
                 </Border>
                 <TabControl Grid.Row="1"
                            SelectedIndex="{Binding ActiveSidebarTabIndex}">
