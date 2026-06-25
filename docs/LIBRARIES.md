@@ -8,9 +8,9 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **AvaloniaEdit** | A real code editor widget — text rendering, cursor, selection, scroll, line numbers, folding. | Without it, you're building from a bare `<TextBox>`. Months of work saved. #1 must-have. |
-| **AvaloniaEdit.TextMate** | Teaches AvaloniaEdit to read TextMate grammars (VS Code's format for coloring code). | Drop in `.tmLanguage` files → instant syntax highlighting. |
-| **TextMateSharp.Grammars** | A bundle of 100+ pre-made TextMate grammars. | C#, Python, JS, Rust, Go, CSS, HTML, Markdown — all covered. No hunting for grammar files. |
+| **AvaloniaEdit** | A real code editor widget — text rendering, cursor, selection, scroll, line numbers, folding. | Without it, you're building from a bare `<TextBox>`. Months of work saved. #1 must-have. **Avalonia 12 compatible: v12.0.0+.** |
+| **AvaloniaEdit.TextMate** | Teaches AvaloniaEdit to read TextMate grammars (VS Code's format for coloring code). | Drop in `.tmLanguage` files → instant syntax highlighting. **Avalonia 12 compatible: v12.0.0+.** |
+| **TextMateSharp.Grammars** | A bundle of 100+ pre-made TextMate grammars. | C#, Python, JS, Rust, Go, CSS, HTML, Markdown — all covered. No hunting for grammar files. No Avalonia dependency. |
 
 
 ## LANGUAGE SERVERS (Phase 4)
@@ -33,7 +33,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
 | **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | **ABANDONED (2026-06-25):** Two integration attempts failed. Internal rendering is too opaque to debug. Fixed Grid+GridSplitter layout used instead. |
-| **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
+| **DialogHost.Avalonia** | Modal popup overlays. | **Unlocked after Avalonia 12 migration.** v0.12.* is compatible with Avalonia 12. Phase 8.3 (Command Palette) can now use proper modals instead of custom overlays. |
 
 
 
@@ -41,7 +41,8 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **ReactiveUI** | Reactive MVVM framework for Avalonia. Automatic change tracking with `WhenAnyValue`. | Replaces manual `PropertyChanged` boilerplate. E.g. `this.WhenAnyValue(x => x.SearchText).Throttle(300ms).Subscribe(DoSearch)`. |
+| **ReactiveUI** | Reactive MVVM framework for Avalonia. Automatic change tracking with `WhenAnyValue`. | Replaces manual `PropertyChanged` boilerplate. E.g. `this.WhenAnyValue(x => x.SearchText).Throttle(300ms).Subscribe(DoSearch)`. **v23.x for Avalonia 12.** |
+| **ReactiveUI.Avalonia** | Avalonia-specific ReactiveUI integration (dispatchers, activation, etc.). | **Renamed from `Avalonia.ReactiveUI` in v12.** v12.0.3+ compatible with Avalonia 12. |
 | **DynamicData** | Reactive collections — auto-diff, filter, sort, transform. | Define a pipeline instead of manually updating `ObservableCollection`. Much less bug-prone with large lists. |
 
 ## CONFIG & DI
@@ -79,7 +80,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
 | **Phosphor Icons (embedded PathIcon)** | 8 vector icons from MIT-licensed Phosphor set. Embedded as `StreamGeometry` in `src/Styles/Icons.axaml`. | No NuGet. Vector crisp. Monochrome. Attribution: MIT — Copyright (c) 2023 Phosphor Icons. |
-| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | Deferred to Avalonia 12 upgrade (Phase 9+). Current compatible versions were not stable with Avalonia 11.3; newer versions require Avalonia 12. See `docs/phases/phase-8/8.5-icon-decision/`. |
+| **Material.Icons.Avalonia** | 5000+ Material Design icons as Avalonia controls. | **Unlocked after Avalonia 12 migration.** v3.0.3+ is compatible. Phase 8.5 can now use real icons instead of text glyphs. See `docs/phases/phase-8/8.5-icon-decision/`. |
 
 ## TESTING
 

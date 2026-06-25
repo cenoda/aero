@@ -279,6 +279,49 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [ ] **Extension points** — register commands, languages, themes
 - [ ] **Plugin marketplace** — optional: discover & install
 
+## Phase 11: Avalonia 12 Migration
+
+> **Goal:** Upgrade from Avalonia 11.3 → 12.0. Major version migration with significant breaking changes.
+> **Entry condition:** Phase 10 complete (or earlier if user elects to prioritize).
+> **Risk level:** HIGH — major framework version upgrade.
+> **Implementation details:** [`docs/phases/phase-11/IMPLEMENTATION_PLAN.md`](../phases/phase-11/IMPLEMENTATION_PLAN.md).
+
+### M1: Branch, Snapshot, and Package Update
+- [ ] Create `avalonia-12-migration` branch, tag `pre-avalonia-12`
+- [ ] Bump all `Avalonia.*` packages from `11.3.*` → `12.0.*`
+- [ ] Rename `Avalonia.ReactiveUI` → `ReactiveUI.Avalonia`
+- [ ] Remove `Avalonia.Diagnostics` (replaced by `AvaloniaUI.DiagnosticsSupport`)
+- [ ] Remove dead `Dock.Avalonia` / `Dock.Serializer.*` packages
+- [ ] Update `ReactiveUI` from `20.*` → `23.*`
+- [ ] `dotnet restore` succeeds; build errors catalogued
+
+### M2: Fix Compilation Errors
+- [ ] Fix all namespace/reference errors from package renames
+- [ ] Fix compiled binding errors (now default ON in v12)
+- [ ] Add `x:DataType` to AXAML views missing it
+- [ ] Fix `IBinding` → `BindingBase` changes
+- [ ] `dotnet build src/aero.csproj` succeeds with zero errors
+
+### M3: Fix Runtime Issues
+- [ ] App launches and renders correctly
+- [ ] Verify: menus, sidebar, editor, tabs, status bar, bottom panel, themes, shortcuts
+- [ ] Fix `FocusChangedEventArgs` if any focus handlers exist
+- [ ] Verify `Window.WindowState` binding works (now direct property)
+
+### M4: Test Suite Migration
+- [ ] Update test project references and namespaces
+- [ ] All tests pass (same count as M1 baseline)
+
+### M5: Cleanup and Documentation
+- [ ] Remove dead code, update `LIBRARIES.md`, `CONVENTIONS.md`, `AGENTS.md`
+- [ ] Update "deferred to Avalonia 12" notes across docs
+- [ ] Full manual smoke test, merge to `main`
+
+### M6 (Optional): Unlock New Capabilities
+- [ ] **DialogHost.Avalonia** — replace custom overlay with proper modal (Phase 8.3 unlock)
+- [ ] **Material.Icons.Avalonia** — replace text glyphs with icon library (Phase 8.5 unlock)
+- [ ] **Compiled bindings** — full audit, enable stricter typing across all views
+
 ---
 
 ## AGENT TRACK: Multi-Agent AI Orchestration

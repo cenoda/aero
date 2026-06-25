@@ -10,7 +10,7 @@
 **What this is:** A standalone code editor (IDE) built from scratch in C#/Avalonia, with a multi-agent AI orchestration layer as its differentiator.
 
 **Tech Stack:**
-- UI: Avalonia 11.3 (XAML)
+- UI: Avalonia 11.3 (XAML) — **Migration to Avalonia 12.0 planned in Phase 11**
 - Language: C# (.NET 9.0)
 - Pattern: MVVM with ReactiveUI
 - Text Editor: AvaloniaEdit
@@ -56,6 +56,7 @@ Do not start Agent Track (Phase A1+) until Phase 8 (UI Polish) is complete.
 | 8 | UI Polish (docking, theme, palette) | Phase 7 complete |
 | 9 | Advanced Features | Phase 8 complete |
 | 10 | Plugin System | Phase 9 complete |
+| 11 | Avalonia 12 Migration | Phase 10 complete |
 
 ### Before Starting Work
 
