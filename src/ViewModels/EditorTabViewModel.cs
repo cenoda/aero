@@ -92,9 +92,27 @@ public class EditorTabViewModel : ReactiveObject, IDisposable
             {
                 _languageId = value;
                 this.RaisePropertyChanged(nameof(LanguageId));
+                this.RaisePropertyChanged(nameof(FontFamily));
             }
         }
     }
+
+    /// <summary>Font family based on language — monospace for code, sans-serif for markdown.</summary>
+    public string FontFamily => _languageId switch
+    {
+        // Code languages → monospace
+        "csharp" or "fsharp" or "javascript" or "typescript" or
+        "typescriptreact" or "javascriptreact" or "python" or
+        "html" or "xml" or "xaml" or "json" or "yaml" or
+        "css" or "scss" or "bat" or "powershell" or "shell" =>
+            "Consolas, Courier New, monospace",
+
+        // Documentation → sans-serif
+        "markdown" or "plaintext" => "Inter, Segoe UI, sans-serif",
+
+        // Default to monospace for unknown languages
+        _ => "Consolas, Courier New, monospace"
+    };
 
     /// <summary>Whether the document has unsaved changes.</summary>
     public bool IsDirty => _document.IsDirty;

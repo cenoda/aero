@@ -14,7 +14,8 @@
                     ItemsSource="{Binding Tabs}"
                     SelectedItem="{Binding ActiveTab}">
             <TabControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:EditorTabViewModel">
+                <DataTemplate>
+                    <!-- Header: filename with icon and close button -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <PathIcon Data="{Binding GlyphGeometry}"
                                   Width="12" Height="12"
@@ -22,11 +23,10 @@
                                   Margin="0,0,2,0"/>
                         <TextBlock Text="{Binding GitStatusGlyph}"
                                    VerticalAlignment="Center"
-                                   FontWeight="Bold"
-                                   Foreground="{DynamicResource git.stagedForeground}"/>
+                                   FontWeight="Bold"/>
                         <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
                         <Button Content="×"
-                                Command="{Binding #EditorTabControl.DataContext.CloseTabCommand}"
+                                Command="{Binding $parent[TabControl].DataContext.CloseTabCommand}"
                                 CommandParameter="{Binding}"
                                 Background="Transparent"
                                 BorderThickness="0"
@@ -37,7 +37,7 @@
                 </DataTemplate>
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
-                <DataTemplate x:DataType="vm:EditorTabViewModel">
+                <DataTemplate>
                     <ae:TextEditor Document="{Binding Document.InnerDocument}"
                                    FontFamily="Consolas, Courier New, monospace"
                                    FontSize="13"

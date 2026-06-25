@@ -13,6 +13,8 @@ using Aero.Services;
 using Aero.Services.Build;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using GridLength = Avalonia.Controls.GridLength;
+using GridUnitType = Avalonia.Controls.GridUnitType;
 using Avalonia.Platform.Storage;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -78,6 +80,11 @@ public class ShellViewModel : ReactiveObject, IDisposable
     // Panel sizes for animations (Phase 8.1 M3)
     [Reactive] public double SidebarWidth { get; set; } = 250;
     [Reactive] public double BottomPanelHeight { get; set; } = 150;
+
+    /// <summary>Grid column width — 0 when sidebar is hidden so the editor expands.</summary>
+    public GridLength SidebarColumnWidth => IsSidebarVisible
+        ? new GridLength(SidebarWidth, GridUnitType.Pixel)
+        : new GridLength(0);
 
     // Window state — persisted via ISettingsService (Phase 8.7)
     [Reactive] public double WindowX { get; set; }
@@ -164,6 +171,10 @@ public ShellViewModel(
         BuildCommand = ReactiveCommand.CreateFromTask(BuildAsync);
         ToggleThemeCommand = ReactiveCommand.CreateFromTask(ToggleThemeAsync);
 
+        // Keep SidebarColumnWidth in sync with visibility + width
+        this.WhenAnyValue(x => x.IsSidebarVisible, x => x.SidebarWidth)
+            .Subscribe(_ => this.RaisePropertyChanged(nameof(SidebarColumnWidth)));
+
         // Subscribe to messages — store handlers for unsubscribe
         _folderOpenedHandler = msg =>
         {
@@ -213,7 +224,7 @@ public ShellViewModel(
         // Panel state (Phase 8.1 M7)
         IsSidebarVisible = settings.IsSidebarVisible;
         IsBottomPanelVisible = settings.IsBottomPanelVisible;
-        SidebarWidth = settings.IsSidebarVisible ? settings.SidebarWidth : 0;
+        SidebarWidth = settings.SidebarWidth > 0 ? settings.SidebarWidth : 250;
         BottomPanelHeight = settings.IsBottomPanelVisible ? settings.BottomPanelHeight : 0;
     }
 
@@ -534,8 +545,10 @@ public ShellViewModel(
     private void ToggleSidebar()
     {
         IsSidebarVisible = !IsSidebarVisible;
-        // Restore width when showing, collapse when hiding
-        SidebarWidth = IsSidebarVisible ? (SidebarWidth > 0 ? SidebarWidth : 250) : 0;
+        // Ensure sensible width when expanding; don't zero it when collapsing
+        // (SidebarColumnWidth handles the column collapse via IsSidebarVisible)
+        if (IsSidebarVisible && SidebarWidth <= 0)
+            SidebarWidth = 250;
         _ = SavePanelStateAsync();
     }
 

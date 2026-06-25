@@ -71,67 +71,24 @@
         <!-- Main editor area: sidebar | splitter | (editor + status bar) -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <!-- Sidebar: fixed default width, MinWidth lets the user collapse to a sliver. -->
-                <ColumnDefinition Width="250" MinWidth="0"/>
+                <!-- Sidebar column: controlled from code-behind -->
+                <ColumnDefinition x:Name="SidebarColumn" Width="250"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-<!-- Sidebar (Phase 2 M2). Wrap in a Grid so IsVisible binds against ShellViewModel
-                 (parent DataContext), not child ViewModels. -->
-            <!-- Phase 8.1 M1: Panel header with icon + title + collapse button -->
-            <!-- Phase 8.1 M2: Border with corner radius on top corners -->
-            <!-- Phase 8.1 M3: Width animation for collapse/expand -->
+            <!-- Sidebar (Phase 2 M2) -->
             <Border Grid.Column="0"
                     IsVisible="{Binding IsSidebarVisible}"
-                    Width="{Binding SidebarWidth}"
                     CornerRadius="8,8,0,0"
                     BorderBrush="{DynamicResource panel.border}"
                     BorderThickness="1"
                     Margin="0,0,0,0">
-                <Border.Transitions>
-                    <Transitions>
-                        <DoubleTransition Property="Width"
-                                          Duration="0:0:0.200"
-                                          Easing="CubicEaseOut"/>
-                    </Transitions>
-                </Border.Transitions>
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0"
-                            Background="{DynamicResource panel.headerBackground}"
-                            BorderBrush="{DynamicResource panel.border}"
-                            BorderThickness="0,0,0,1"
-                            Padding="12,6">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <PathIcon Grid.Column="0"
-                                      Data="{StaticResource Icon.Folder}"
-                                      Width="14" Height="14"
-                                      Foreground="{DynamicResource panel.headerForeground}"
-                                      Margin="0,0,6,0"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding ActiveSidebarTitle}"
-                                       Foreground="{DynamicResource panel.headerForeground}"
-                                       FontWeight="SemiBold"
-                                       FontSize="11"
-                                       VerticalAlignment="Center"/>
-                            <Button Grid.Column="2"
-                                    Command="{Binding ToggleSidebarCommand}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="4"
-                                    ToolTip.Tip="Collapse sidebar"
-                                    Cursor="Hand">
-                                <PathIcon Data="{StaticResource Icon.ChevronLeft}"
-                                          Width="12" Height="12"
-                                          Foreground="{DynamicResource panel.headerForeground}"/>
-                        </Button>
-                    </Grid>
-                </Border>
-                <TabControl Grid.Row="1"
+                <TabControl Grid.Row="0"
                            SelectedIndex="{Binding ActiveSidebarTabIndex}">
                     <TabItem Header="Explorer">
                         <views:FileExplorerView DataContext="{Binding FileExplorerViewModel}"/>
@@ -144,8 +101,10 @@
             </Border>
 
             <!-- Draggable divider between sidebar and editor -->
-            <GridSplitter Grid.Column="1"
+            <GridSplitter x:Name="SidebarSplitter"
+                          Grid.Column="1"
                           Width="4"
+                          IsVisible="{Binding IsSidebarVisible}"
                           Background="{DynamicResource panel.border}"
                           ResizeDirection="Columns"
                           ResizeBehavior="PreviousAndNext"/>

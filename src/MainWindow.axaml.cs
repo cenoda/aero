@@ -3,6 +3,7 @@ using Aero.Core;
 using Aero.ViewModels;
 using Aero.Views;
 using Avalonia.Controls;
+using Avalonia.ReactiveUI;
 
 namespace Aero;
 
