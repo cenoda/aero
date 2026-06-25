@@ -21,7 +21,9 @@
                 <TextBlock Text="{Binding GitStatusGlyph}"
                            VerticalAlignment="Center"
                            FontWeight="Bold"/>
-                <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Title}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
                 <Button Content="×"
                         Command="{Binding $parent[TabControl].DataContext.CloseTabCommand}"
                         CommandParameter="{Binding}"
@@ -40,13 +42,20 @@
                     ItemsSource="{Binding Tabs}"
                     SelectedItem="{Binding ActiveTab}">
 
-            <!-- Horizontal StackPanel → single-row tabs that shrink
-                 (like Chrome) instead of the default WrapPanel which stacks. -->
+            <!-- TabShrinkPanel: proportional shrinking like Chrome.
+                 MinWidth/MaxWidth on TabItem control the shrink range. -->
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" />
+                    <views:TabShrinkPanel />
                 </ItemsPanelTemplate>
             </TabControl.ItemsPanel>
+
+            <TabControl.Styles>
+                <Style Selector="TabItem">
+                    <Setter Property="MinWidth" Value="60" />
+                    <Setter Property="MaxWidth" Value="200" />
+                </Style>
+            </TabControl.Styles>
 
             <TabControl.ContentTemplate>
                 <DataTemplate>
