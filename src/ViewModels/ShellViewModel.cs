@@ -534,7 +534,8 @@ public ShellViewModel(
     private void ToggleSidebar()
     {
         IsSidebarVisible = !IsSidebarVisible;
-        SidebarWidth = IsSidebarVisible ? 250 : 0;
+        // Restore width when showing, collapse when hiding
+        SidebarWidth = IsSidebarVisible ? (SidebarWidth > 0 ? SidebarWidth : 250) : 0;
         _ = SavePanelStateAsync();
     }
 
