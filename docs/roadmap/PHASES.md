@@ -187,7 +187,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > **Entry condition:** Phase 7 is complete.
 > **Exit condition:** Panels have polished headers, borders, and animations; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
 
-### 8.1 Panel Polish & Layout Refinement [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
+### 8.1 Panel Polish & Layout Refinement [`docs/phases/phase-8/8.1-panel-polish/`](docs/phases/phase-8/8.1-panel-polish/)
 - [ ] **Panel headers** — consistent header bars with Phosphor icon + title + action buttons
 - [ ] **Panel borders & spacing** — unified `panel.border` and `radius.panel` across all panels
 - [ ] **Collapse/expand animations** — 200ms CubicOut transitions for sidebar and bottom panel

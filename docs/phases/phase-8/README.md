@@ -43,7 +43,7 @@ Aero uses a **fixed sidebar+editor+bottom-panel layout** with GridSplitter resiz
 
 | # | Folder | Scope |
 |---|--------|-------|
-| 8.1 | [`8.1-dockable-panels/`](8.1-dockable-panels/) | Panel polish — headers, borders, animations, empty states, splitter hover. No Dock.Avalonia. |
+| 8.1 | [`8.1-panel-polish/`](8.1-panel-polish/) | Panel polish — headers, borders, animations, empty states, splitter hover. No Dock.Avalonia. |
 | 8.2 | [`8.2-theme-system/`](8.2-theme-system/) | Light/Dark with 115 semantic color tokens + JSON override — no custom theme editor |
 | 8.3 | [`8.3-command-palette/`](8.3-command-palette/) | Ctrl+Shift+P, FuzzySharp on registered commands only |
 | 8.4 | [`8.4-welcome-page/`](8.4-welcome-page/) | Recent projects + quick actions as a landing tab |
