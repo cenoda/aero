@@ -105,8 +105,9 @@ lifetime). `CliWrap` is oriented toward run-to-completion command execution and 
 for Phase 5 (Output Panel / process runner).
 
 The same situation applies to other packages already in `aero.csproj` ahead of their documented
-phase: `Dock.Avalonia`, `Microsoft.Extensions.Configuration.Json`, `Microsoft.Extensions.Logging`.
+phase: `Microsoft.Extensions.Configuration.Json`, `Microsoft.Extensions.Logging`.
 These are pre-positioned but not yet used — the docs reflect when they become active.
+Note: Dock.Avalonia was abandoned 2026-06-25 (see Phase 8.1).
 
 ### Language Server Choice
 

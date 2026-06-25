@@ -239,7 +239,7 @@ dotnet run --project src   # visual check
 ## 6. Phase 8.9 Limitations (by design)
 
 - **TabItem top-only radius** — deferred to 8.2. Requires ControlTemplate override that interacts with tab color tokens. Documenting here avoids re-adding complexity without a concrete need.
-- **Transition application** — 8.9 establishes duration/easing constants only. Actual `Transitions { ... }` blocks are written per-control in 8.1 (panels) and 8.2 (theme hover states). This is intentional: applying transitions globally to all controls would cause regressions in AvaloniaEdit and Dock.Avalonia.
+- **Transition application** — 8.9 establishes duration/easing constants only. Actual `Transitions { ... }` blocks are written per-control in 8.1 (panels) and 8.2 (theme hover states). This is intentional: applying transitions globally to all controls would cause regressions in AvaloniaEdit. Note: Dock.Avalonia was abandoned 2026-06-25, so this regression risk no longer applies.
 - **ScrollBar ControlTemplate** — the full ScrollBar template override (thumb radius) is considered medium complexity. If it causes friction with Avalonia's SimpleTheme, document the limitation and skip — thumb radius is cosmetic.
 - **No color applied** — 8.9 is structure only. All color comes from 8.2. Running the app after 8.9 may look unstyled or use SimpleTheme defaults for colors — this is expected.
 

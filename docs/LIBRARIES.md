@@ -32,7 +32,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 
 | Library | What It Does | Why You Want It |
 |---------|-------------|-----------------|
-| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | This makes an IDE feel like an IDE. Users expect to drag panels around. |
+| **Dock.Avalonia** | VS Code-style dockable/floatable panels with drag-to-rearrange. | **ABANDONED (2026-06-25):** Two integration attempts failed. Internal rendering is too opaque to debug. Fixed Grid+GridSplitter layout used instead. |
 | **DialogHost.Avalonia** | Modal popup overlays. | Requires Avalonia >= 12.0.0 — incompatible with Avalonia 11.3. Phase 8 uses a custom overlay instead (< 100 lines). Revisit when upgrading to Avalonia 12. |
 
 
@@ -105,7 +105,7 @@ Every library explained in plain English — what it does, why you'd want it, an
 Avalonia.AvaloniaEdit      11.3.*
 AvaloniaEdit.TextMate      11.3.*
 TextMateSharp.Grammars     1.*
-Dock.Avalonia              11.3.*
+# Dock.Avalonia           11.3.*  (ABANDONED 2026-06-25)
 Microsoft.Extensions.DependencyInjection  9.*
 Microsoft.Extensions.Configuration.Json   9.*
 Microsoft.Extensions.Logging             9.*
@@ -126,8 +126,9 @@ Phase 3: + AvaloniaEdit.TextMate, TextMateSharp.Grammars
 Phase 4: + StreamJsonRpc
 Phase 5: + CliWrap, Pty.Net, VtNetCore
 Phase 7: + LibGit2Sharp, DiffPlex
-Phase 8: + Dock.Avalonia, FuzzySharp,
+Phase 8: + FuzzySharp,
           Phosphor embedded PathIcon assets (icon decision resolved — no new package), Microsoft.Extensions.*
+          (Dock.Avalonia abandoned 2026-06-25 — fixed Grid layout used instead)
           (DialogHost.Avalonia skipped — requires Avalonia 12; custom overlay instead)
 Phase 10: + McMaster.NETCore.Plugins
 Anytime: + Humanizer, Polly, xUnit, NSubstitute

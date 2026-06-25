@@ -9,7 +9,7 @@ Phase 1 implements the core text editor with tabs, open/save, undo/redo, and fin
 ### Entry Condition
 - Phase 0 complete: DI container, AvaloniaEdit package, directory skeleton all in place
 - Current setup: Avalonia 11.2, ReactiveUI, Microsoft.Extensions.DependencyInjection
-- Libraries already available: AvaloniaEdit 11.3.*, Dock.Avalonia, Material.Icons.Avalonia
+- Libraries already available: AvaloniaEdit 11.3.*, Material.Icons.Avalonia (Dock.Avalonia abandoned 2026-06-25)
 
 ### Exit Conditions (Must All Pass)
 1. Can open, edit, save, and close multiple files via tabs

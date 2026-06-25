@@ -203,7 +203,7 @@ Apply abstraction to:
 |----------------|--------------|-------------------|
 | Text editor widget | AvaloniaEdit | Custom text rendering |
 | Syntax highlighting | AvaloniaEdit.TextMate + TextMateSharp.Grammars | Grammar parser |
-| Dockable panels | Dock.Avalonia | Manual drag-drop layout |
+| Dockable panels | ~~Dock.Avalonia~~ (abandoned 2026-06-25) | Manual Grid+GridSplitter layout |
 | JSON-RPC / LSP | StreamJsonRpc | Custom protocol handler |
 | Process execution | CliWrap | Process.Start boilerplate |
 | Git operations | LibGit2Sharp | git CLI parser |

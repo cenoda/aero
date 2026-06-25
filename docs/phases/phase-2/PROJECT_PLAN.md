@@ -37,7 +37,7 @@ Do not write Phase 2 code until all of these are true:
 
 ### Out of Scope (protects solid state)
 
-- Drag-and-drop docking (`Dock.Avalonia` is reserved for Phase 8).
+- Drag-and-drop docking (`Dock.Avalonia` was reserved for Phase 8, but abandoned 2026-06-25 — fixed Grid layout is permanent).
 - Full MSBuild / solution parsing.
 - Git status icons or file-modified badges in the tree.
 - Find-in-files, file content search.
@@ -87,7 +87,7 @@ ConfirmDelete(string Path, Action<bool> OnResult)
 | ADR-2 | Tree models are plain records; `ObservableCollection` lives in VM layer | Keeps models simple and UI-agnostic; matches `CONVENTIONS.md` MVVM rules. |
 | ADR-3 | `FileSystemWatcherService` is a singleton that publishes `FolderChanged` | Decouples OS watcher from UI; VM decides how to refresh and on which thread. |
 | ADR-4 | Dialog prompts use the existing MessageBus pattern (`ConfirmDirtyClose`) | ViewModels never reference Views; `MainWindow` code-behind owns all dialogs. |
-| ADR-5 | Sidebar uses manual `Grid` + `GridSplitter` | `PANELS_AND_DOCKING.md` recommends this for Phase 1–2; defers `Dock.Avalonia` risk to Phase 8. |
+| ADR-5 | Sidebar uses manual `Grid` + `GridSplitter` | `PANELS_AND_DOCKING.md` recommends this for Phase 1–2; Dock.Avalonia was abandoned 2026-06-25, fixed Grid layout is permanent. |
 | ADR-6 | `ProjectLoader` is recognition-only, not parsing | Meets Phase 2 exit condition without pulling in MSBuild/XML parsers. |
 | ADR-7 | No new NuGet packages | Built-in `FileSystemWatcher` + already referenced `Material.Icons.Avalonia` are sufficient. |
 
@@ -237,7 +237,7 @@ public class FileExplorerViewModel : ReactiveObject, IDisposable
 - **`FileExplorerView.axaml`** — `TreeView` with a `TreeDataTemplate` binding `Children`, `ContextMenu` bound to VM commands, `MaterialIcon` for icons. Keyboard accessibility: Arrow keys navigate, Enter opens file, Delete triggers delete, F2 triggers rename.
 - **`TextInputDialog.axaml`** — reusable text prompt (OK/Cancel), used for New and Rename.
 - **`ConfirmDialog.axaml`** — reusable yes/no confirmation, used for Delete.
-- **`MainWindow.axaml`** — restructure the content area into a 3-column `Grid`: sidebar (250 px), `GridSplitter`, editor. Keep the existing menu and status bar untouched. NOTE: This fixed Grid layout is temporary scaffolding; Phase 8 replaces it with `Dock.Avalonia`.
+- **`MainWindow.axaml`** — restructure the content area into a 3-column `Grid`: sidebar (250 px), `GridSplitter`, editor. Keep the existing menu and status bar untouched. NOTE: This fixed Grid layout is permanent — Dock.Avalonia was abandoned 2026-06-25.
 
 ### 5.5 Messages
 

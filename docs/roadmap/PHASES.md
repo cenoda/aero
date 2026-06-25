@@ -177,7 +177,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > |-----------|------|-----------------|
 > | **Conservative** | Traditional IDE (text center, agent right) | Preset layout provided |
 > | **Progressive** | VS Code style (agent as main view) | Preset layout provided |
-> | **Ultra-progressive** | Multi-agent view (split, pipeline, multiple windows) | Dock.Avalonia full custom |
+> | **Ultra-progressive** | Multi-agent view (split, pipeline, multiple windows) | Custom multi-window layout (future) |
 > | **Orchestration** | Auto-route Agent A → Agent B | Phase A4 (Agent-to-Agent Pipeline) |
 >
 > Every Phase 8 decision answers: *"Does this give the user choice, or does it force them?"*
@@ -185,7 +185,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > ---
 >
 > **Entry condition:** Phase 7 is complete.
-> **Exit condition:** Panels are dockable in two modes; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
+> **Exit condition:** Panels have polished headers, borders, and animations; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
 
 ### 8.1 Panel Polish & Layout Refinement [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
 - [ ] **Panel headers** — consistent header bars with Phosphor icon + title + action buttons
@@ -220,7 +220,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 - [x] Update `docs/LIBRARIES.md` with the decision
 
 ### 8.6 Settings Page [`docs/phases/phase-8/8.6-settings-page/`](docs/phases/phase-8/8.6-settings-page/)
-- [ ] Single dialog: Font, Theme, Tab Size, Editor options, **Layout Mode selector** (Tile/Freeform)
+- [ ] Single dialog: Font, Theme, Tab Size, Editor options
 - [ ] Persist to `~/.aero/settings.json` (via ISettingsService from 8.7); immediate apply, no restart
 
 ### 8.7 Workspace Persistence [`docs/phases/phase-8/8.7-workspace-persistence/`](docs/phases/phase-8/8.7-workspace-persistence/)

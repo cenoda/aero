@@ -19,7 +19,7 @@ Phase 8 sub-phases (8.4, 8.6, 8.1) depend on. Persists two JSON files under `~/.
 
 | File | Content | Consumer |
 |------|---------|----------|
-| `~/.aero/settings.json` | User preferences (font, theme, tab size, layout mode) | 8.6 Settings Page |
+| `~/.aero/settings.json` | User preferences (font, theme, tab size) | 8.6 Settings Page |
 | `~/.aero/workspace.json` | Last folder, open files, active tab, window position, recent folders | 8.4 Welcome Page, ShellViewModel, MainWindow |
 
 This sub-phase implements the **infrastructure only**. The UI consumers (8.4, 8.6, 8.1)
@@ -92,7 +92,6 @@ public record SettingsModel
     public string FontFamily { get; init; } = "Inter";
     public int FontSize { get; init; } = 13;
     public int TabSize { get; init; } = 4;
-    public string LayoutMode { get; init; } = "Tile";
 }
 ```
 

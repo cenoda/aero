@@ -50,17 +50,17 @@ class PanelHost {
 
 ## Docking Approach
 
-**Option A (recommended):** Use `Dock.Avalonia` NuGet package.
-- Provides VS-style docking with drag-to-rearrange
-- Supports pin/unpin, tab groups, float windows
-- Mature and well-tested
+**Decision (2026-06-25):** Fixed `Grid` with `GridSplitter` layout. Dock.Avalonia was evaluated and abandoned after two failed integration attempts — the library's internal rendering is too opaque to debug effectively.
 
-**Option B (simpler first):** Manual `Grid` with `GridSplitter` controls.
-- Fixed zones, no drag-to-rearrange
-- Easier to implement, less flexible
-- Good for Phase 1-2, migrate to Dock.Avalonia later
+**Option A (abandoned):** `Dock.Avalonia` NuGet package.
+- ~~Provides VS-style docking with drag-to-rearrange~~
+- ~~Supports pin/unpin, tab groups, float windows~~
+- **ABANDONED:** Two integration attempts failed. Internal rendering is opaque.
 
-Recommend starting with Option B (manual grid) to ship faster, then migrate to Option A in Phase 8 (UI Polish).
+**Option B (chosen):** Manual `Grid` with `GridSplitter` controls.
+- Fixed zones: sidebar (Explorer+Git) | editor | bottom panel (Problems+Output)
+- No drag-to-rearrange, but covers the 95% use case
+- Simple, debuggable, already working
 
 ## View → ViewModel Wiring
 

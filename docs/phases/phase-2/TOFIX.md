@@ -154,8 +154,9 @@ lands, swap the XAML binding from `{Binding Glyph}` to
 **Decision options for the user:**
 
 1. **Bump Avalonia to 12.0.0** + adopt `Material.Icons.Avalonia 3.0.2`.
-   Risks: Avalonia 12 is a major version — AvaloniaEdit, Dock.Avalonia,
+   Risks: Avalonia 12 is a major version — AvaloniaEdit,
    and the existing `Fody`/`ReactiveUI.Fody` setup may need updates.
+   Note: Dock.Avalonia was abandoned 2026-06-25 (see Phase 8.1).
 2. **Stay on Avalonia 11.3** + adopt a different icon library (or
    none). Candidates: hand-rolled SVG, `Projektanker.Icons.Avalonia`
    (FontAwesome / Material subset, may have a 1.x version compatible
