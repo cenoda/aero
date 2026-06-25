@@ -8,44 +8,37 @@
              x:Class="Aero.Views.EditorView"
              x:DataType="vm:EditorViewModel">
 
+    <!-- Implicit DataTemplate: when Avalonia needs to render an
+         EditorTabViewModel (as set by TabItem.UpdateHeader for the Header),
+         it finds this template by type and uses it instead of ToString(). -->
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:EditorTabViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <PathIcon Data="{Binding GlyphGeometry}"
+                          Width="12" Height="12"
+                          VerticalAlignment="Center"
+                          Margin="0,0,2,0"/>
+                <TextBlock Text="{Binding GitStatusGlyph}"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"/>
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                <Button Content="×"
+                        Command="{Binding $parent[TabControl].DataContext.CloseTabCommand}"
+                        CommandParameter="{Binding}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="4,0"
+                        FontSize="14"
+                        VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <Grid>
         <!-- Editor surface: TabControl fills all available space -->
         <TabControl x:Name="EditorTabControl"
                     ItemsSource="{Binding Tabs}"
                     SelectedItem="{Binding ActiveTab}">
-
-            <!-- TabItem.HeaderTemplate: controls the tab header strip display.
-                 TabItem.SetCurrentValue(HeaderProperty, DataContext) is called by
-                 UpdateHeader when DataContext changes, so we must override the
-                 HeaderTemplate to show Title instead of ToString(). -->
-            <TabControl.Styles>
-                <Style Selector="TabItem">
-                    <Setter Property="HeaderTemplate">
-                        <Setter.Value>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <PathIcon Data="{Binding GlyphGeometry}"
-                                              Width="12" Height="12"
-                                              VerticalAlignment="Center"
-                                              Margin="0,0,2,0"/>
-                                    <TextBlock Text="{Binding GitStatusGlyph}"
-                                               VerticalAlignment="Center"
-                                               FontWeight="Bold"/>
-                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
-                                    <Button Content="×"
-                                            Command="{Binding $parent[TabControl].DataContext.CloseTabCommand}"
-                                            CommandParameter="{Binding}"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Padding="4,0"
-                                            FontSize="14"
-                                            VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </TabControl.Styles>
 
             <TabControl.ContentTemplate>
                 <DataTemplate>

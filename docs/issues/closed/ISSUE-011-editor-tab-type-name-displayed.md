@@ -53,35 +53,41 @@ which is `TabItem.Content` — the body, not the header.
 Neither controls the tab header. The header is exclusively controlled by
 `TabItem.HeaderTemplate` (from `HeaderedContentControl`).
 
-## Resolution (Attempt 2 — CORRECT FIX)
+## Resolution (Attempt 3 — FINAL FIX)
 
-**Attempt 1 (FAILED):** Changed `#EditorTabControl` to `$parent[TabControl]` in the binding.
-This did not fix the issue because `ItemTemplate` is not the right property.
+### Attempt 1 (FAILED)
+Changed `#EditorTabControl` to `$parent[TabControl]` in the close button binding.
+Did not fix — `ItemTemplate` targets content area, not header.
 
-**Attempt 2 (CORRECT):** Replaced `TabControl.ItemTemplate` with a `Style` that sets
-`TabItem.HeaderTemplate`. The `HeaderTemplate` data template is now applied to the
-`TabItem.Header` property, which is what the `TabStrip` renders for each tab.
+### Attempt 2 (FAILED — committed to origin/master)
+Moved the template from `TabControl.ItemTemplate` to a `Style Selector="TabItem"`
+setting `HeaderTemplate`. The TabItem template uses `ContentPresenter` with
+`ContentTemplate="{TemplateBinding HeaderTemplate}"`, so this should have worked.
+But it didn't — possibly a template binding priority issue with the Simple theme.
+
+### Attempt 3 (CURRENT — implicit DataTemplate)
+**Root cause confirmed:** `TabItem.UpdateHeader()` sets `Header = DataContext` (the
+entire `EditorTabViewModel` instance). The `ContentPresenter` in the TabItem template
+renders this Header. With no template matching, Avalonia calls `ToString()` → type name.
+
+**Fix:** Use Avalonia's **implicit typed DataTemplate** system. A `DataTemplate` with
+`DataType="vm:EditorTabViewModel"` is placed in `UserControl.DataTemplates`. When the
+`ContentPresenter` renders the `Header` (an `EditorTabViewModel`), Avalonia searches
+up the resource tree, finds this template by type match, and applies it. No Style,
+no `HeaderTemplate` property — pure type-based template resolution.
 
 ```xml
-<!-- Before (incorrect — ItemTemplate targets content, not header) -->
-<TabControl.ItemTemplate>
-    <DataTemplate>...</DataTemplate>
-</TabControl.ItemTemplate>
-
-<!-- After (correct — Style sets HeaderTemplate on TabItem) -->
-<TabControl.Styles>
-    <Style Selector="TabItem">
-        <Setter Property="HeaderTemplate">
-            <Setter.Value>
-                <DataTemplate>...</DataTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-</TabControl.Styles>
+<UserControl.DataTemplates>
+    <DataTemplate DataType="vm:EditorTabViewModel">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+            <PathIcon Data="{Binding GlyphGeometry}" .../>
+            <TextBlock Text="{Binding GitStatusGlyph}" .../>
+            <TextBlock Text="{Binding Title}" .../>
+            <Button Command="{Binding $parent[TabControl]..." .../>
+        </StackPanel>
+    </DataTemplate>
+</UserControl.DataTemplates>
 ```
-
-Also kept the `$parent[TabControl]` fix (from Attempt 1) for the close button command
-binding, since `$parent` is more robust than `#controlName` for visual tree traversal.
 
 **File changed:** `src/Views/EditorView.axaml`
 **Date:** 2026-06-25
@@ -89,9 +95,10 @@ binding, since `$parent` is more robust than `#controlName` for visual tree trav
 
 ## Key Avalonia TabControl Learning
 
-| Property | What it controls |
+| What | How |
 |---|---|
-| `TabControl.ContentTemplate` | Selected tab's body content |
-| `TabControl.ItemTemplate` | Same as ContentTemplate (applied to `ContentControl.Content`) |
-| `TabItem.HeaderTemplate` | **Tab header in the strip** (set via Style) |
-| `TabItem.Header` | Auto-set to `DataContext` by `UpdateHeader()` if null |
+| `TabItem.Header` | Auto-set to `DataContext` by `UpdateHeader()` |
+| Tab item header rendering | `ContentPresenter` with `Content="{TemplateBinding Header}"` and `ContentTemplate="{TemplateBinding HeaderTemplate}"` |
+| Implicit typed DataTemplate | Put in `UserControl.DataTemplates`, matches by `DataType`, found via resource tree walk — **most reliable approach** |
+| `TabControl.ItemTemplate` | Applied to `TabItem.Content` (body area), NOT header |
+| `$parent[TabControl]` | Works for cross-scope bindings from DataTemplates |
