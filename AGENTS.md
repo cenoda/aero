@@ -341,19 +341,21 @@ grep -r "AddSingleton\|AddTransient\|AddScoped" src/App.axaml.cs src/
 
 ---
 
-## 9. Lessons Learned from Phase 8.1a Failure
+## 9. Lessons Learned from Phase 8.1a Failures
 
-> **⚠️ This section was added after Phase 8.1a failed. All agents must read this before starting new implementation work.**
+> **⚠️ This section was added after Phase 8.1a failed (v1), then updated after v2 also failed. All agents must read this before starting new implementation work.**
 
 ### What Happened
 
-Phase 8.1a (Dockable Panels) was implemented using Dock.Avalonia library. The implementation compiled successfully, all ViewModels were wired correctly, but the UI only showed the Explorer panel. Other panels (Git, Editor, Problems, Output) were not visible or not working.
+Phase 8.1a (Dockable Panels) was implemented using Dock.Avalonia library **twice** — once on `failed-dockable-panels` (v1) and again on `phase-8.1a-dockable-panels-v2` (v2, preserved as `failed-dockable-panels-v3`). Both attempts compiled successfully, all ViewModels were wired correctly, but the UI did not render panels as expected.
 
-After 13+ debugging attempts over 3+ hours, the implementation was reverted to the M0.5 baseline.
+After 13+ debugging attempts per attempt, both implementations were reverted.
 
-### Root Cause
+### Direction Change (2026-06-25)
 
-**Primary:** Dock.Avalonia's internal rendering logic is not transparent. The code was correct (VisibleDockables, IsExpanded, ActiveDockable all set properly) but the UI did not render as expected.
+**Dock.Avalonia is abandoned.** The library's internal rendering is opaque — code can be correct but the UI doesn't render as expected. The cost of debugging exceeds the value of the feature.
+
+**Phase 8.1 is now "Panel Polish"** — polish the existing Grid+GridSplitter layout (sidebar + editor + bottom panel). This is the 95% use case. No drag-to-rearrange, no tear-away windows, no Dock.Avalonia.
 
 ### Key Lessons
 
@@ -377,21 +379,16 @@ After 13+ debugging attempts over 3+ hours, the implementation was reverted to t
 - ❌ **Bad:** "Just get it done" → fast but broken
 - ✅ **Good:** Take time to verify → future debugging easier
 
-### For Future Phases
+#### 6. Know When to Walk Away (NEW)
+- ❌ **Bad:** "Third time's the charm" → waste another 2 weeks
+- ✅ **Good:** Two failed attempts = library is the problem, not you. Pivot.
 
-Before starting any new implementation:
+### Post-Mortem Documents
 
-1. **Study the library/tool first** — understand how it works
-2. **Create minimal test** — prove it works
-3. **Add logging from start** — makes debugging possible
-4. **Test frequently** — don't wait until end
-5. **Document what doesn't work** — helps future agents
-
-### Post-Mortem Document
-
-See `/docs/POSTMORTEM-phase-8.1a.md` for full details.
+See `/docs/POSTMORTEM-phase-8.1a.md` for v1 details.
+See `failed-dockable-panels-v3` branch for v2 code.
 
 ---
 
-*Last updated: 2026-06-23*
+*Last updated: 2026-06-25*
 *Governs: entire project (`/home/cenoda/aero`)*

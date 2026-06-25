@@ -187,13 +187,15 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 > **Entry condition:** Phase 7 is complete.
 > **Exit condition:** Panels are dockable in two modes; theme has 115 tokens with JSON override; command palette, welcome page, icons, settings, persistence, keybinding reference, and design system all deliverable.
 
-### 8.1 Dockable Panels — Layout Modes [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
-- [ ] **8.1a Freeform Mode** — wire existing panels into Dock.Avalonia (draggable, resizable, hideable, rearrangeable)
-- [ ] **8.1b Tile Mode** — auto-layout with tiling + stack (tab) support. Panels tile side-by-side, stack when overlapped. Keyboard-navigation optimized. Manual adjustment still allowed (avoids Hyperland limitation).
-- [ ] **8.1c Tear-Away Windows** — panels can be dragged out of the main window into standalone OS windows (Chrome tab style). Re-dockable.
-- [ ] **Tile + Stack mixing** — panels tile when placed side-by-side, merge into tabs when placed in the same slot.
-- [ ] Mode switching in settings; no restart required.
-- [ ] Principles: Tile Mode *must* still allow manual adjustment. Mode switch must be instant.
+### 8.1 Panel Polish & Layout Refinement [`docs/phases/phase-8/8.1-dockable-panels/`](docs/phases/phase-8/8.1-dockable-panels/)
+- [ ] **Panel headers** — consistent header bars with Phosphor icon + title + action buttons
+- [ ] **Panel borders & spacing** — unified `panel.border` and `radius.panel` across all panels
+- [ ] **Collapse/expand animations** — 200ms CubicOut transitions for sidebar and bottom panel
+- [ ] **Tab strip polish** — styled tab headers with active indicator and hover effects
+- [ ] **Empty states** — beautiful centered messages for panels with no content
+- [ ] **GridSplitter polish** — hover highlight with accent color, 200ms transition
+- [ ] **Panel visibility persistence** — remember sidebar/bottom panel state across restarts
+- [ ] **Direction changed 2026-06-25:** Dock.Avalonia abandoned after two failed attempts. Fixed Grid+GridSplitter layout is the 95% use case.
 
 ### 8.2 Theme Engine — 115 Color Tokens + JSON Override [`docs/phases/phase-8/8.2-theme-system/`](docs/phases/phase-8/8.2-theme-system/)
 - [x] Define **115 semantic color tokens** (editor bg/fg/selection, scrollbar, button hover, tab active underline, inline hints, debug states, panel headers, borders, git states, etc.) — full inventory in [`TOKENS.md`](docs/phases/phase-8/8.2-theme-system/TOKENS.md)
@@ -246,7 +248,7 @@ Build the IDE first so it's usable standalone, then add agents to supercharge it
 ### Phase 8 Tests (All Sub-Phases)
 - [ ] Unit tests for command registry, theme tokens, settings I/O, glyph mapping
 - [ ] Integration tests for settings round-trip, workspace persistence, theme switch
-- [ ] Manual tests for dockable panels (drag, resize, tear-away, mode switch)
+- [ ] Manual tests for panel polish (headers, borders, animations, empty states)
 - [ ] All pre-existing tests continue to pass
 
 ## Phase 9: Advanced Features
