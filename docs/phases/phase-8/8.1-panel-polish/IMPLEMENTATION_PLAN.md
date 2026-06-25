@@ -11,9 +11,21 @@
 
 - [ ] `dotnet build src/aero.csproj` passes (0 errors)
 - [ ] `dotnet test tests` passes (baseline: 525 passed)
-- [ ] Phase 8.9 design system tokens are present in `src/Styles/ThemeLight.axaml`
-- [ ] `src/Styles/Icons.axaml` contains Phosphor icons (Folder, Code, etc.)
-- [ ] Phase 8.7 `ISettingsService` exists at `src/Services/SettingsService.cs`
+- [ ] Required panel/tab/splitter design tokens are present in `src/Styles/ThemeLight.axaml` and `src/Styles/ThemeDark.axaml`
+- [ ] `src/Styles/Icons.axaml` contains required Phosphor icons (Folder, Code, etc.)
+- [ ] `ISettingsService` exists and is wired to persisted settings load/save flow
+
+---
+
+## Preflight Verification (M0.5)
+
+Before editing implementation files, verify these mappings and contracts in the current repo state:
+
+- [ ] Confirm actual host ViewModel used by `MainWindow` (plan examples refer to `ShellViewModel`; adjust to real type if different)
+- [ ] Confirm exact file names and paths for panel views (Explorer, Problems, Output, Git panel)
+- [ ] Confirm Avalonia style selector and `/template/` targeting syntax by matching existing `ControlThemes.axaml` patterns
+- [ ] Confirm settings model mutability/update pattern (`record` + `with` vs mutable class setters) and service serialization behavior
+- [ ] Confirm canonical local build/test commands and current baseline pass count
 
 ---
 
@@ -178,7 +190,9 @@ is not directly supported via `Transitions`. The correct approach:
 
 - **Sidebar collapse:** Set `ColumnDefinition.Width` to `0` and use a `GridLength`
   animation via code-behind, or alternatively set `Width` on the sidebar's wrapping
-  `Grid` control using a `Transitions` collection on the `Grid`:
+  `Grid` control using a `Transitions` collection on the `Grid`.
+  **Implementation note:** choose one strategy during preflight and keep it consistent.
+  Prefer wrapper-width animation unless layout constraints force GridLength animation.
   ```xml
   <Grid.Transitions>
       <Transitions>
@@ -191,14 +205,15 @@ is not directly supported via `Transitions`. The correct approach:
   Bind `Width` reactively from `ShellViewModel` (`SidebarWidth` property: `0.0` or `250.0`).
 
 - **Bottom panel collapse:** Same technique. `BottomPanelHeight` property: `0.0` or `150.0`.
-  The `TabControl` in Row 2 binds `Height` and transitions smoothly.
+  The `TabControl` (or a stable wrapper container in Row 2) binds `Height` and transitions smoothly.
+  **Implementation note:** use a stable wrapper if direct `TabControl.Height` binding causes layout jitter.
 
 - **GridSplitter visibility:** Hide the splitter (`IsVisible`) when the adjacent panel
   collapses, synced via a computed binding.
 
 #### M3.1: Sidebar Width Animation
 
-- Add `[Reactive] public double SidebarWidth { get; set; } = 250;` to `ShellViewModel`
+- Add `[Reactive] public double SidebarWidth { get; set; } = 250;` to the actual host ViewModel (examples use `ShellViewModel`)
 - `ToggleSidebar()`: set `SidebarWidth = IsSidebarVisible ? 250 : 0`
 - Bind `Grid.Width="{Binding SidebarWidth}"` on the sidebar wrapper
 - Add `DoubleTransition` for `Width` (200ms, CubicEaseOut) in XAML
@@ -206,7 +221,7 @@ is not directly supported via `Transitions`. The correct approach:
 
 #### M3.2: Bottom Panel Height Animation
 
-- Add `[Reactive] public double BottomPanelHeight { get; set; } = 150;`
+- Add `[Reactive] public double BottomPanelHeight { get; set; } = 150;` to the actual host ViewModel
 - `ToggleBottomPanel()`: set `BottomPanelHeight = IsBottomPanelVisible ? 150 : 0`
 - Bind `TabControl.Height="{Binding BottomPanelHeight}"`
 - Add `DoubleTransition` for `Height` (200ms, CubicEaseOut)
@@ -412,7 +427,7 @@ public record SettingsModel
 
 #### M7.2: Load on Startup
 
-In `ShellViewModel.InitializeAsync()` (or equivalent startup path), after loading settings:
+In the host ViewModel initialization path (examples reference `ShellViewModel.InitializeAsync()`), after loading settings:
 ```csharp
 IsSidebarVisible = settings.IsSidebarVisible;
 IsBottomPanelVisible = settings.IsBottomPanelVisible;
@@ -446,13 +461,14 @@ Implement strictly one milestone at a time. Verify `dotnet build` passes after e
 Run `dotnet test tests` after M4 (tab templates can cause XAML compile errors).
 
 ```
-M6 (Splitter hover)   ← smallest change, easiest win, confirms ControlTheme works
-M4 (Tab styling)      ← ControlTheme for TabItem (verifies XAML theming approach)
-M1 (Panel headers)    ← requires icon additions + ViewModel computed properties
-M2 (Border & spacing) ← XAML-only, safe
-M3 (Animations)       ← ViewModel + XAML transitions (most likely to surprise)
-M5 (Empty states)     ← view-layer only, needs icon additions
-M7 (Persistence)      ← model + service changes
+M0.5 (Preflight verification) ← confirm VM/file mappings, selector syntax, settings contract, command baseline
+M6 (Splitter hover)           ← smallest change, easiest win, confirms ControlTheme works
+M4 (Tab styling)              ← ControlTheme for TabItem (verifies XAML theming approach)
+M1 (Panel headers)            ← requires icon additions + ViewModel computed properties
+M2 (Border & spacing)         ← XAML-only, safe
+M3 (Animations)               ← ViewModel + XAML transitions (most likely to surprise)
+M5 (Empty states)             ← view-layer only, needs icon additions
+M7 (Persistence)              ← model + service changes
 ```
 
 ---
@@ -464,12 +480,12 @@ M7 (Persistence)      ← model + service changes
 | `src/Styles/ControlThemes.axaml` | Add `GridSplitter` ControlTheme (M6), `TabItem` ControlTheme (M4), `TabControl` style (M4) |
 | `src/Styles/Icons.axaml` | Add `Icon.ChevronLeft`, `Icon.ChevronDown`, `Icon.CheckCircle`, `Icon.GitBranch` |
 | `src/MainWindow.axaml` | Wrap sidebar + bottom panel with header bars (M1), add `DoubleTransition` bindings (M3), border tweaks (M2) |
-| `src/ViewModels/ShellViewModel.cs` | Add `SidebarWidth`, `BottomPanelHeight`, `ActiveSidebarTitle`, `ActiveBottomTabTitle` (M1, M3), persist state (M7) |
-| `src/Models/Settings/SettingsModel.cs` | Add 4 panel-state properties (M7) |
+| `src/ViewModels/ShellViewModel.cs` (or actual host VM) | Add `SidebarWidth`, `BottomPanelHeight`, `ActiveSidebarTitle`, `ActiveBottomTabTitle` (M1, M3), persist state (M7) |
+| `src/Models/Settings/SettingsModel.cs` | Add 4 panel-state properties (M7), adjusted to actual model mutability pattern |
 | `src/Views/FileExplorerView.axaml` | Add empty state (M5) |
-| `src/Views/ProblemsView.axaml` | Add/verify empty state (M5) |
-| `src/Views/OutputView.axaml` | Add empty state (M5) |
-| `src/Views/GitPanelView.axaml` | Add empty state (M5) |
+| `src/Views/ProblemsView.axaml` (or actual Problems view path) | Add/verify empty state (M5) |
+| `src/Views/OutputView.axaml` (or actual Output view path) | Add empty state (M5) |
+| `src/Views/GitPanelView.axaml` (or actual Git panel view path) | Add empty state (M5) |
 
 ---
 
@@ -538,6 +554,16 @@ Steps to cover:
 5. Click between tabs in sidebar and bottom panel — verify active indicator
 6. Resize sidebar to ~350px via drag — close app — reopen — verify width restored
 7. Toggle Dark theme — verify all panel tokens look correct in dark mode
+
+---
+
+## Integration Risk Controls
+
+- Validate each new selector in `ControlThemes.axaml` against existing selector style before adding complex pseudo-class/template-part rules.
+- Prefer minimal, incremental XAML template changes; build after each theme/template edit.
+- Keep one animation strategy per panel axis (wrapper dimension or GridLength), not mixed simultaneously.
+- Persist panel size defaults defensively (store last non-zero width/height for restore behavior).
+- If any referenced file differs from plan naming, update this plan first, then implement.
 
 ---
 
